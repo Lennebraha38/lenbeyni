@@ -52,3 +52,10 @@ def test_tarayici_hafif_mod():
     from agentv2.araclar.tarayici import _hafif
     son = _hafif("ac", "https://example.com/")
     assert "Example Domain" in son or son.startswith("[")
+
+def test_token_tavani():
+    z = zeka()
+    assert z._tavan("nvidia/nemotron-3-ultra-550b-a55b:free", 65536) == 65536
+    assert z._tavan("nvidia/nemotron-3-ultra-550b-a55b:free", 99999) == 65536
+    assert z._tavan("poolside/laguna-s-2.1:free", 65536) == 32768
+    assert z._tavan("dots-studio/dots-3-note-preview:free", 400000) == 400000

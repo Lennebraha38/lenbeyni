@@ -14,13 +14,29 @@ except ImportError:
 MEGA_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 PLAN_MODEL = "cohere/north-mini-code:free"
 
-def llm(mesajlar, model=MEGA_MODEL, max_tokens=4096):
+# Model -> max cikti token (OpenRouter /v1/models'ten). Free modeler 65K-460K tasir.
+MODEL_TAVANI = {
+    "nvidia/nemotron-3-ultra-550b-a55b:free": 65536,
+    "nvidia/nemotron-3.5-lightning:free": 65536,
+    "thinkingmachines/inkling:free": 262144,
+    "dots-studio/dots-3-note-preview:free": 460800,
+    "poolside/laguna-s-2.1:free": 32768,
+    "cohere/north-mini-code:free": 8192,
+}
+
+def _tavan(model, istenen):
+    """Modelin tavani ile kullanici istegini dengeler."""
+    tav = MODEL_TAVANI.get(model, 65536)
+    return min(max(istenen or 65536, 1), tav)
+
+def llm(mesajlar, model=MEGA_MODEL, max_tokens=65536):
     if not OPENROUTER_KEY:
         return None
     import requests
     r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
-        "model": model, "messages": mesajlar, "temperature": 0.7, "max_tokens": max_tokens
-    }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=90)
+        "model": model, "messages": mesajlar, "temperature": 0.7,
+        "max_tokens": _tavan(model, max_tokens)
+    }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=600)
     if r.status_code == 200:
         return r.json()["choices"][0]["message"]["content"]
     return None

@@ -39,7 +39,7 @@ async function megaBeyin(mesajlar, model, key) {
       const r = await fetch(window.location.origin + "/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 4096 }),
+body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 65536 }),
       });
       const j = await r.json();
       if (r.ok && j.content !== undefined) return j.content;
