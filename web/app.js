@@ -33,13 +33,19 @@ function mesajEkle(role, icerik) {
   return div;
 }
 
-async function megaBeyin(mesajlar, model, key) {
+function gecerliUzunluk() {
+  const seviye = ($("uzunlukSec") ? $("uzunlukSec").value : "normal");
+  return { kisa: 4096, normal: 16384, uzun: 65536 }[seviye] || 16384;
+}
+
+async function megaBeyin(mesajlar, model, key, max_tokens) {
+  const mt = max_tokens || gecerliUzunluk();
   if (sunucuModu !== false) {
     try {
       const r = await fetch(window.location.origin + "/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 65536 }),
+        body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: mt }),
       });
       const j = await r.json();
       if (r.ok && j.content !== undefined) return j.content;
@@ -53,7 +59,7 @@ body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 
   const r = await fetch(OPENROUTER, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-    body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 4096 }),
+    body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: mt }),
   });
   if (!r.ok) {
     const hata = await r.text();
@@ -131,7 +137,9 @@ async function tekMod(soru, key, model) {
     { role: "user", content: kullaniciIc },
   ];
   await ajanMod(mesajlar, { arama: $("toolArama").checked, site: $("toolSite").checked });
-  durum(true, model + " düşünüyor...");
+  const seviye = $("uzunlukSec") ? $("uzunlukSec").value : "normal";
+  const sureMetni = seviye === "uzun" ? " (bu seviyede ~10-20 dk sürebilir)" : "";
+  durum(true, model + " düşünüyor" + sureMetni + "…");
   const div = mesajEkle("ai", "…");
   try {
     const yanit = await megaBeyin(mesajlar, model, key);

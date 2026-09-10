@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "POST gerekli" });
 
-  const { model, messages, temperature = 0.7, max_tokens = 65536 } = req.body || {};
+  const { model, messages, temperature = 0.7, max_tokens = 16384 } = req.body || {};
   if (!model || !messages) return res.status(400).json({ error: "model ve messages gerekli" });
 
   try {

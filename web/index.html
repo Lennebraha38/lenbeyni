@@ -41,6 +41,15 @@
       <small><strong>Uyarı:</strong> çok uzun çıktı istersen cevap uzun sürebilir (65K yaklaşık ~15 dk).</small>
     </div>
 
+    <div class="model-box">
+      <label>Cevap uzunluğu</label>
+      <select id="uzunlukSec">
+        <option value="normal">Normal (16K)</option>
+        <option value="kisa">Kısa (4K)</option>
+        <option value="uzun">Uzun (65K)</option>
+      </select>
+    </div>
+
     <div class="model-box hidden" id="meclisModel">
       <label>Meclisteki modeller</label>
       <label class="chk"><input type="checkbox" value="nvidia/nemotron-3-ultra-550b-a55b:free" checked /> Nemotron 550B</label>

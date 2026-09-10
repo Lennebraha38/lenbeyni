@@ -59,3 +59,6 @@ def test_token_tavani():
     assert z._tavan("nvidia/nemotron-3-ultra-550b-a55b:free", 99999) == 65536
     assert z._tavan("poolside/laguna-s-2.1:free", 65536) == 32768
     assert z._tavan("dots-studio/dots-3-note-preview:free", 400000) == 400000
+    assert z.uzunluk("nvidia/nemotron-3-ultra-550b-a55b:free", "normal") == 16384
+    assert z.uzunluk("nvidia/nemotron-3-ultra-550b-a55b:free", "kisa") == 4096
+    assert z.uzunluk("poolside/laguna-s-2.1:free", "uzun") == 32768

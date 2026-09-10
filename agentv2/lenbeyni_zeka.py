@@ -29,10 +29,17 @@ def _tavan(model, istenen):
     tav = MODEL_TAVANI.get(model, 65536)
     return min(max(istenen or 65536, 1), tav)
 
-def llm(mesajlar, model=MEGA_MODEL, max_tokens=65536):
+def uzunluk(model, seviye="normal"):
+    """Pratik cevap uzunlugu: normal(16K), kisa(4K), uzun(65K)."""
+    uzunluklar = {"kisa": 4096, "normal": 16384, "uzun": 65536}
+    return _tavan(model, uzunluklar.get(seviye, 16384))
+
+def llm(mesajlar, model=MEGA_MODEL, max_tokens=None, seviye="normal"):
     if not OPENROUTER_KEY:
         return None
     import requests
+    if max_tokens is None:
+        max_tokens = uzunluk(model, seviye)
     r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
         "model": model, "messages": mesajlar, "temperature": 0.7,
         "max_tokens": _tavan(model, max_tokens)
@@ -93,6 +100,15 @@ def rapor(soru):
 def chat(soru):
     return ajan(soru)
 
+def acik(soru, mod="ajan"):
+    if mod == "rapor":
+        return rapor(soru)
+    if mod == "chat":
+        son = llm([{"role": "system", "content": "Sen LenBeyni'sin. Turkce, net cevap ver."},
+                   {"role": "user", "content": soru}], seviye="normal")
+        return son or "Beyin yanit vermedi."
+    return ajan(soru)
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Kullanim: python3 lenbeyni_zeka.py <soru> [ajan|rapor|chat]")
@@ -101,9 +117,4 @@ if __name__ == "__main__":
         soru, mod = sys.argv[1], "ajan"
     else:
         soru, mod = " ".join(sys.argv[1:-1]), sys.argv[-1]
-    if mod == "rapor":
-        print(rapor(soru))
-    elif mod == "chat":
-        print(chat(soru))
-    else:
-        print(ajan(soru))
+    print(acik(soru, mod))

@@ -40,7 +40,7 @@ def derin_arastirma(llm, soru, derinlik=3):
     kaynak = "\n\n".join(toplanan)
     rapor = llm([
         {"role":"system","content":"Kaynaklardan kurumsal rapor yaz: Ozet, Bulgular, Sonuc. Turkce."},
-        {"role":"user","content":f"SORU: {soru}\n\nVERI:\n{kaynak[:14000]}"}], max_tokens=65536)
+        {"role":"user","content":f"SORU: {soru}\n\nVERI:\n{kaynak[:14000]}"}], seviye="uzun")
     return rapor or kaynak[:1500]
 
 def web_ara(sorgu):
