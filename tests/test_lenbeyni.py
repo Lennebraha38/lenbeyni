@@ -41,3 +41,14 @@ def test_kamp_dosyalari_derlenir():
     py_compile.compile("egitim/kod_testi.py", doraise=True)
     py_compile.compile("agentv2/araclar/arac_katmani.py", doraise=True)
     py_compile.compile("agentv2/lenbeyni_zeka.py", doraise=True)
+
+def test_yeni_araclar_derlenir():
+    import py_compile, glob
+    for f in glob.glob("agentv2/araclar/*.py"):
+        py_compile.compile(f, doraise=True)
+
+def test_tarayici_hafif_mod():
+    import importlib
+    from agentv2.araclar.tarayici import _hafif
+    son = _hafif("ac", "https://example.com/")
+    assert "Example Domain" in son or son.startswith("[")

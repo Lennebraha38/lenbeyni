@@ -62,6 +62,46 @@ def yonlendir(metin):
         klasor, kalip = par[0].strip(), (par[1].strip() if len(par) > 1 else "*")
         sonuc.append("LISTE:\n" + dosyalar(klasor, kalip)[:1200])
 
+    for m in re.finditer(r"\[TARAYICI\]([^\[]*)\[/TARAYICI\]", metin, re.S):
+        from .tarayici import otomatik
+        par = m.group(1).strip().split(",")
+        sonuc.append("TARAYICI:\n" + otomatik(par[:3])[:2000])
+
+    for m in re.finditer(r"\[GORSEL\]\s*(\S+)\s*,\s*([^\[]*)\[/GORSEL\]", metin, re.S):
+        from .tarayici import otomatik
+        par = m.group(1).strip(), m.group(2).strip()
+        sonuc.append("GORSEL:\n" + _gorsel_isle(par))
+
+    for m in re.finditer(r"\[GORUN](\S+?)\[/GORUN]", metin, re.S):
+        sonuc.append("GORUNTU:\n" + _gorsel_dosya(m.group(1).strip()))
+
+    for m in re.finditer(r"\[CEVIR]([^\[]*)\[/CEVIR]", metin, re.S):
+        from .ceviri import cevir
+        sonuc.append("CEVIR: " + cevir(m.group(1).strip()))
+
     if not sonuc:
         return ""
     return "\n\n".join(sonuc)
+
+def _gorsel_isle(par):
+    import os, sys
+    try:
+        from .gorsel import fraktal_png, svg_ureteci
+    except Exception:
+        return "[gorsel modulu yok]"
+    if par[0] == "fraktal":
+        try:
+            boyut = int(par[1]) if par[1].strip().isdigit() else 128
+        except Exception:
+            boyut = 128
+        return "Gorsel: " + fraktal_png(boyut, 30, "/tmp/lb_fraktal.png")
+    return "Gorsel: " + fraktal_png(128, 30, "/tmp/lb_svg.png")
+
+def _gorsel_dosya(yol):
+    try:
+        if not os.path.exists(yol):
+            return f"{yol} dosya yok"
+        from .multimodal import gorsel_anla
+        return gorsel_anla(None, yol)[:2000]
+    except Exception as e:
+        return f"[gorsel dosya hata: {e}]"

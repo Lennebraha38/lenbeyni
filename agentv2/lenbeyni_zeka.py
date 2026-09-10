@@ -35,7 +35,8 @@ def ajan(soru):
         "[BELGE]dosya[/BELGE] dosya okur, [PYTHON]kod[/PYTHON] python calistirir, "
         "[BASH]cmd[/BASH] bash calistirir, [SISTEM]bakis[/SISTEM] sistem bilgisi, "
         "[GITHUB]sorgu[/GITHUB] github ara, [SIFRE]uzunluk[/SIFRE] sifre uret, "
-        "[RSS]kategori[/RSS] haber, [LISTE]klasor,kalip[/LISTE] dosya listeler."
+        "[RSS]kategori[/RSS] haber, [LISTE]klasor,kalip[/LISTE] dosya listeler, "
+        "[TARAYICI]ac,url[/TARAYICI] site acar, [GORUN]dosya.png[/GORUN] goruntu analiz eder."
         + (f"\nHatirla (bellekten):\n{baglam}" if baglam else ""))},
         {"role": "user", "content": soru}]
     for tur in range(7):
@@ -46,7 +47,7 @@ def ajan(soru):
         siteler = re.findall(r"\[SITE\]([^\[]*)\[/SITE\]", cevap)
         komutlar = re.findall(r"\[KOMUT\]([^\[]*)\[/KOMUT\]", cevap)
         digerler = []
-        for sozcuk in ["BELGE","PYTHON","BASH","SISTEM","GITHUB","SIFRE","RSS","LISTE"]:
+        for sozcuk in ["BELGE","PYTHON","BASH","SISTEM","GITHUB","SIFRE","RSS","LISTE","TARAYICI","GORUN"]:
             if f"[{sozcuk}]" in cevap:
                 digerler.append(sozcuk)
         if not (aramalar or siteler or komutlar or digerler):
