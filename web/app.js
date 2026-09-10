@@ -68,6 +68,52 @@ async function megaBeyin(mesajlar, model, key, max_tokens) {
   return (await r.json()).choices[0].message.content;
 }
 
+// Streaming: cevap parca parca ekrana yazilir (ilk kelime saniyeler icinde gorunur).
+// Geri dondurulen tam cevaptir.
+async function megaBeyinAkis(mesajlar, model, key, max_tokens, onDelta) {
+  const mt = max_tokens || gecerliUzunluk();
+  const endpoint = sunucuModu !== false ? window.location.origin + "/api/chat" : OPENROUTER;
+  const hdrs = sunucuModu !== false
+    ? { "Content-Type": "application/json" }
+    : { "Content-Type": "application/json", "Authorization": "Bearer " + key };
+  if (sunucuModu === false && !key) throw new Error("Sunucu rölesi çalışmıyor ve API key girilmedi.");
+
+  const r = await fetch(endpoint, {
+    method: "POST",
+    headers: hdrs,
+    body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: mt, stream: true }),
+  });
+  if (!r.ok) {
+    let msj = "HTTP " + r.status;
+    try { msj = (await r.json()).error || msj; } catch (e) { msj = await r.text(); }
+    if (sunucuModu !== false && String(msj).includes("OPENROUTER_KEY")) { sunucuModu = false; }
+    throw new Error(String(msj).slice(0, 250));
+  }
+  if (!r.body) { throw new Error("Tarayıcın streaming desteklemiyor; kısa cevap seç."); }
+
+  const okuyucu = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "", tam = "";
+  while (true) {
+    const { done, value } = await okuyucu.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const satir = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (!satir.startsWith("data:")) continue;
+      const veri = satir.slice(5).trim();
+      if (veri === "[DONE]") continue;
+      try {
+        const delta = JSON.parse(veri)?.choices?.[0]?.delta?.content || "";
+        if (delta) { tam += delta; if (onDelta) onDelta(delta); }
+      } catch (e) { /* eksik parca, yoksay */ }
+    }
+  }
+  return tam;
+}
+
 async function siteCek(url) {
   try {
     const r = await fetch(CORS_PROXY + encodeURIComponent(url));
@@ -139,11 +185,13 @@ async function tekMod(soru, key, model) {
   await ajanMod(mesajlar, { arama: $("toolArama").checked, site: $("toolSite").checked });
   const seviye = $("uzunlukSec") ? $("uzunlukSec").value : "normal";
   const sureMetni = seviye === "uzun" ? " (bu seviyede ~10-20 dk sürebilir)" : "";
-  durum(true, model + " düşünüyor" + sureMetni + "…");
-  const div = mesajEkle("ai", "…");
+  durum(true, model + " cevaplıyor" + sureMetni + "…");
+  const div = mesajEkle("ai", "");
   try {
-    const yanit = await megaBeyin(mesajlar, model, key);
-    div.textContent = yanit;
+    let yanit = "";
+    const update = (p) => { yanit += p; div.textContent = yanit; $("chat").scrollTop = $("chat").scrollHeight; };
+    yanit = await megaBeyinAkis(mesajlar, model, key, gecerliUzunluk(), update);
+    if (!yanit) { div.textContent = "(boş cevap)"; }
     gecmis.push({ role: "user", content: kullaniciIc }, { role: "assistant", content: yanit });
     gecmis = gecmis.slice(-20);
   } catch (e) {
@@ -191,7 +239,7 @@ async function meclisMod(soru, key) {
       const gerekce = await megaBeyin([
         { role: "system", content: "Sen AI meclisinin hakimisin. MOD1..MODN cevaplarını oku, en iyisini seç ve 1-2 cümle gerekçe ver. Format: 'MOD3 kazandı: <gerekçe>'" },
         { role: "user", content: "Soru: " + soru + "\n\n" + liste },
-      ], "nvidia/nemotron-3-ultra-550b-a55b:free", key);
+      ], "dots-studio/dots-3-note-preview:free", key);
       const m = gerekce.match(/MOD(\d+)/);
       const kazananIdx = m ? parseInt(m[1]) - 1 : 0;
       if (kazananIdx >= 0 && kazananIdx < sözler.length) {

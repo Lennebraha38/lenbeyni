@@ -11,8 +11,8 @@ except ImportError:
     from agentv2.araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
     from agentv2.araclar import yonlendir
 
-MEGA_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
-PLAN_MODEL = "cohere/north-mini-code:free"
+MEGA_MODEL = "dots-studio/dots-3-note-preview:free"
+PLAN_MODEL = "poolside/laguna-s-2.1:free"
 
 # Model -> max cikti token (OpenRouter /v1/models'ten). Free modeler 65K-460K tasir.
 MODEL_TAVANI = {
@@ -34,19 +34,36 @@ def uzunluk(model, seviye="normal"):
     uzunluklar = {"kisa": 4096, "normal": 16384, "uzun": 65536}
     return _tavan(model, uzunluklar.get(seviye, 16384))
 
-def llm(mesajlar, model=MEGA_MODEL, max_tokens=None, seviye="normal"):
+def llm(mesajlar, model=MEGA_MODEL, max_tokens=None, seviye="normal", stream=True):
     if not OPENROUTER_KEY:
         return None
-    import requests
+    import requests, json
     if max_tokens is None:
         max_tokens = uzunluk(model, seviye)
     r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
         "model": model, "messages": mesajlar, "temperature": 0.7,
-        "max_tokens": _tavan(model, max_tokens)
+        "max_tokens": _tavan(model, max_tokens), "stream": stream
     }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=600)
-    if r.status_code == 200:
-        return r.json()["choices"][0]["message"]["content"]
-    return None
+    if r.status_code != 200:
+        return None
+    if not stream:
+        return r.json().get("choices", [{}])[0].get("message", {}).get("content")
+
+    # streaming: parcalari topla, ilk tokeni ver (LLM uygulamasi akis hissi icin cagiran yardima bakabilir)
+    parcalar = []
+    for satir in r.iter_lines(decode_unicode=True):
+        if not satir or not satir.startswith("data:"):
+            continue
+        veri = satir[5:].strip()
+        if veri == "[DONE]":
+            break
+        try:
+            delta = json.loads(veri)["choices"][0]["delta"].get("content", "")
+            if delta:
+                parcalar.append(delta)
+        except Exception:
+            continue
+    return "".join(parcalar) or None
 
 def ajan(soru):
     belleklik = Bellek()

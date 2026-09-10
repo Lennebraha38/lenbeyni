@@ -14,15 +14,31 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "POST gerekli" });
 
-  const { model, messages, temperature = 0.7, max_tokens = 16384 } = req.body || {};
+  const { model, messages, temperature = 0.7, max_tokens = 16384, stream = false } = req.body || {};
   if (!model || !messages) return res.status(400).json({ error: "model ve messages gerekli" });
 
   try {
     const r = await fetch(OPENROUTER, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KEY },
-      body: JSON.stringify({ model, messages, temperature, max_tokens }),
+      body: JSON.stringify({ model, messages, temperature, max_tokens, stream }),
     });
+
+    if (stream) {
+      // SSE'yi oldugu gibi bayraktan gecir
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value));
+      }
+      return res.end();
+    }
+
     const data = await r.json();
     if (!r.ok) return res.status(r.status).json({ error: data?.error?.message || JSON.stringify(data).slice(0, 300) });
     return res.json({ content: data.choices?.[0]?.message?.content || "" });
