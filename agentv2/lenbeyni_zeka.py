@@ -7,9 +7,11 @@ OPENROUTER_KEY = ENV_KEY
 try:
     from araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
     from araclar import yonlendir
+    from akil_motoru import sistem_promptu, birim_mantik_skoru
 except ImportError:
     from agentv2.araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
     from agentv2.araclar import yonlendir
+    from agentv2.akil_motoru import sistem_promptu, birim_mantik_skoru
 
 MEGA_MODEL = "dots-studio/dots-3-note-preview:free"
 PLAN_MODEL = "poolside/laguna-s-2.1:free"
@@ -69,16 +71,20 @@ def ajan(soru):
     belleklik = Bellek()
     ilgili = belleklik.ara(soru)
     baglam = "\n\n".join(f"{k}: {v}" for k, v in ilgili) if ilgili else ""
-    mesajlar = [{"role": "system", "content": (
-        "Sen LenBeyni ajanisin. Isi bitirmek icin araclarini kullan. "
-        "[ARAMA]soru[/ARAMA] web arar, [SITE]url[/SITE] site okur, [KOMUT]cmd[/KOMUT] komut calistirir, "
-        "[BELGE]dosya[/BELGE] dosya okur, [PYTHON]kod[/PYTHON] python calistirir, "
-        "[BASH]cmd[/BASH] bash calistirir, [SISTEM]bakis[/SISTEM] sistem bilgisi, "
-        "[GITHUB]sorgu[/GITHUB] github ara, [SIFRE]uzunluk[/SIFRE] sifre uret, "
-        "[RSS]kategori[/RSS] haber, [LISTE]klasor,kalip[/LISTE] dosya listeler, "
-        "[TARAYICI]ac,url[/TARAYICI] site acar, [GORUN]dosya.png[/GORUN] goruntu analiz eder."
-        + (f"\nHatirla (bellekten):\n{baglam}" if baglam else ""))},
+    # Akil Motoru: CoT + kapsam + dogrulama promptu
+    sistem = sistem_promptu(konu=None, kapsam="uzun", seviye="duzgun")
+    mesajlar = [{"role": "system", "content": sistem
+        + (f"\n\nHatirla (bellekten):\n{baglam}" if baglam else "")
+        + "\n\nARAclarini kullan: [ARAMA]soru[/ARAMA] web arar, [SITE]url[/SITE] site okur, "
+          "[KOMUT]cmd[/KOMUT] komut calistirir, [BELGE]dosya[/BELGE] dosya okur, "
+          "[PYTHON]kod[/PYTHON] python calistirir, [BASH]cmd[/BASH] bash calistirir, "
+          "[SISTEM]bakis[/SISTEM] sistem bilgisi, [GITHUB]sorgu[/GITHUB] github ara, "
+          "[SIFRE]uzunluk[/SIFRE] sifre uret, [RSS]kategori[/RSS] haber, "
+          "[LISTE]klasor,kalip[/LISTE] dosya listeler, "
+          "[TARAYICI]ac,url[/TARAYICI] site acar, [GORUN]dosya.png[/GORUN] goruntu analiz eder."
+        },
         {"role": "user", "content": soru}]
+    dogrulandi = False
     for tur in range(7):
         cevap = llm(mesajlar)
         if not cevap:
@@ -93,6 +99,19 @@ def ajan(soru):
         if not (aramalar or siteler or komutlar or digerler):
             if len(cevap) > 3000:
                 belleklik.ozet_ata(llm, cevap, "yanit_" + re.sub(r"[^a-z0-9]", "_", soru.lower())[:40])
+            # Self-verification: kalite dusukse bir tur daha
+            if not dogrulandi:
+                skor = birim_mantik_skoru(cevap)
+                if skor < 0.4:
+                    dogrulandi = True
+                    mesajlar += [{"role": "assistant", "content": cevap},
+                                 {"role": "user", "content": (
+                                     "Kendi cevabini kontrol et: "
+                                     "mantik hatasi, eksik bilgi veya yarim kalmis cumle var mi? "
+                                     "Varsa kisa duzeltmeleri yap, sonra tam cevabi ver. "
+                                     "Hedef: madde sayisi 4+, kelime 300+."
+                                 )}]
+                    continue
             return cevap
         sonuclar = []
         for s in aramalar: sonuclar.append("ARAMA: " + web_ara(s.strip()))
@@ -103,6 +122,15 @@ def ajan(soru):
             if router_sonucu:
                 sonuclar.append(router_sonucu)
         if not sonuclar:
+            # Cevap hazir, ama bir dogrulama turu daha (maks 1 kez)
+            skor = birim_mantik_skoru(cevap)
+            if skor < 0.5 and tur == 0:
+                mesajlar += [{"role": "assistant", "content": cevap},
+                             {"role": "user", "content": (
+                                 "Kendi cevabini kontrol et: mantik hata mi, eksik mi var? "
+                                 "Varsa duzelt. Hedef: madde sayisi 4+, kelime 300+."
+                             )}]
+                continue  # Duzeltme turu icin donguye don
             return cevap
         mesajlar += [{"role": "assistant", "content": cevap},
                      {"role": "user", "content": "ARAC SONUCLARI:\n" + "\n".join(sonuclar) + "\nDevam et ve kullaniciya cevap ver."}]
@@ -121,7 +149,8 @@ def acik(soru, mod="ajan"):
     if mod == "rapor":
         return rapor(soru)
     if mod == "chat":
-        son = llm([{"role": "system", "content": "Sen LenBeyni'sin. Turkce, net cevap ver."},
+        sistem = sistem_promptu(konu=None, kapsam="uzun", seviye="duzgun")
+        son = llm([{"role": "system", "content": sistem},
                    {"role": "user", "content": soru}], seviye="normal")
         return son or "Beyin yanit vermedi."
     return ajan(soru)
