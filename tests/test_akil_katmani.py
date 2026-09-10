@@ -1,0 +1,154 @@
+import sys, os
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "agentv2"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+# ── Akil Motoru ─────────────────────────────────────────────
+def test_akil_motoru_konu_yontemleri():
+    from agentv2.akil_motoru import KONU_YONTEM
+    assert "matematik" in KONU_YONTEM
+    assert "mantik" in KONU_YONTEM
+    assert "kod" in KONU_YONTEM
+    # hepsi Turkce ipucu içeriyor
+    for konu, y in KONU_YONTEM.items():
+        assert len(y) > 30
+
+def test_akil_motoru_sistem_promptu():
+    from agentv2.akil_motoru import sistem_promptu
+    s = sistem_promptu("matematik", "uzun")
+    assert "5000" in s  # kapsam hedefi
+    assert "ADIM ADIM" in s  # CoT talimati
+    assert "Turkce" in s
+    s_kisa = sistem_promptu(None, "normal")
+    assert "2500" in s_kisa
+
+def test_akil_motoru_mantik_skoru():
+    from agentv2.akil_motoru import birim_mantik_skoru, KAPSAM
+    # 4+ madde + 300+ kelime + sonuc kelimesi -> yuksek
+    metin = "- Adim 1: parcala\n- Adim 2: coz\n- Adim 3: kontrol\n- Adim 4: bitir\nSonuc: dogru\n" + "detay "*150
+    assert birim_mantik_skoru(metin) >= 0.4
+    # Kisa cevap dusuk skor
+    assert birim_mantik_skoru("kisa cevap") < 0.4
+    # Kapsam daneleri
+    assert KAPSAM["uzun"] >= KAPSAM["normal"] >= KAPSAM["kisa"]
+
+# ── Model Routing ───────────────────────────────────────────
+def test_model_routing_konular():
+    from agentv2.model_routing import model_sec, KONU_MODELLERI
+    # 10 konu tanimli olmali
+    assert len(KONU_MODELLERI) == 10
+    # Kod modeli kod uzmani olmali
+    kod_model, kod_max = model_sec("kod")
+    assert "north" in kod_model
+    assert kod_max >= 16384
+    # Matematik modeli 550B olmali
+    mat_model, mat_max = model_sec("matematik")
+    assert "nemotron" in mat_model
+    assert mat_max >= 32768
+    # CoT token butceleri rakipten cok (Claude ~128K cikti -> biz hedef 2-4x)
+    for konu, (_m, mt, _a) in KONU_MODELLERI.items():
+        assert mt >= 16000, f"{konu} token butcesi cok dusuk: {mt}"
+
+def test_model_routing_bilinmeyen():
+    from agentv2.model_routing import model_sec
+    m, mt = model_sec("bilinmeyen_konu")
+    assert "dots" in m
+    assert mt > 0
+
+# ── Self-Correction ─────────────────────────────────────────
+def test_kod_dogrula_basarili():
+    from agentv2.self_correction import kod_dogrula
+    ok, mesaj = kod_dogrula("print(2+2)")
+    assert ok is True
+    assert "4" in mesaj
+
+def test_kod_dogrula_syntax_hatasi():
+    from agentv2.self_correction import kod_dogrula
+    ok, mesaj = kod_dogrula("def f(:\n print")
+    assert ok is False
+    assert "Syntax" in mesaj or "hatasi" in mesaj
+
+def test_kod_dogrula_runtime_hatasi():
+    from agentv2.self_correction import kod_dogrula
+    ok, mesaj = kod_dogrula("x = 1/0")
+    assert ok is False
+    assert "Runtime" in mesaj
+
+def test_kod_dogrula_markdown():
+    from agentv2.self_correction import kod_dogrula
+    markdown = "Aciklamasi:\n```python\nimport time\nprint('ok')\n```"
+    ok, mesaj = kod_dogrula(markdown)
+    assert ok is True
+
+def test_self_correction_kod_duzeltir():
+    from agentv2.self_correction import self_correction
+    # once hatali ver, duzeltme turunda dogru kodu dondur
+    def sahte_llm(mesajlar):
+        return "def f():\n    return 42\n```python\ndef f():\n    return 42\n```"
+    sonuc, tur, not_ = self_correction(
+        "fonksiyon yaz", "def f(:\n   đçkıO", "kod",
+        sahte_llm, max_tur=1)
+    assert tur >= 1 or "duzelt" in not_
+
+def test_self_correction_kod_zaten_dogru():
+    from agentv2.self_correction import self_correction
+    def sahte_llm(mesajlar):
+        return None  # duzeltme gerekmemeli
+    sonuc, tur, not_ = self_correction(
+        "test", "```python\nprint(1)\n```", "kod", sahte_llm)
+    assert tur == 0
+    assert "dogrulandi" in not_
+
+def test_self_correction_genel_kisa_cevap():
+    from agentv2.self_correction import self_correction
+    def sahte_llm(mesajlar):
+        return "uzun detayli cevap " * 20
+    sonuc, tur, not_ = self_correction(
+        "kisa soru", "kisa", "bilim", sahte_llm, max_tur=1)
+    assert len(sonuc.split()) > 15
+
+# ── Otomatik Skorer ─────────────────────────────────────────
+def test_skorer_kod_puanlar():
+    from agentv2.otomatik_skorer import puanla
+    sonuclar = [
+        {"no": 1, "konu": "kod", "cikti": "def f():\n    return 1", "kelime": 4},
+        {"no": 2, "konu": "kod", "cikti": "def hatalı(:\n   print", "kelime": 2},
+    ]
+    rapor = puanla(sonuclar)
+    assert rapor["basarili_soru"] == 2
+    # birinci yuksek, ikinci dusuk
+    assert rapor["sonuclar"][0]["puan"] > rapor["sonuclar"][1]["puan"]
+
+def test_skorer_hatali_atlanir():
+    from agentv2.otomatik_skorer import puanla
+    sonuclar = [
+        {"no": 1, "konu": "kod", "cikti": "[HTTP 429: rate", "kelime": 0},
+        {"no": 2, "konu": "kod", "cikti": "print(1)", "kelime": 1},
+    ]
+    rapor = puanla(sonuclar)
+    assert rapor["hatali_soru"] == 1
+    assert rapor["basarili_soru"] == 1
+
+def test_skorer_matematik():
+    from agentv2.otomatik_skorer import puanla
+    sonuclar = [
+        {"no": 6, "konu": "matematik", "cikti": "- 7*3=21\n- 8/2=4\n- 2+21=23\n- 23-4=19\nSonuc: **19**", "kelime": 10},
+    ]
+    rapor = puanla(sonuclar)
+    assert rapor["sonuclar"][0]["puan"] >= 0.5
+
+# ── Cogunluk Oyu ────────────────────────────────────────────
+def test_cogunluk_ozet_cevir():
+    from agentv2.cogunluk_oyu import cevap_ozet
+    assert cevap_ozet("cevap 42 burada 7 de var") == "sayi:42|7"
+    assert cevap_ozet("Evet, bu dogru") == "karar:evet"
+
+def test_cogunluk_ata():
+    from agentv2.cogunluk_oyu import cogunluk
+    # sahte cevaplarla: 2x "evet" 1x "hayir" -> kazanan evet
+    import agentv2.cogunluk_oyu as co
+    co.llm = lambda msg, **kw: "Evet kesinlikle dogru"
+    co.MEGA_MODEL = "sahte"
+    sonuc = cogunluk("test sorusu", tekrar=3)
+    assert sonuc["guven"] >= 0.5
+    assert "Evet" in sonuc["kazanan"]

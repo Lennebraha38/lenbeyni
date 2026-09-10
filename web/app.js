@@ -272,11 +272,74 @@ async function gonder() {
   try {
     if (mod === "tek") await tekMod(soru, key, $("modelSec").value);
     else if (mod === "meclis") await meclisMod(soru, key);
-    else if (mod === "ajan") await tekMod(soru, key, $("modelSec").value);
+    else if (mod === "ajan") await akilMod(soru, key, $("modelSec").value, true);
+    else if (mod === "akil") await akilMod(soru, key, $("modelSec").value, false);
   } finally {
     $("btnGonder").disabled = false;
     $("giris").focus();
   }
+}
+
+// Akil Motoru: CoT + bol token. Claude'un yuksek mantik + rakipten cok token.
+// Sistem promptu agentv2/akil_motoru.py ile ayni mantiktadir (web tarafinda yerel).
+const AKIL_SISTEM = (konu) => {
+  const yontemler = {
+    matematik: "Once problemi parcala ve adim adim coz (adimlari yaz, hesapla). Son adimda sonucu **buyuk ve net** yaz.",
+    mantik: "Once onermeleri ayir, kucuk dizilimlerle coz. Sonra genel sonuc cikar. Her adimi gerekcelendir.",
+    kod: "Once ne isteniyor analiz et. Sonra en iyi ornegi dusun. Kodu syntax+mantik uyumlu yaz.",
+    dil: "Cumleyi parcala, kurali hatirla, ornekle pekistir.",
+    bilim: "Once temel prensibi hatirla, sonra detaylandir, sonra kisa ornek ver.",
+    tarih: "Donemi hatirla, neden-sonuc zincirini kur.",
+    yaratici: "Once temayi kur (kim/neden/hangi ortam), sonra kategori ve ton.",
+    kultur: "Bilgiyi hatirla, basit ve pratik cevap al, ornekle ac.",
+    pratik: "Kisa, net, uygulanabilir. Uc adimli cevap ver.",
+    teknoloji: "Once temel prensip, sonra nasil calistigi, sonra neden onemli."
+  };
+  const y = yontemler[konu] || yontemler.pratik;
+  return "Sen LenBeyni'sin, akil yurutme paketi. Turkce konusuyorsun.\n\n" +
+    "YONTEM: " + y + "\n\n" +
+    "HEDEF: Cevaplarin claude'den cok daha ayrintili ve kapsamli. Kisa kesme aramadan, tum yonlariyla acikla. Cevabin yaklasik 5000 kelimeden az olmamali.\n" +
+    "ADIM ADIM: (1) once dusun, (2) cevabi KAPSAMLI yaz, (3) kendi cevabini yeniden oku, mantik hatasi / eksik var mi, varsa duzelt.\n" +
+    "TURKCE cevap ver, bol madde, baslik ve ornek kullan. Seviye: duzgun.";
+};
+
+async function akilMod(soru, key, model, webAraci) {
+  // Konu tespiti (basit): sorudaki anahtar kelimeler
+  const s = soru.toLowerCase();
+  let konu = "pratik";
+  if (/\b(?:python|kod|sql|regex|fonksiyon|siralama|algoritma)\b/.test(s)) konu = "kod";
+  else if (/\b(?:matematik|toplam|pi|asal|olasilik|istenlemin|acilar)\b/.test(s)) konu = "matematik";
+  else if (/\b(?:mantik|onerme|bilmece|sudoku|kuzgun)\b/.test(s)) konu = "mantik";
+  else if (/\b(?:nedir|nasil|ne demek|fizik|dna|kuantum|foton)\b/.test(s)) konu = "bilim";
+  else if (/\b(?:tarih|osmanli|ronesans|savas|cumhuriyet)\b/.test(s)) konu = "tarih";
+  else if (/\b(?:hikaye|masal|kisa hikaye|logo|manifesto|fidan)\b/.test(s)) konu = "yaratici";
+  else if (/\b(?:kahve|istanbul|sehir|bayrak|maskot)\b/.test(s)) konu = "kultur";
+  else if (/\b(?:context|veritabani|blockchain|gpu|egitirsin|yapay)\b/.test(s)) konu = "teknoloji";
+
+  mesajEkle("user", soru);
+  const mesajlar = [
+    { role: "system", content: AKIL_SISTEM(konu) },
+    ...gecmis.slice(-10),
+    { role: "user", content: soru },
+  ];
+  // Web aracı modu: sitedeki linkler/sorgular ajanMod ile beslenir
+  if (webAraci) await ajanMod(mesajlar, { arama: true, site: true });
+  const seviye = $("uzunlukSec") ? $("uzunlukSec").value : "normal";
+  durum(true, "Akil Motoru (" + konu + ") " + model.split("/").pop() + " üzerinde düşünüyor…");
+  const div = mesajEkle("ai", "");
+  try {
+    let yanit = "";
+    const update = (p) => { yanit += p; div.textContent = yanit; $("chat").scrollTop = $("chat").scrollHeight; };
+    yanit = await megaBeyinAkis(mesajlar, model, key, gecerliUzunluk(), update);
+    if (!yanit) { div.textContent = "(boş cevap)"; }
+    gecmis.push({ role: "user", content: soru }, { role: "assistant", content: yanit });
+    gecmis = gecmis.slice(-20);
+  } catch (e) {
+    div.className = "msg hata";
+    div.textContent = "Hata: " + e.message;
+  }
+  durum(false);
+  $("chat").scrollTop = $("chat").scrollHeight;
 }
 
 document.querySelectorAll(".mode-btn").forEach((b) => {
@@ -284,7 +347,7 @@ document.querySelectorAll(".mode-btn").forEach((b) => {
     mod = b.dataset.mode;
     document.querySelectorAll(".mode-btn").forEach((x) => x.classList.remove("active"));
     b.classList.add("active");
-    $("tekModel").classList.toggle("hidden", mod !== "tek");
+    $("tekModel").classList.toggle("hidden", mod !== "tek" && mod !== "akil");
     $("meclisModel").classList.toggle("hidden", mod !== "meclis");
   });
 });

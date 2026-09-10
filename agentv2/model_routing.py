@@ -6,7 +6,7 @@ Token limitlerini yuksek tut (Claude 128K'dan 2x-4x daha fazla cikti).
 """
 import os
 
-# Konu bazli model haritasi: (model_id, max_tokens, aciklama, neden_bu_model)
+# Konu bazli model haritasi: (model_id, max_tokens, aciklama)
 KONU_MODELLERI = {
     "kod": (
         "cohere/north-mini-code:free",
@@ -65,10 +65,10 @@ DEFAULT_MAX = 32768
 
 def model_sec(konu):
     """Konuya gore model ve max_tokens dondur."""
-    model, maxt, _, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan", ""))
+    model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
     return model, maxt
 
 def konu_aciklama(konu):
     """Konunun neden o modelde secildigini acikla."""
-    _, _, aciklama, neden = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan", ""))
-    return f"{aciklama}. {neden}"
+    _, _, aciklama = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan model"))
+    return aciklama
