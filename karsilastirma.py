@@ -1,8 +1,23 @@
 """LenBeyni 50-konu karsilastirma testi.
 Her konuda bir soru sorar, sure/kelime/cikti kaydeder, JSON rapor yazar.
 Rate-limit aware: her istek arasinda bekleme + 429'da exponential backoff.
+Model Routing: konuya gore dogru modeli secer.
+Self-Correction: hatali cevap bulursa duzeltme turu calistirir.
 """
 import os, sys, json, time, re
+
+# Routing ve self-correction modulleri
+_syd = os.path.dirname(__file__)
+if _syd not in sys.path:
+    sys.path.insert(0, _syd)
+if os.path.join(_syd, "agentv2") not in sys.path:
+    sys.path.insert(0, os.path.join(_syd, "agentv2"))
+try:
+    from model_routing import model_sec, konu_aciklama
+    from self_correction import self_correction
+except ImportError:
+    from agentv2.model_routing import model_sec, konu_aciklama
+    from agentv2.self_correction import self_correction
 
 SORULAR = [
     # 1-5: Kod
@@ -67,7 +82,7 @@ SORULAR = [
     ("teknoloji", "Bir yapay zeka modelini nasil egitirsin? Adim adim."),
 ]
 
-def test_et(o, model, key, deneme=3):
+def test_et(o, model, key, max_tokens=1024, deneme=3):
     import requests
     for tur in range(deneme):
         t0 = time.time()
@@ -76,7 +91,7 @@ def test_et(o, model, key, deneme=3):
                 "model": model,
                 "messages": [{"role": "system", "content": "Turkce, net ve dogru cevap ver."},
                              {"role": "user", "content": o}],
-                "max_tokens": 1024, "temperature": 0.3,
+                "max_tokens": max_tokens, "temperature": 0.3,
             }, headers={"Authorization": "Bearer " + key}, timeout=120)
             sure = round(time.time()-t0, 1)
             if r.status_code == 200:
@@ -92,15 +107,60 @@ def test_et(o, model, key, deneme=3):
             return {"sure": round(time.time()-t0,1), "kelime": 0, "cikti": f"[HATA: {e}]"}
     return {"sure": 0, "kelime": 0, "cikti": "[HTTP 429: rate-limit asildi, tum denemeler tükendi]"}
 
+def _sor(mesajlar, model, key, max_tokens=1024):
+    """Self-correction duzeltme turlari icin dogrudan soru sorma."""
+    import requests
+    try:
+        r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+            "model": model,
+            "messages": mesajlar,
+            "max_tokens": max_tokens, "temperature": 0.2,
+        }, headers={"Authorization": "Bearer " + key}, timeout=120)
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        return None
+    except Exception:
+        return None
+
 if __name__ == "__main__":
     model = os.environ.get("LB_MODEL", "dots-studio/dots-3-note-preview:free")
+    routing = os.environ.get("LB_ROUTING", "on") != "off"
     key = os.environ.get("OPENROUTER_KEY", "")
     butun = []
+    model_kullanim = {}
     for i, (k, s) in enumerate(SORULAR, 1):
-        print(f"[{i}/50] {k}: {s[:45]}...")
-        son = test_et(s, model, key)
-        butun.append({"no": i, "konu": k, "soru": s, **son})
-        print(f"   -> {son['sure']}sn, {son['kelime']} kelime, {son['cikti'][:40].replace(chr(10),' ')!r}")
+        # Model Routing: konuya gore model sec
+        secilen_model = model
+        secilen_max = 1024
+        if routing:
+            secilen_model, secilen_max = model_sec(k)
+            model_kullanim[secilen_model] = model_kullanim.get(secilen_model, 0) + 1
+        print(f"[{i}/50] {k}: {s[:45]}... (model: {secilen_model.split('/')[-1].split(':')[0]})")
+        
+        # Ilk test: seçilen model ile
+        son = test_et(s, secilen_model, key, secilen_max)
+        
+        # Self-Correction: kod/matematik hatalarinda duzeltme turlari
+        duzeltilen = 0
+        sc_notu = ""
+        if son.get("kelime", 0) > 0 and k in ("kod", "matematik"):
+            cevap, tur, not_ = self_correction(s, son["cikti"], k, 
+                lambda msg: _sor(msg, secilen_model, key, secilen_max))
+            duzeltilen = tur
+            sc_notu = not_
+            son["cikti"] = cevap
+            son["kelime"] = len(cevap.split())
+        elif son.get("kelime", 0) > 0 and k == "mantik":
+            cevap, tur, not_ = self_correction(s, son["cikti"], "genel",
+                lambda msg: _sor(msg, secilen_model, key, secilen_max))
+            duzeltilen = tur
+            sc_notu = not_
+            son["cikti"] = cevap
+            son["kelime"] = len(cevap.split())
+        
+        butun.append({"no": i, "konu": k, "soru": s, "model": secilen_model, 
+                      "duzeltme": duzeltilen, "sc_notu": sc_notu, **son})
+        print(f"   -> {son['sure']}sn, {son['kelime']} kelime, sc:{duzeltilen} {sc_notu[:30]} {son['cikti'][:40].replace(chr(10),' ')!r}")
         # Her sorudan sonra 2sn bekle (rate-limit korumasi)
         if i < len(SORULAR):
             time.sleep(2)
@@ -108,9 +168,13 @@ if __name__ == "__main__":
             if i % 10 == 0:
                 cikti_yol = os.environ.get("LB_CIKTI", "karsilastirma.json")
                 with open(cikti_yol, "w") as f:
-                    json.dump({"model": model, "sonuclar": butun}, f, ensure_ascii=False, indent=1)
+                    json.dump({"model": model, "routing": routing, "model_kullanim": model_kullanim, "sonuclar": butun}, f, ensure_ascii=False, indent=1)
                 print(f"   [kismi kaydedildi: {i}/50]")
     cikti_yol = os.environ.get("LB_CIKTI", "karsilastirma.json")
     with open(cikti_yol, "w") as f:
-        json.dump({"model": model, "sonuclar": butun}, f, ensure_ascii=False, indent=1)
+        json.dump({"model": model, "routing": routing, "model_kullanim": model_kullanim, "sonuclar": butun}, f, ensure_ascii=False, indent=1)
     print(f"\nRapor: {cikti_yol}")
+    if routing:
+        print("\nModel kullanim dagilimi:")
+        for m, adet in sorted(model_kullanim.items(), key=lambda x: -x[1]):
+            print(f"  {m.split('/')[-1].split(':')[0]:30s} {adet} soru")
