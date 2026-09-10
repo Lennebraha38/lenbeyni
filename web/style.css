@@ -1,0 +1,58 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0a0e17; color: #e2e8f0; height: 100vh; }
+
+#app { display: flex; height: 100vh; }
+
+#sidebar { width: 300px; min-width: 300px; background: #111827; border-right: 1px solid #1f2937; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-icon { font-size: 32px; }
+.logo h1 { font-size: 20px; color: #34d399; }
+.subtitle { font-size: 12px; color: #64748b; }
+
+.box-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px; display: block; }
+label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+
+.key-box input, .model-box select {
+  width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1f2937;
+  background: #0f172a; color: #e2e8f0; font-size: 13px; outline: none;
+}
+.key-box input:focus, .model-box select:focus { border-color: #34d399; }
+.key-box small { display: block; font-size: 10px; color: #475569; margin-top: 4px; }
+
+.mode-btn { width: 100%; padding: 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid #1f2937; background: #0f172a; color: #94a3b8; font-size: 13px; cursor: pointer; text-align: left; }
+.mode-btn.active { border-color: #34d399; color: #34d399; background: #052e22; }
+
+.chk { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; margin-bottom: 4px; cursor: pointer; }
+.chk input { accent-color: #34d399; }
+
+#btnTemizle, #btnKopyala { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; background: #0f172a; color: #94a3b8; font-size: 13px; cursor: pointer; }
+#btnTemizle:hover, #btnKopyala:hover { border-color: #34d399; color: #34d399; }
+
+#main { flex: 1; display: flex; flex-direction: column; }
+#chat { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.msg { max-width: 80%; padding: 14px 18px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
+.msg.user { align-self: flex-end; background: #1e40af; color: #fff; }
+.msg.ai { align-self: flex-start; background: #1f2937; }
+.msg.system { align-self: center; background: #0f172a; border: 1px solid #075985; color: #7dd3fc; font-size: 12px; }
+.msg.hata { align-self: center; background: #450a0a; border: 1px solid #b91c1c; color: #fca5a5; font-size: 12px; }
+
+.msg .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; background: #064e3b; color: #6ee7b7; margin-bottom: 8px; }
+
+.meclis-wrap { max-width: 100%; align-self: flex-start; }
+.meclis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.meclis-card { border: 1px solid #1f2937; border-radius: 12px; background: #111827; overflow: hidden; }
+.meclis-card h4 { padding: 10px 14px; font-size: 12px; color: #34d399; background: #0f172a; border-bottom: 1px solid #1f2937; }
+.meclis-card .content { padding: 12px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+.meclis-card .kazanan { background: #052e22; color: #6ee7b7; font-size: 11px; padding: 4px 14px; border-top: 1px solid #064e3b; }
+
+#inputRow { display: flex; gap: 10px; padding: 16px 24px; border-top: 1px solid #1f2937; background: #111827; }
+#giris { flex: 1; resize: vertical; padding: 12px; border-radius: 10px; border: 1px solid #1f2937; background: #0f172a; color: #e2e8f0; font-size: 14px; outline: none; min-height: 44px; max-height: 150px; }
+#giris:focus { border-color: #34d399; }
+#btnGonder { width: 52px; border-radius: 10px; border: none; background: #34d399; color: #052e22; font-size: 18px; cursor: pointer; }
+#btnGonder:hover { background: #6ee7b7; }
+#btnGonder:disabled { background: #1f2937; color: #475569; }
+
+#durum { padding: 10px 24px; background: #0f172a; color: #7dd3fc; font-size: 12px; border-top: 1px solid #1f2937; }
+.hidden { display: none !important; }

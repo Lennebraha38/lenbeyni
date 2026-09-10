@@ -1,0 +1,13 @@
+*.gguf
+*.safetensors
+*.bin
+__pycache__/
+*.pyc
+.env
+.env.local
+openrouter_keys.txt
+gemini_keys.txt
+*.part
+lora_*/
+gguf_*/
+kayit_*/

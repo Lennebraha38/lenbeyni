@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LenBeyni Ajan Paneli</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="logo">
+      <span class="logo-icon">⚛</span>
+      <div>
+        <h1>LenBeyni</h1>
+        <p class="subtitle">Ajan Paneli · Meclis Modu</p>
+      </div>
+    </div>
+
+    <div class="key-box">
+      <label>OpenRouter API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-or-v1-..." />
+      <small>Key sadece tarayıcında kalır, sunucuya gitmez.</small>
+    </div>
+
+    <div class="mode-box">
+      <label>Mod</label>
+      <button class="mode-btn active" data-mode="tek">Sohbet (tek model)</button>
+      <button class="mode-btn" data-mode="meclis">AI Meclisi (3 model)</button>
+      <button class="mode-btn" data-mode="ajan">Web Ajanı</button>
+    </div>
+
+    <div class="model-box" id="tekModel">
+      <label>Model</label>
+      <select id="modelSec">
+        <option value="nvidia/nemotron-3-ultra-550b-a55b:free">Nemotron 550B (ücretsiz)</option>
+        <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 120B (ücretsiz)</option>
+        <option value="cohere/north-mini-code:free">Cohere Mini Code (ücretsiz)</option>
+        <option value="poolside/laguna-s-2.1:free">Poolside Laguna S (ücretsiz)</option>
+      </select>
+    </div>
+
+    <div class="model-box hidden" id="meclisModel">
+      <label>Meclisteki modeller</label>
+      <label class="chk"><input type="checkbox" value="nvidia/nemotron-3-ultra-550b-a55b:free" checked /> Nemotron 550B</label>
+      <label class="chk"><input type="checkbox" value="nvidia/nemotron-3-super-120b-a12b:free" /> Nemotron 120B</label>
+      <label class="chk"><input type="checkbox" value="cohere/north-mini-code:free" /> Cohere Mini Code</label>
+      <label class="chk"><input type="checkbox" value="poolside/laguna-s-2.1:free" /> Poolside Laguna S</label>
+    </div>
+
+    <div class="tools-box">
+      <label>Araçlar</label>
+      <label class="chk"><input type="checkbox" id="toolArama" checked /> Web araması</label>
+      <label class="chk"><input type="checkbox" id="toolSite" checked /> Site okuma</label>
+      <label class="chk"><input type="checkbox" id="toolDosya" /> Dosya yükleme</label>
+      <label class="chk"><input type="checkbox" id="toolYerel" /> Yerel Ollama (varsa)</label>
+    </div>
+
+    <button id="btnTemizle">Temizle</button>
+    <div class="copy-box"><button id="btnKopyala">Yanıtı kopyala</button></div>
+  </aside>
+
+  <main id="main">
+    <div id="chat"></div>
+    <div id="inputRow">
+      <textarea id="giris" placeholder="LenBeyni'ye sor..." rows="2"></textarea>
+      <button id="btnGonder">➤</button>
+    </div>
+    <div id="durum" class="hidden"></div>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
