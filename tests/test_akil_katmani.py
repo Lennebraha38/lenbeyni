@@ -145,10 +145,42 @@ def test_cogunluk_ozet_cevir():
 
 def test_cogunluk_ata():
     from agentv2.cogunluk_oyu import cogunluk
-    # sahte cevaplarla: 2x "evet" 1x "hayir" -> kazanan evet
     import agentv2.cogunluk_oyu as co
     co.llm = lambda msg, **kw: "Evet kesinlikle dogru"
     co.MEGA_MODEL = "sahte"
     sonuc = cogunluk("test sorusu", tekrar=3)
     assert sonuc["guven"] >= 0.5
     assert "Evet" in sonuc["kazanan"]
+
+# ── Akil Dongu Testi ────────────────────────────────────────
+def test_dongu_testi_mock():
+    from agentv2.akil_dongu_test import dongu_testi
+    sonuclar, soru = dongu_testi("test sorusu")
+    assert len(sonuclar) == 5  # 5 tur
+    assert all("puan" in s for s in sonuclar)
+    # Kombinasyon en dusukten yuksek olmali (mock veride esit veya yuksek)
+    baseline = sonuclar[0]["puan"]
+    kombinasyon = sonuclar[3]["puan"]
+    assert kombinasyon >= baseline
+
+# ── Genisletilmis Meclis Hakemi ─────────────────────────────
+def test_meclis_hakemi_kriter_sayisi():
+    from agentv2.meclis_hakemi import KRITERLER, kriter_puanla, hakem_paneli
+    assert len(KRITERLER) == 12  # tam 12 kriter
+
+def test_meclis_hakemi_puanlama():
+    from agentv2.meclis_hakemi import kriter_puanla
+    # Turkce icerik: turkce kriteri yuksek olmali
+    p = kriter_puanla("turkce", "DNA yapisi: adenin, timin, guanin ve sitozin. Bu dört baz çiftlesir.")
+    assert p >= 0.4
+
+def test_meclis_hakemi_paneli():
+    from agentv2.meclis_hakemi import hakem_paneli
+    cevaplar = [
+        ("model-a", "Detayli Turkce cevap: DNA iki sarmaldan olusur. Adenin-timin, guanin-sitozin eslesir. Ornek: Insan genome'su 3 milyar baz cifti icerir. Bu bilgiyi guncel arastirmalardan dogruladim."),
+        ("model-b", "Kisa cevap. DNA vucudda bulunur."),
+    ]
+    rapor = hakem_paneli(cevaplar, "DNA'nin yapisini anlat")
+    assert rapor["kazanan"] == "model-a"
+    assert len(rapor["siralama"]) == 2
+    assert rapor["kazanan_skor"] > 0.4
