@@ -117,10 +117,10 @@ def tek_soru_test(soru_no, konu, soru, key, cogunluk_modu=False):
     # 2. Self-correction (kod/matematik icin)
     duzeltilen = 0
     if sonuc.get("kelime", 0) > 0 and konu in ("kod", "matematik", "mantik"):
-        cevap, tur, not_ = self_correction(
-            soru, sonuc["cikti"], konu,
-            lambda msg: api_iste(msg, secilen_model, key, maxt)["cikti"] if api_iste(msg, secilen_model, key, maxt).get("kelime") else None
-        )
+        def _duzelt_istek(msg):
+            r = api_iste(msg, secilen_model, key, maxt)
+            return r["cikti"] if r.get("kelime", 0) > 0 else None
+        cevap, tur, not_ = self_correction(soru, sonuc["cikti"], konu, _duzelt_istek)
         if tur > 0:
             sonuc["cikti"] = cevap
             sonuc["kelime"] = len(cevap.split())
