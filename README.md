@@ -19,7 +19,7 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 | Karşılama testi | `karsilastirma.py` | 50 konulu turkce karsilastirma + rate-limit aware (retry + backoff) |
 | Deep Research | `agentv2/lenbeyni_zeka.py` (`rapor` modu) | Soruyu alt-başlıklara böler, kaynakları toplar, kaynaklı kurumsal rapor yazar |
 | Bellek | `agentv2/lenbeyni_zeka.py` (`bellek` modu) | Araştırma sonuçlarını hatırlar (`~/.lenbeyni_bellek.json`) |
-| Web GUI | `web/` | Tarayıcıdan erişilen ajan paneli (tek model, AI Meclisi, Web Ajanı, Akil Motoru modları) |
+| Web GUI | `web/` | Gemini/Claude seviyesi arayüz: konu→model yönlendirme rozeti, Akıl Motoru, AI Meclisi, **Skills ekleme**, **MCP bağlama** |
 | Kod eğitimi | `egitim/` | QLoRA ile 7B/14B kod modeli fine-tune (Kaggle) |
 | Cihaz beyni | `ciday/` (tablet) | Ollama tabanlı, offline sohbet/kod |
 | Arac katmanı | `agentv2/araclar/` | 10+ yetenek: belge, kod sandbox, sistem, github, haber, hava, gorsel, guvenlik (browser-use/gpt-researcher/OpenCLI ozleri) |
@@ -44,13 +44,26 @@ python3 agentv2/lenbeyni_zeka.py "sorun" ajan
 python3 agentv2/lenbeyni_zeka.py "araştırma konusu" rapor
 ```
 
-## Web paneli: ZERO-CONFIG (key gerekmez)
+## Web GUI: Gemini/Claude seviyesi arayüz
 
-Kullanıcı tarayıcıda hiçbir key'le uğraşmaz — Gemini gibi:
-- **Sunucu rölesi** (`web/api/chat.js`): OpenRouter key'i sadece Vercel env'inde tutulur
-  (`OPENROUTER_KEY`). Tarayıcıya key asla sızmaz.
-- Panel açılır → "⚡ Hazır — key gerekmez" rozetini görür → mesajı yazar → cevap gelir.
-- Sunucu yoksa kullanıcı kendi key'ini girebilir (geliştirici modu).
+**ZERO-CONFIG** — kullanıcı tarayıcıda hiçbir key'le uğraşmaz (Gemini gibi):
+- **Sunucu rölesi** (`web/api/chat.js`): OpenRouter key'i sadece Vercel env'inde tutulur (`OPENROUTER_KEY`). Tarayıcıya key asla sızmaz.
+- **MCP rölesi** (`web/api/mcp.js`): Uzak MCP sunucularına JSON-RPC over HTTP ile alet listeleme/çağırma — key gerekmez.
+- Sunucu yoksa kullanıcı kendi key'ini girebilir (geliştirici modu). Key localStorage'da saklanır, sunucuya gitmez.
+
+**Özellikler:**
+- **Akıl yönlendirme rozeti** — soruyu okuyup konu tespiti yapar, doğru modeli önerir (kod→north-mini, matematik→nemotron, vb.)
+- **Skills** — Yetenekler panelinden mevcut skill'leri aç/kapat, **yeni skill ekle** (ad + sistem talimatı). Aktif skill'ler cevap üretirken sistem talimatına enjekte edilir ve mesajda ✨etiketi olarak görünür.
+- **MCP bağlama** — Sağ panelden sunucu adı + uç nokta girerek bağlan. Bağlı aletler listelenir (● bağlı / ! hata). Model ihtiyaç duyarsa `TOOL_CALL:` satırıyla alet çıktırması yapar, sonuç geri beslenir.
+- **Modlar** — Sohbet / Akıl Motoru (CoT + kapsamlı) / AI Meclisi (3 model + hakem)
+- **Araçlar** — Web araması + site okuma (gerçek veri, sistem promptuna beslenir)
+- **Markdown** — Başlık, liste, tablo, kod bloğu (kopyala butonuyla), alıntı
+- **Sohbet listesi** — Sol panelde geçmiş konuşmalar, yeni sohbet, temizle
+
+**Test:**
+```bash
+NODE_PATH=$(npm root -g) node web/web_gui_test.js   # Playwright GUI doğrulaması
+```
 
 ```bash
 # Vercel'e deploy:

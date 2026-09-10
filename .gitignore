@@ -11,3 +11,7 @@ gemini_keys.txt
 lora_*/
 gguf_*/
 kayit_*/
+*test_sonuc.json
+dongu_test_sonuc*.json
+zirve_sonuc*.json
+node_modules/

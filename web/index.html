@@ -3,82 +3,188 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LenBeyni Ajan Paneli</title>
+<title>LenBeyni — Zeka Asistanı</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div id="app">
+  <!-- ══ SOL PANEL ══ -->
   <aside id="sidebar">
-    <div class="logo">
-      <span class="logo-icon">⚛</span>
-      <div>
-        <h1>LenBeyni</h1>
-        <p class="subtitle">Ajan Paneli · Meclis Modu</p>
+    <div class="side-top">
+      <button id="btnYeniSohbet" class="yeni-konus">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Yeni sohbet</span>
+      </button>
+    </div>
+
+    <div id="sohbetListesi" class="sohbet-listesi"></div>
+
+    <div class="side-bottom">
+      <div class="side-item" id="btnGecmiGizle">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="15" y1="4" x2="15" y2="20"/></svg>
+        <span>Geçmişi gizle</span>
+        <span class="spacer"></span>
+        <label class="sw"><input type="checkbox" id="swGecmis"><i></i></label>
+      </div>
+      <div class="side-item" id="btnAyarlar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Ayarlar ve Yetenekler</span>
+      </div>
+      <div class="side-item" id="btnProfil" title="Bu cihazda">👤 <span>Bu cihazda</span></div>
+    </div>
+  </aside>
+
+  <!-- ══ ANA ALAN ══ -->
+  <main id="main">
+    <!-- Üst bar -->
+    <header id="ustBar">
+      <div class="logo-mini">
+        <span class="logo-dot">⚛</span>
+        <span class="logo-yazi">LenBeyni</span>
+      </div>
+      <div class="ust-orta">
+        <div class="model-pili" id="modelPili" title="Model seçimi">
+          <span id="modelAdi">Model seçin</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="routing-roz" id="routingRoz" title="Konu tespiti ve yönlendirme (Akıl Motoru)">
+          <span id="routingKonu">—</span>
+          <span class="routing-ok">›</span>
+          <span id="routingModel">otomatik</span>
+        </div>
+      </div>
+      <div class="ust-sag">
+        <div class="temiz-btn" id="btnTemizle" title="Sohbeti temizle">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </div>
+        <div class="acili-btn" id="btnPanel" title="Yetenekler ve bağlantılar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sohbet alanı -->
+    <div id="chat" class="bos-merkez">
+      <div class="karsilama" id="karsilama">
+        <div class="karsilama-logo">⚛</div>
+        <h2>Bugün ne yapalım?</h2>
+        <p class="karsilama-alt">LenBeyni — konuya göre model yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla. Gemini/Claude seviyesinde bir zeka.</p>
+        <div class="oneri-grid" id="oneriGrid"></div>
       </div>
     </div>
 
-    <div class="key-box" id="keyBox">
-      <label>OpenRouter API Key <em>(sunucu rölesi yoksa gerekli)</em></label>
-      <input type="password" id="apiKey" placeholder="sk-or-v1-..." />
-      <small>Key sadece tarayıcında kalır, sunucuya gitmez.</small>
+    <!-- Girdi alanı -->
+    <div class="girdi-kutu-wrap">
+      <div class="girdi-cubuk" id="girdiCubuk">
+        <button class="ek-btn" id="btnDosya" title="Dosya ekle">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </button>
+        <textarea id="giris" rows="1" placeholder="LenBeyni'ye bir şey sor…"></textarea>
+        <button class="ek-btn" id="btnMod" title="Araçlar: web arama + site okuma + Akıl Motoru">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="4"/><line x1="11" y1="5" x2="11" y2="3"/><line x1="11" y1="19" x2="11" y2="21"/><line x1="5" y1="11" x2="3" y2="11"/><line x1="19" y1="11" x2="21" y2="11"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+        </button>
+        <button class="gonder-btn" id="btnGonder">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+      <div class="girdi-alt">
+        <span>LenBeyni hatalı bilgi verebilir. Önemli bilgileri doğrulayın.</span>
+        <div class="mod-cips" id="modCips"></div>
+      </div>
     </div>
 
-    <div class="mode-box">
-      <label>Mod</label>
-      <button class="mode-btn active" data-mode="tek">Sohbet (tek model)</button>
-      <button class="mode-btn" data-mode="meclis">AI Meclisi (3 model)</button>
-      <button class="mode-btn" data-mode="ajan">Web Ajanı</button>
-      <button class="mode-btn" data-mode="akil">Akil Motoru</button>
-    </div>
-
-    <div class="model-box" id="tekModel">
-      <label>Model</label>
-      <select id="modelSec">
-        <option value="dots-studio/dots-3-note-preview:free" selected>Dots-3 Note (hızlı, 460K)</option>
-        <option value="nvidia/nemotron-3-ultra-550b-a55b:free">Nemotron 550B (65K çıktı)</option>
-        <option value="nvidia/nemotron-3.5-lightning:free">Nemotron Lightning 3.5 (65K)</option>
-        <option value="poolside/laguna-s-2.1:free">Poolside Laguna S</option>
-      </select>
-      <small><strong>Uyarı:</strong> çok uzun çıktı istersen cevap uzun sürebilir (65K yaklaşık ~15 dk).</small>
-    </div>
-
-    <div class="model-box">
-      <label>Cevap uzunluğu</label>
-      <select id="uzunlukSec">
-        <option value="normal">Normal (16K)</option>
-        <option value="kisa">Kısa (4K)</option>
-        <option value="uzun">Uzun (65K)</option>
-      </select>
-    </div>
-
-    <div class="model-box hidden" id="meclisModel">
-      <label>Meclisteki modeller</label>
-      <label class="chk"><input type="checkbox" value="nvidia/nemotron-3-ultra-550b-a55b:free" checked /> Nemotron 550B</label>
-      <label class="chk"><input type="checkbox" value="dots-studio/dots-3-note-preview:free" /> Dots-3 (460K)</label>
-      <label class="chk"><input type="checkbox" value="poolside/laguna-s-2.1:free" /> Poolside Laguna S</label>
-    </div>
-
-    <div class="tools-box">
-      <label>Araçlar</label>
-      <label class="chk"><input type="checkbox" id="toolArama" checked /> Web araması</label>
-      <label class="chk"><input type="checkbox" id="toolSite" checked /> Site okuma</label>
-      <label class="chk"><input type="checkbox" id="toolDosya" /> Dosya yükleme</label>
-      <label class="chk"><input type="checkbox" id="toolYerel" /> Yerel Ollama (varsa)</label>
-    </div>
-
-    <button id="btnTemizle">Temizle</button>
-    <div class="copy-box"><button id="btnKopyala">Yanıtı kopyala</button></div>
-  </aside>
-
-  <main id="main">
-    <div id="chat"></div>
-    <div id="inputRow">
-      <textarea id="giris" placeholder="LenBeyni'ye sor..." rows="2"></textarea>
-      <button id="btnGonder">➤</button>
-    </div>
     <div id="durum" class="hidden"></div>
   </main>
+
+  <!-- ══ Sağ Panel: Skills + MCP ══ -->
+  <aside id="panel" class="hidden">
+    <div class="panel-baslik">
+      <span>Yetenekler ve Bağlantılar</span>
+      <button id="btnPanelKapat">✕</button>
+    </div>
+    <div class="panel-icerik">
+      <div class="panel-bolum">
+        <div class="panel-bolum-baslik">Kenar çubuğu</div>
+        <label class="chk-row"><input type="checkbox" id="swSidebar" checked /> <span>Kenar çubuğu göster</span></label>
+        <label class="chk-row"><input type="checkbox" id="swRoute" checked /> <span>Akıl yönlendirme (konu→model)</span></label>
+        <label class="chk-row"><input type="checkbox" id="swKisaYol"> <span>Kısayol: Enter yerine Ctrl+Enter</span></label>
+      </div>
+
+      <div class="panel-bolum">
+        <div class="panel-bolum-baslik">Mod</div>
+        <div class="mod-secim" id="modSecim">
+          <button class="mod-chip active" data-mod="tek">Sohbet</button>
+          <button class="mod-chip" data-mod="akil">Akıl Motoru</button>
+          <button class="mod-chip" data-mod="meclis">AI Meclisi</button>
+        </div>
+        <div class="model-ozel hidden" id="meclisModelSec">
+          <label>Meclis modelleri</label>
+          <label class="chk-row"><input type="checkbox" value="nvidia/nemotron-3-ultra-550b-a55b:free" checked /> Nemotron 550B</label>
+          <label class="chk-row"><input type="checkbox" value="dots-studio/dots-3-note-preview:free" checked /> Dots-3</label>
+          <label class="chk-row"><input type="checkbox" value="poolside/laguna-s-2.1:free" /> Poolside Laguna</label>
+        </div>
+      </div>
+
+      <div class="panel-bolum">
+        <div class="panel-bolum-baslik">Araçlar</div>
+        <label class="chk-row"><input type="checkbox" id="toolArama" checked /> <span>Web araması</span></label>
+        <label class="chk-row"><input type="checkbox" id="toolSite" checked /> <span>Site okuma</span></label>
+      </div>
+
+      <div class="panel-bolum" id="skillBolumu">
+        <div class="panel-bolum-baslik">
+          <span>Skills (Yetenekler)</span>
+          <button class="mini-buton" id="btnSkillEkle">＋ Ekle</button>
+        </div>
+        <p class="panel-aciklama">Seçili skill, cevap üretirken sistem talimatınıza eklenir.</p>
+        <div id="skillListesi"></div>
+      </div>
+
+      <div class="panel-bolum" id="mcpBolumu">
+        <div class="panel-bolum-baslik">
+          <span>MCP Bağlantıları</span>
+          <button class="mini-buton" id="btnMcpEkle">＋ Bağla</button>
+        </div>
+        <p class="panel-aciklama">Uzak MCP sunucularını JSON-RPC over HTTP ile bağlayın. Bağlı aletler sohbetinize eklenir.</p>
+        <div id="mcpListesi"></div>
+      </div>
+
+      <div class="panel-bolum">
+        <div class="panel-bolum-baslik">Geliştirici</div>
+        <label class="chk-row"><input type="password" id="apiKey" placeholder="OpenRouter API key (gerekirse)" autocomplete="off" /> </label>
+        <p class="panel-aciklama">Key tarayıcınızda saklanır, sunucuya gitmez. Vercel rölesi kullanılıyorsa gerekmez.</p>
+      </div>
+    </div>
+  </aside>
 </div>
+
+<div id="skillModal" class="modal hidden">
+  <div class="modal-kutu">
+    <h3>Yeni Skill</h3>
+    <input id="skillAd" placeholder="Skill adı (örn: Web Uzmanı)" />
+    <textarea id="skillIcerik" rows="4" placeholder="Sistem talimatı… Örn: 'Sen tecrübeli bir web geliştiricisisin. HTML, CSS, JS önerileri ver.'"></textarea>
+    <div class="modal-butonlar">
+      <button id="btnSkillKaydet">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="mcpModal" class="modal hidden">
+  <div class="modal-kutu">
+    <h3>MCP Sunucusu Bağla</h3>
+    <input id="mcpAd" placeholder="Sunucu adı (örn: Veritabanı)" />
+    <input id="mcpUc" placeholder="Uç noktası (örn: https://sunucu.com/mcp)" />
+    <select id="mcpProto">
+      <option value="http">HTTP (JSON-RPC over HTTP)</option>
+      <option value="sse">SSE (Server-Sent Events)</option>
+    </select>
+    <p class="panel-aciklama">Bağlandığında sunucudan alet (tool) listesi çekilir ve sohbete eklenir.</p>
+    <div class="modal-butonlar">
+      <button id="btnMcpBagla">Bağla ve aletleri listele</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
