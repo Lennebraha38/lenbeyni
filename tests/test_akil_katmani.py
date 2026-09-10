@@ -184,3 +184,17 @@ def test_meclis_hakemi_paneli():
     assert rapor["kazanan"] == "model-a"
     assert len(rapor["siralama"]) == 2
     assert rapor["kazanan_skor"] > 0.4
+
+# ── Tam Zirve Testi ─────────────────────────────────────────
+def test_tam_zirve_sorular():
+    from agentv2 import tam_zirve
+    assert len(tam_zirve.SORULAR) == 50
+    # Tum sorular (konu, soru) ikilisi
+    assert all(len(s) == 2 for s in tam_zirve.SORULAR)
+    konular = {k for k, _ in tam_zirve.SORULAR}
+    assert konular == {"kod","matematik","dil","mantik","bilim","tarih","yaratici","kultur","pratik","teknoloji"}
+
+def test_tam_zirve_skor_modulu():
+    from agentv2.tam_zirve import tek_soru_test, api_iste
+    # fonksiyonlar mevcut ve callable
+    assert callable(tek_soru_test) and callable(api_iste)

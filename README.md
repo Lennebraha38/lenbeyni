@@ -27,10 +27,13 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 ## Test
 
 ```bash
-python3 -m pytest tests/ -q          # 24 test (akil katmani + araclar + token tavani)
+python3 -m pytest tests/ -q          # 29 test (akil katmani + meclis hakemi + dongu testi + araclar + token tavani)
 python3 agentv2/otomatik_skorer.py karsilastirma.json   # canli test skoru raporu
 python3 agentv2/cogunluk_oyu.py "soru" --tekrar 3       # majority vote
-```
+python3 agentv2/tam_zirve.py --soru 10                  # zirve testi (ilk 10 soru)
+python3 agentv2/tam_zirve.py --kalan-bekle              # rate-limit bekle, surekli dene
+python3 agentv2/meclis_hakemi.py "soru"                 # genisletilmis hakem paneli (12 kriter)
+python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu: baseline/cot/sc/kombinasyon/meclis
 
 ## Kurulum
 

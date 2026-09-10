@@ -8,5 +8,5 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install -r requirements.txt
-      - run: python -m py_compile agentv2/lenbeyni_zeka.py agentv2/araclar/*.py agentv2/akil_motoru.py agentv2/model_routing.py agentv2/self_correction.py agentv2/otomatik_skorer.py agentv2/cogunluk_oyu.py
+      - run: python -m py_compile agentv2/lenbeyni_zeka.py agentv2/araclar/*.py agentv2/akil_motoru.py agentv2/model_routing.py agentv2/self_correction.py agentv2/otomatik_skorer.py agentv2/cogunluk_oyu.py agentv2/akil_dongu_test.py agentv2/meclis_hakemi.py agentv2/tam_zirve.py
       - run: python -m pytest tests/ -q
