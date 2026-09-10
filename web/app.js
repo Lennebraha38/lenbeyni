@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   LenBeyni Web — Gemini/Claude seviyesi arayüz
+   Zenai Web — Gemini/Claude seviyesi arayüz
    Özellikler: konu→model yönlendirme, Akıl Motoru, Skills ekleme,
    MCP bağlama (JSON-RPC over HTTP rölesi), AI Meclisi, streaming,
    web arama + site okuma, sohbet geçmişi, konuşma listesi.
@@ -233,7 +233,7 @@ function mesajEkle(role, icerik, meta) {
   const ikon = role === "user" ? "🧑" : (meta && meta.meclis ? "⚖" : "⚛");
   wrap.innerHTML = `<div class="avatar ${role}">${ikon}</div>
     <div class="msg-govde">
-      <div class="msg-kim">${role === "user" ? "Sen" : meta && meta.ad ? meta.ad : "LenBeyni"}</div>
+      <div class="msg-kim">${role === "user" ? "Sen" : meta && meta.ad ? meta.ad : "Zenai"}</div>
       <div class="msg-icerik"></div>
       <div class="msg-eylem"></div>
     </div>`;
@@ -479,7 +479,7 @@ function sorudakiUrl(s) {
 // ── Ana gönderim akışı ────────────────────────────────
 async function sistemPromptu(konu, soyut) {
   const parcalar = [
-    "Sen LenBeyni'sin — Gemini/Claude seviyesi bir zeka asistanı. Türkçe, net ve rakiplerinden daha kapsamlı cevap ver.",
+    "Sen Zenai'sin — Gemini/Claude seviyesi bir zeka asistanı. Türkçe, net ve rakiplerinden daha kapsamlı cevap ver.",
     "HEDEF: Shally, kısa kesme aramadan konunun tüm yönlerini ele al. Bol madde, başlık, örnek ve açıklama kullan. Claude'un 'kısa cevap' alışkanlığının ötesine geç.",
   ];
   if (soyut) {
@@ -568,7 +568,7 @@ async function gonder() {
     ];
     await ajanBaglam(soru, mesajlar);
 
-    durum(true, (soyut ? "Akıl Motoru" : "LenBeyni") + " — " + konu + " → " + model.split("/").pop().split(":")[0] + " düşünüyor…");
+    durum(true, (soyut ? "Akıl Motoru" : "Zenai") + " — " + konu + " → " + model.split("/").pop().split(":")[0] + " düşünüyor…");
     const aiWrap = mesajEkle("ai", "", { skilller: aktifSkillerBu.map((s) => s.ikon + " " + s.ad) });
     const govde = aiWrap.querySelector(".msg-icerik");
     let tam = "";
@@ -616,7 +616,7 @@ async function meclisTuru(soru, key) {
     grid.appendChild(kart);
     const icerik = kart.querySelector(".content");
     try {
-      const yanit = await mega([{ role: "system", content: "Sen LenBeyni meclisinin bir üyesisin. Türkçe, net cevap ver." }, { role: "user", content: soru }], model, key);
+      const yanit = await mega([{ role: "system", content: "Sen Zenai meclisinin bir üyesisin. Türkçe, net cevap ver." }, { role: "user", content: soru }], model, key);
       icerik.textContent = yanit;
       return { model, yanit };
     } catch (e) { icerik.textContent = "Hata: " + e.message; return { model, yanit: null }; }

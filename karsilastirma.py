@@ -1,4 +1,4 @@
-"""LenBeyni 50-konu karsilastirma testi.
+"""Zenai 50-konu karsilastirma testi.
 Her konuda bir soru sorar, sure/kelime/cikti kaydeder, JSON rapor yazar.
 Rate-limit aware: her istek arasinda bekleme + 429'da exponential backoff.
 Model Routing: konuya gore dogru modeli secer.

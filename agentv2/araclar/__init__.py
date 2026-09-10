@@ -1,4 +1,4 @@
-"""LenBeyni Arac Yonlendirici. Tum araclar tek yerden.
+"""Zenai Arac Yonlendirici. Tum araclar tek yerden.
 
 Komut formati:
   [BELGE]dosya_yolu[/BELGE]     - PDF/DOCX/CSV/JSON oku

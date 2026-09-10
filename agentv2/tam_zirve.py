@@ -1,4 +1,4 @@
-"""LenBeyni Tam Zirve Testi — tek komutla tum sistemi calistir.
+"""Zenai Tam Zirve Testi — tek komutla tum sistemi calistir.
 Akil motoru + model routing + self-correction + cogunluk oyu + meclis hakemi.
 Rate-limit aware: aralarda bekleme, kismi sonuc kaydetme, kalan hak sureci.
 

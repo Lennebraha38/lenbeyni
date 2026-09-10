@@ -1,4 +1,4 @@
-"""LenBeyni Arac Katmani.
+"""Zenai Arac Katmani.
 
 GitHub acik kaynak ekolojisinden ilhamla:
 - browser-use   -> Tarayici otomasyonu (Selenium/Playwright yerine hafif HTTP tabanli)

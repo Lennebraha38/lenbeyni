@@ -1,4 +1,4 @@
-# LenBeyni Entegrasyon Matrisi
+# Zenai Entegrasyon Matrisi
 
 Binlerce açık kaynak repo tek "Arac Katmanı"nda toplandı. Yaklaşım:
 **yerelde hafif, işlevsel özler** — şişman bağımlılık yok, her yerde çalışır.

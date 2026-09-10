@@ -1,8 +1,8 @@
-# LenBeyni vs Claude Fable 5.1 / ChatGPT Astra 6 / Gemini 3.1 Pro
+# Zenai vs Claude Fable 5.1 / ChatGPT Astra 6 / Gemini 3.1 Pro
 
-## Neden LenBeyni Farklı Strateji İzliyor?
+## Neden Zenai Farklı Strateji İzliyor?
 
-| | Rakipler | LenBeyni |
+| | Rakipler | Zenai |
 |---|---|---|
 | **Strateji** | Tek dev model, kendi web hizmeti | **Sistem zekası** + en ucuz en iyi modeller |
 | **Token limiti** | Sabit (concise mod düşük token) | **KAPSAM ayarlanabilir** (1200/2500/5000 kelime) |
@@ -25,9 +25,9 @@
 | ARC-AGI-2 | — | — | 77.1% |
 | Intelligence Index | — | 61 | — |
 
-**Anahtar:** Rakipler GPQA/MMLU'da %90+ alıyor. Ama bu testler **bilgi + mantık** ölçer; üretkenlik (yaratıcı hikaye, Türkçe dilbilgisi, pratil) ölçmez. LenBeyni 50 soruda konu çeşitliliğiyle gerçek kullanıcı deneyimini hedefliyor.
+**Anahtar:** Rakipler GPQA/MMLU'da %90+ alıyor. Ama bu testler **bilgi + mantık** ölçer; üretkenlik (yaratıcı hikaye, Türkçe dilbilgisi, pratil) ölçmez. Zenai 50 soruda konu çeşitliliğiyle gerçek kullanıcı deneyimini hedefliyor.
 
-## LenBeyni Gerçek Test Sonuçları (Dots-3)
+## Zenai Gerçek Test Sonuçları (Dots-3)
 
 **35 soru** — 67.2/100 (rate-limit kayıpları hariç). Konu performansı:
 

@@ -1,4 +1,4 @@
-"""Akıl Motoru — Claude'un "az token + yüksek mantık" felsefesini LenBeyni'ne taşır.
+"""Akıl Motoru — Claude'un "az token + yüksek mantık" felsefesini Zenai'ne taşır.
 Mantigi keskinlestiren akil yurutme katmani + rakipten cok token.
 
 Formul:
@@ -68,7 +68,7 @@ def sistem_promptu(konu=None, kapsam="uzun", seviye="duzgun"):
     butce = KAPSAM.get(kapsam, 2500)
     hedef = "claude'den cok daha ayrintili ve kapsamli"
     return (
-        "Sen LenBeyni'sin, akil yurutme paketi. Turkce konusuyorsun.\n\n"
+        "Sen Zenai'sin, akil yurutme paketi. Turkce konusuyorsun.\n\n"
         + y + "\n\n"
         + f"HEDEF: Cevaplarin {hedef}. Kisa kesme aramadan, tum yonlariyla acikla. "
         f"Cevabin yaklasik {butce} kelimeden az olmamali.\n"

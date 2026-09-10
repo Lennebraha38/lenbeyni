@@ -1,4 +1,4 @@
-// LenBeyni MCP Rölesi (Vercel Serverless).
+// Zenai MCP Rölesi (Vercel Serverless).
 // Tarayıcıdan uzak MCP sunucularına JSON-RPC over HTTP ile alet listeleme/çağırma.
 // CORS ve anahtar sorunlarını sunucu tarafında çözer; key tarayıcıya asla sızmaz.
 const MCP_HEADERS = { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" };
