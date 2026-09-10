@@ -393,9 +393,8 @@ function karsilamaGoster() {
 }
 
 // ── API ───────────────────────────────────────────────
-async function mega(mesajlar, model, key, mt, fn) {
+async function mega(mesajlar, model, key, mt) {
   const meta = { model, messages: mesajlar, temperature: 0.7, max_tokens: mt || gecerliMaxTok() };
-  if (fn) meta.fns = fn;
   if (sunucuModu !== false) {
     try {
       const r = await fetch(window.location.origin + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(meta) });
@@ -517,7 +516,7 @@ async function ajanBaglam(soru, mesajlar) {
 }
 
 // MCP alet çağrısı — model `TOOL_CALL:` satırı çıkarırsa çalıştır, sonucu geri besle.
-async function mcpIsle(soru, cevap, mesajlar) {
+async function mcpIsle(soru, cevap, mesajlar, model) {
   const satir = cevap.split("\n").find((l) => l.trim().startsWith("TOOL_CALL:"));
   if (!satir) return cevap;
   const m = satir.match(/TOOL_CALL:\s*(\w+)\s*\((.*?)\)/s);
@@ -532,7 +531,7 @@ async function mcpIsle(soru, cevap, mesajlar) {
     const sonuc = await mcpAletCagir(svr, aletAd, argumanlar);
     durum(true, "Alet sonucu işleniyor…");
     mesajlar.push({ role: "user", content: sonuc.slice(0, 3000) });
-    const devam = await mega(mesajlar, mesajlar._model, gecerliKey(), gecerliMaxTok());
+    const devam = await mega(mesajlar, model, gecerliKey(), gecerliMaxTok());
     return devam;
   }
   return cevap;
@@ -578,7 +577,7 @@ async function gonder() {
     if (!cevap) { govde.textContent = "(boş cevap)"; }
     else {
       const once = cevap;
-      cevap = await mcpIsle(soru, cevap, mesajlar);
+      cevap = await mcpIsle(soru, cevap, mesajlar, model);
       if (cevap !== once) { govde.innerHTML = ""; mdYazdir(govde, cevap); }
       gecmis.push({ role: "user", content: soru });
       gecmis.push({ role: "assistant", content: cevap });
