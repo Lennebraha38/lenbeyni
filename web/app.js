@@ -230,7 +230,7 @@ function mesajEkle(role, icerik, meta) {
   if (karsilama) karsilama.style.display = "none";
   const wrap = document.createElement("div");
   wrap.className = "msg-yuzde " + role;
-  const ikon = role === "user" ? "🧑" : (meta && meta.meclis ? "⚖" : "⚛");
+  const ikon = role === "user" ? "S" : (meta && meta.meclis ? "M" : "Z");
   wrap.innerHTML = `<div class="avatar ${role}">${ikon}</div>
     <div class="msg-govde">
       <div class="msg-kim">${role === "user" ? "Sen" : meta && meta.ad ? meta.ad : "Zenai"}</div>
