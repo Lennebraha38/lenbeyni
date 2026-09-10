@@ -3,8 +3,21 @@ const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
 let mod = "tek";
 let gecmis = [];
+let sunucuModu = null; // null: bilinmiyor, true: /api/chat aktif (zero-config), false: degil
 
 const $ = (id) => document.getElementById(id);
+
+async function sunucuKontrol() {
+  try {
+    const r = await fetch(window.location.origin + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "ping", messages: [] }) });
+    const j = await r.json();
+    sunucuModu = true;
+    return true;
+  } catch (e) {
+    sunucuModu = false;
+    return false;
+  }
+}
 
 function durum(goster, metin) {
   if (goster) { $("durum").classList.remove("hidden"); $("durum").textContent = metin; }
@@ -21,6 +34,22 @@ function mesajEkle(role, icerik) {
 }
 
 async function megaBeyin(mesajlar, model, key) {
+  if (sunucuModu !== false) {
+    try {
+      const r = await fetch(window.location.origin + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: mesajlar, temperature: 0.7, max_tokens: 4096 }),
+      });
+      const j = await r.json();
+      if (r.ok && j.content !== undefined) return j.content;
+      if (j.error && String(j.error).includes("OPENROUTER_KEY")) { sunucuModu = false; }
+    } catch (e) {
+      if (sunucuModu === true) throw e;
+      sunucuModu = false;
+    }
+  }
+  if (!key) throw new Error("Sunucu rölesi çalışmıyor ve API key girilmedi.");
   const r = await fetch(OPENROUTER, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
@@ -178,7 +207,10 @@ async function gonder() {
   const soru = $("giris").value.trim();
   const key = $("apiKey").value.trim();
   if (!soru) return;
-  if (!key) { alert("OpenRouter API key'ini yaz (https://openrouter.ai/keys — ücretsiz)."); return; }
+  if (!key) {
+    if (sunucuModu === null) await sunucuKontrol();
+    if (sunucuModu === false) { alert("Sunucu rölesi yok ve API key girilmedi."); return; }
+  }
   $("giris").value = "";
   $("btnGonder").disabled = true;
   try {
@@ -211,6 +243,19 @@ $("btnKopyala").addEventListener("click", () => {
 });
 
 try {
+  (async () => {
+    if (await sunucuKontrol()) {
+      // zero-config: key kutusu gizle, rozet göster
+      const kutu = $("keyBox");
+      if (kutu) {
+        kutu.classList.add("hidden");
+        const rozet = document.createElement("div");
+        rozet.className = "zero-rozet";
+        rozet.textContent = "⚡ Hazır — key gerekmez";
+        kutu.insertAdjacentElement("beforebegin", rozet);
+      }
+    }
+  })();
   $("apiKey").value = localStorage.getItem("lb_key") || "";
   $("apiKey").addEventListener("input", () => localStorage.setItem("lb_key", $("apiKey").value));
 } catch (e) {}
