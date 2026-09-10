@@ -6,8 +6,10 @@ OPENROUTER_KEY = ENV_KEY
 
 try:
     from araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
+    from araclar import yonlendir
 except ImportError:
     from agentv2.araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
+    from agentv2.araclar import yonlendir
 
 MEGA_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 PLAN_MODEL = "cohere/north-mini-code:free"
@@ -29,17 +31,25 @@ def ajan(soru):
     baglam = "\n\n".join(f"{k}: {v}" for k, v in ilgili) if ilgili else ""
     mesajlar = [{"role": "system", "content": (
         "Sen LenBeyni ajanisin. Isi bitirmek icin araclarini kullan. "
-        "[ARAMA]soru[/ARAMA] web arar, [SITE]url[/SITE] site okur, [KOMUT]cmd[/KOMUT] komut calistirir."
+        "[ARAMA]soru[/ARAMA] web arar, [SITE]url[/SITE] site okur, [KOMUT]cmd[/KOMUT] komut calistirir, "
+        "[BELGE]dosya[/BELGE] dosya okur, [PYTHON]kod[/PYTHON] python calistirir, "
+        "[BASH]cmd[/BASH] bash calistirir, [SISTEM]bakis[/SISTEM] sistem bilgisi, "
+        "[GITHUB]sorgu[/GITHUB] github ara, [SIFRE]uzunluk[/SIFRE] sifre uret, "
+        "[RSS]kategori[/RSS] haber, [LISTE]klasor,kalip[/LISTE] dosya listeler."
         + (f"\nHatirla (bellekten):\n{baglam}" if baglam else ""))},
         {"role": "user", "content": soru}]
-    for tur in range(5):
+    for tur in range(7):
         cevap = llm(mesajlar)
         if not cevap:
             return "Mega beyin yanit vermedi (OPENROUTER_KEY ayarla)."
         aramalar = re.findall(r"\[ARAMA\]([^\[]*)\[/ARAMA\]", cevap)
         siteler = re.findall(r"\[SITE\]([^\[]*)\[/SITE\]", cevap)
         komutlar = re.findall(r"\[KOMUT\]([^\[]*)\[/KOMUT\]", cevap)
-        if not (aramalar or siteler or komutlar):
+        digerler = []
+        for sozcuk in ["BELGE","PYTHON","BASH","SISTEM","GITHUB","SIFRE","RSS","LISTE"]:
+            if f"[{sozcuk}]" in cevap:
+                digerler.append(sozcuk)
+        if not (aramalar or siteler or komutlar or digerler):
             if len(cevap) > 3000:
                 belleklik.ozet_ata(llm, cevap, "yanit_" + re.sub(r"[^a-z0-9]", "_", soru.lower())[:40])
             return cevap
@@ -47,6 +57,12 @@ def ajan(soru):
         for s in aramalar: sonuclar.append("ARAMA: " + web_ara(s.strip()))
         for s in siteler: sonuclar.append("SITE: " + sayfa(s.strip()))
         for s in komutlar: sonuclar.append("KOMUT: " + komut(s.strip()))
+        if digerler:
+            router_sonucu = yonlendir(cevap)
+            if router_sonucu:
+                sonuclar.append(router_sonucu)
+        if not sonuclar:
+            return cevap
         mesajlar += [{"role": "assistant", "content": cevap},
                      {"role": "user", "content": "ARAC SONUCLARI:\n" + "\n".join(sonuclar) + "\nDevam et ve kullaniciya cevap ver."}]
     return "Araclar islendi."
