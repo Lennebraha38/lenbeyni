@@ -7,12 +7,12 @@ Token limitlerini yuksek tut (Claude 128K'dan 2x-4x daha fazla cikti).
 import os
 
 # Konu bazli model haritasi: (model_id, max_tokens, aciklama)
-# Kod: deepseek benchmark'ta kod 97 (ZenAI 88) — veriye dayali degisti.
+# Kod: free-tier anahtarda deepseek 402 (bakiye yok) -> free kod uzmanina geri.
 KONU_MODELLERI = {
     "kod": (
-        "deepseek/deepseek-chat-v3-0324",
-        65536,  # kod uzmani + genis token: benchmark kazanan model
-        "Kod uzmani (benchmark: kod 97): syntax + calisan kod uret"
+        "cohere/north-mini-code:free",
+        65536,  # kod uzmani + genis token (deepseek bakiye olunca 402 -> free'ye don)
+        "Kod uzmani (free): syntax + calisan kod uret"
     ),
     "matematik": (
         "nvidia/nemotron-3-ultra-550b-a55b:free",

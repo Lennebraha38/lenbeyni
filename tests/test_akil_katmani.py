@@ -37,9 +37,9 @@ def test_model_routing_konular():
     from agentv2.model_routing import model_sec, KONU_MODELLERI
     # 10 konu tanimli olmali
     assert len(KONU_MODELLERI) == 10
-    # Kod modeli benchmark kazanani (deepseek, kod 97) olmali
+    # Kod modeli free-tier kod uzmani olmali (deepseek 402 veriyor)
     kod_model, kod_max = model_sec("kod")
-    assert "deepseek" in kod_model
+    assert "free" in kod_model
     assert kod_max >= 16384
     # Matematik modeli 550B olmali
     mat_model, mat_max = model_sec("matematik")
