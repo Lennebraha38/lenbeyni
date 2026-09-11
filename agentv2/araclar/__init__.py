@@ -14,6 +14,18 @@ Komut formati:
 """
 import os, re
 
+try:
+    from .guvenlik import yorl_guvenli
+except Exception:
+    try:
+        from agentv2.guvenlik import yorl_guvenli
+    except Exception:
+        yorl_guvenli = lambda p: p
+
+def _izinli_yol(yol):
+    guvenli = yorl_guvenli(yol)
+    return guvenli if guvenli else None
+
 def yonlendir(metin):
     """Tum [X]...[/X] komutlarini isler, sonuclari biriktirir."""
     sonuc = []
@@ -21,7 +33,11 @@ def yonlendir(metin):
     for m in re.finditer(r"\[BELGE\]([^\[]*)\[/BELGE\]", metin, re.S):
         from .belgeler import belge
         yol = m.group(1).strip()
-        sonuc.append(f"BELGE [{yol}]: " + belge(yol)[:2000])
+        guvenli = _izinli_yol(yol)
+        if not guvenli:
+            sonuc.append(f"BELGE [{yol}]: [GUVENLIK Bloklandi: izin verilmeyen yol]")
+            continue
+        sonuc.append(f"BELGE [{guvenli}]: " + belge(guvenli)[:2000])
 
     for m in re.finditer(r"\[PYTHON\]([^\[]*)\[/PYTHON\]", metin, re.S):
         from .kod_sandbox import python_kod
@@ -60,7 +76,11 @@ def yonlendir(metin):
         from .sistem import dosyalar
         par = m.group(1).strip().split(",")
         klasor, kalip = par[0].strip(), (par[1].strip() if len(par) > 1 else "*")
-        sonuc.append("LISTE:\n" + dosyalar(klasor, kalip)[:1200])
+        guvenli = _izinli_yol(klasor)
+        if not guvenli:
+            sonuc.append(f"LISTE: [GUVENLIK Bloklandi: izin verilmeyen yol]")
+            continue
+        sonuc.append("LISTE:\n" + dosyalar(guvenli, kalip)[:1200])
 
     for m in re.finditer(r"\[TARAYICI\]([^\[]*)\[/TARAYICI\]", metin, re.S):
         from .tarayici import otomatik

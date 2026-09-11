@@ -188,11 +188,24 @@ def test_meclis_hakemi_paneli():
 # ── Tam Zirve Testi ─────────────────────────────────────────
 def test_tam_zirve_sorular():
     from agentv2 import tam_zirve
-    assert len(tam_zirve.SORULAR) == 50
-    # Tum sorular (konu, soru) ikilisi
-    assert all(len(s) == 2 for s in tam_zirve.SORULAR)
-    konular = {k for k, _ in tam_zirve.SORULAR}
+    assert len(tam_zirve.SORULAR) == 150
+    # Tum sorular (konu, soru, zorluk) uclusu
+    assert all(len(s) == 3 for s in tam_zirve.SORULAR)
+    assert all(s[2] in ("kolay", "orta", "zor") for s in tam_zirve.SORULAR)
+    konular = {k for k, _, _ in tam_zirve.SORULAR}
     assert konular == {"kod","matematik","dil","mantik","bilim","tarih","yaratici","kultur","pratik","teknoloji"}
+    for z in ("kolay", "orta", "zor"):
+        assert any(s[2] == z for s in tam_zirve.SORULAR), f"{z} soru yok"
+
+def test_tam_zirve_filtreleri():
+    from agentv2.tam_zirve import sorulari_sec
+    kodsiz = sorulari_sec(sayi=0, kategori="kod", zorluk=None)
+    assert kodsiz and all(s[0] == "kod" for s in kodsiz)
+    zorlar = sorulari_sec(sayi=0, kategori=None, zorluk="zor")
+    assert zorlar and all(s[2] == "zor" for s in zorlar)
+    # Inis secme: cok secilirse sayi kadar
+    az = sorulari_sec(sayi=5, kategori="kod")
+    assert len(az) == 5
 
 def test_tam_zirve_skor_modulu():
     from agentv2.tam_zirve import tek_soru_test, api_iste

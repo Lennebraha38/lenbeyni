@@ -12,11 +12,22 @@ Hepsi bagimsiz calisir, mega beyin bu katmani cagirir.
 import requests, re, os, json, subprocess, tempfile
 from urllib.parse import quote_plus, unquote
 
+try:
+    from .guvenlik import url_guvenli, komut_tehlikeli
+except Exception:
+    try:
+        from agentv2.guvenlik import url_guvenli, komut_tehlikeli
+    except Exception:
+        url_guvenli = lambda u: True
+        komut_tehlikeli = lambda c: False
+
 BASLIK = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36"}
 
 # ---------- browser-use: tarayici / site ----------
 def sayfa(url, maxlen=4000):
     if not url.startswith("http"): url = "https://" + url
+    if not url_guvenli(url):
+        return "[GUVENLIK Bloklandi: engellenen URL (ic ag/SSRF onleme)]"
     r = requests.get(url, timeout=20, headers=BASLIK, allow_redirects=True)
     metin = re.sub(r"<script.*?</script>|<style.*?</style>|<nav.*?</nav>|<footer.*?</footer>|<header.*?</header>", "", r.text, flags=re.S)
     metin = re.sub(r"<[^>]+>", " ", metin)
@@ -61,6 +72,8 @@ def web_ara(sorgu):
 
 # ---------- OpenCLI: komut calistirma ----------
 def komut(emir, timeout=20):
+    if komut_tehlikeli(emir):
+        return "[GUVENLIK Bloklandi: tehlikeli komut kalibi]"
     try:
         r = subprocess.run(emir, shell=True, capture_output=True, text=True, timeout=timeout)
         return (r.stdout or "")[-3000:] + (r.stderr or "")[-1000:]
@@ -74,29 +87,12 @@ def kanal_ozetle(llm, kanal_turu, mesajlar):
         {"role":"user","content":mesajlar[:6000]}], max_tokens=1000)
 
 # ---------- LocalRAG: dosya belleği ----------
-class Bellek:
-    def __init__(self, yol=None):
-        self.yol = yol or os.path.expanduser("~/.lenbeyni_bellek.json")
-        self.veri = {}
-        try:
-            with open(self.yol) as f: self.veri = json.load(f)
-        except Exception: pass
+try:
+    from ..bellek_vektor import BellekVec
+except Exception:
+    try:
+        from agentv2.bellek_vektor import BellekVec
+    except Exception:
+        from bellek_vektor import BellekVec
 
-    def kaydet(self, anahtar, deger):
-        self.veri[anahtar] = deger
-        with open(self.yol, "w") as f: json.dump(self.veri, f, ensure_ascii=False, indent=1)
-
-    def ara(self, sorgu):
-        kelimeler = set(re.findall(r"[a-zA-ZçğıöşüÇĞİÖŞÜ]{4,}", sorgu.lower()))
-        eslesen = []
-        for k, v in self.veri.items():
-            kk = set(re.findall(r"[a-zA-ZçğıöşüÇĞİÖŞÜ]{4,}", k.lower()))
-            if kelimeler & kk:
-                eslesen.append((k, v))
-        return eslesen[:3]
-
-    def ozet_ata(self, llm, metin, anahtar):
-        ozet = llm([{"role":"system","content":"Bunu 3 maddede ozetle, Turkce."},
-                    {"role":"user","content":metin[:4000]}], max_tokens=400)
-        if ozet: self.kaydet(anahtar, ozet)
-        return ozet
+Bellek = BellekVec

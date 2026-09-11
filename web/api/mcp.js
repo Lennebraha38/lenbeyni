@@ -1,7 +1,47 @@
 // Zenai MCP Rölesi (Vercel Serverless).
 // Tarayıcıdan uzak MCP sunucularına JSON-RPC over HTTP ile alet listeleme/çağırma.
 // CORS ve anahtar sorunlarını sunucu tarafında çözer; key tarayıcıya asla sızmaz.
+// Güvenlik: SSRF önleme — iç ağ/özel IP uçlarına bağlanma engellenir.
+const { lookup } = require("node:dns/promises");
+
 const MCP_HEADERS = { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" };
+
+// ── SSRF koruması ──
+function ipOzelMi(ip) {
+  const v6 = ip.includes(":");
+  if (v6) {
+    if (ip === "::1" || ip.toLowerCase() === "::ffff:127.0.0.1") return true;
+    const alt = ip.toLowerCase().split("::")[0];
+    return alt.startsWith("fc") || alt.startsWith("fd") || alt.startsWith("fe8") || alt.startsWith("fe9")
+      || alt.startsWith("fea") || alt.startsWith("feb") || ip.startsWith("0:");
+  }
+  const o = ip.split(".").map(Number);
+  if (o.length !== 4) return true;
+  return (
+    o[0] === 10 || o[0] === 127 || o[0] === 0 ||
+    (o[0] === 172 && o[1] >= 16 && o[1] <= 31) ||
+    (o[0] === 192 && o[1] === 168) ||
+    (o[0] === 169 && o[1] === 254) ||
+    (o[0] === 100 && o[1] >= 64 && o[1] <= 127) ||
+    o[0] >= 224
+  );
+}
+
+async function ucGuvenli(uç) {
+  if (!uç || typeof uç !== "string" || uç.length > 2048) return false;
+  let u;
+  try { u = new URL(uç); } catch { return false; }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+  if (u.username || u.password) return false;
+  const port = u.port ? Number(u.port) : (u.protocol === "https:" ? 443 : 80);
+  if (port !== 80 && port !== 443) return false;
+  const host = u.hostname;
+  if (!host || host === "localhost" || host === "127.0.0.1" || host === "::1" || /^\d+\.\d+\.\d+\.\d+$/.test(host) && ipOzelMi(host)) return false;
+  try {
+    const { address } = await lookup(host);
+    return !ipOzelMi(address);
+  } catch { return false; }
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -12,6 +52,8 @@ export default async function handler(req, res) {
 
   const { action, uc, proto = "http", alet, argumanlar } = req.body || {};
   if (!uc) return res.status(400).json({ error: "Uç nokta (uc) gerekli" });
+  if (!["http", "sse"].includes(proto)) return res.status(400).json({ error: "Geçersiz protokol" });
+  if (!(await ucGuvenli(uc))) return res.status(400).json({ error: "Güvenlik: izin verilmeyen uç nokta (SSRF önleme)" });
 
   try {
     if (action === "tools") {

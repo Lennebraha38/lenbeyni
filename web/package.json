@@ -1,0 +1,14 @@
+{
+  "name": "zenai-web",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Zenai web arayüzü (vanilla JS, Vercel serverless API'leri)",
+  "main": "index.html",
+  "scripts": {
+    "test:gui": "NODE_PATH=$(npm root -g) node web_gui_test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

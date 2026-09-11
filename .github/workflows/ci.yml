@@ -7,6 +7,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install -r requirements.txt
-      - run: python -m py_compile agentv2/lenbeyni_zeka.py agentv2/araclar/*.py agentv2/akil_motoru.py agentv2/model_routing.py agentv2/self_correction.py agentv2/otomatik_skorer.py agentv2/cogunluk_oyu.py agentv2/akil_dongu_test.py agentv2/meclis_hakemi.py agentv2/tam_zirve.py
-      - run: python -m pytest tests/ -q
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Python bagimliliklar
+        run: pip install -r requirements.txt pytest
+      - name: Derleme kontrolu
+        run: python -m py_compile agentv2/lenbeyni_zeka.py agentv2/akil_motoru.py agentv2/model_routing.py agentv2/self_correction.py agentv2/otomatik_skorer.py agentv2/cogunluk_oyu.py agentv2/meclis_hakemi.py agentv2/tam_zirve.py agentv2/guvenlik.py agentv2/bellek_vektor.py agentv2/soru_bankasi.py agentv2/araclar/*.py
+      - name: Test paketi (+ coverage)
+        run: pip install pytest-cov && python -m pytest tests/ -q --cov=agentv2 --cov-report=term --cov-fail-under=30
+      - name: Bagimlilik CVE taramasi (pip-audit)
+        continue-on-error: true
+        run: pip install pip-audit && pip-audit -r requirements.txt --fail-on=high
+      - name: Node bagimlilik CVE taramasi (npm audit)
+        continue-on-error: true
+        working-directory: web
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm audit --audit-level=high

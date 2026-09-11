@@ -17,9 +17,11 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 | **Self-Correction** | `agentv2/self_correction.py` | Kod cevaplari sandbox'ta calistirilir -> syntax/runtime hatasi bulunursa model duzeltme turu yapar |
 | **Otomatik Skorer** | `agentv2/otomatik_skorer.py` | Test cevaplarini makineyle puanlar: kod=calistir, matematik=hesapla, dil=yapiskan metrikler |
 | **Cogunluk Oyu** | `agentv2/cogunluk_oyu.py` | Ayni soruyu N kez sorar, en sik cevabi secer (dogrulugu istatistiksel artirir) |
-| Karşılama testi | `karsilastirma.py` | 50 konulu turkce karsilastirma + rate-limit aware (retry + backoff) |
+| Karşılama testi | `karsilastirma.py` | Turkce karsilastirma + rate-limit aware (retry + backoff) |
+| Benchmark | `agentv2/tam_zirve.py` + `soru_bankasi.py` | **150 soru** / 10 konu / 3 zorluk; `--kategori`, `--zorluk` filtreleri |
 | Deep Research | `agentv2/lenbeyni_zeka.py` (`rapor` modu) | Soruyu alt-başlıklara böler, kaynakları toplar, kaynaklı kurumsal rapor yazar |
-| Bellek | `agentv2/lenbeyni_zeka.py` (`bellek` modu) | Araştırma sonuçlarını hatırlar (`~/.lenbeyni_bellek.json`) |
+| Bellek (vektör) | `agentv2/bellek_vektor.py` | Karakter n-gram benzerliğiyle hatırlar (`~/.zenai_bellek.json`); TTL + kullanıcı izolasyonu |
+| Güvenlik | `agentv2/guvenlik.py` + `SECURITY.md` | SSRF / kod / path / prompt-injection koruması — araç girişlerinde deny-by-default |
 | Web GUI | `web/` | Gemini/Claude seviyesi arayüz: konu→model yönlendirme rozeti, Akıl Motoru, AI Meclisi, **Skills ekleme**, **MCP bağlama** |
 | Kod eğitimi | `egitim/` | QLoRA ile 7B/14B kod modeli fine-tune (Kaggle) |
 | Cihaz beyni | `ciday/` (tablet) | Ollama tabanlı, offline sohbet/kod |
@@ -28,13 +30,18 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 ## Test
 
 ```bash
-python3 -m pytest tests/ -q          # 29 test (akil katmani + meclis hakemi + dongu testi + araclar + token tavani)
+python3 -m pytest tests/ -q          # 41 test (akil katmani + guvenlik + meclis + araclar + token tavani)
 python3 agentv2/otomatik_skorer.py karsilastirma.json   # canli test skoru raporu
 python3 agentv2/cogunluk_oyu.py "soru" --tekrar 3       # majority vote
 python3 agentv2/tam_zirve.py --soru 10                  # zirve testi (ilk 10 soru)
+python3 agentv2/tam_zirve.py --kategori kod             # sadece kod sorulari
+python3 agentv2/tam_zirve.py --zorluk zor               # sadece zor sorular
 python3 agentv2/tam_zirve.py --kalan-bekle              # rate-limit bekle, surekli dene
 python3 agentv2/meclis_hakemi.py "soru"                 # genisletilmis hakem paneli (12 kriter)
 python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu: baseline/cot/sc/kombinasyon/meclis
+
+> Rate-limit notu: ücretsiz OpenRouter modelleri 429 dönebilir; `--kalan-bekle`
+> otomatik bekler. Zirve raporunu `agentv2/tam_zirve.py --sadece-skor` ile gör.
 
 ## Kurulum
 
