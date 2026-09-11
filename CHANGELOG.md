@@ -4,6 +4,19 @@ Tüm önemli değişiklikler bu dosyada toplanır.
 
 ## [2.1.0] — Devam ediyor
 
+### Puan 71.3 → 92.7/100 (ikinci gerçek benchmark)
+- Skorlayıcı soru-bazlı beklenen yanıt tablosuyla güçlendirildi
+  (`soru_bankasi.HEDEFLER`): matematik tam sayı/kesir/ondalık eşleşmesi,
+  mantik/dil anahtar kavram eşleşmesi + LaTeX `\sqrt`/kök normalizasyonu.
+- `tam_zirve.py`: `BENCH_SISTEM` promptu — her cevapta en az 3 madde ve
+  "Sonuç: <değer>" satırı; self-correction tüm konularda çalışır.
+- Yeni koşu (50 soru, gpt-4o-mini): **92.7/100, 50/50 başarılı, 0 hata**.
+  Konu bazlı: dil 100.0, matematik 95.0, kod 88.0, mantik 77.0.
+  (İlk koşudaki matematik 50.0'i skorlayıcı artefaktıydı: ölçüm tablosu eski
+  soru numaralarına kilitliydi; yanıtlar zaten doğruydu.)
+- Testler: beklenen-hesapli skorlama senaryoları (matematik doğru/yanlış,
+  mantik kavram varlığı) eklendi.
+
 ### İlk gerçek benchmark ölçümü
 - 50 soruluk koşu (gpt-4o-mini override) → **71.3/100, 50/50 başarılı, 0 hata**.
   Konu bazlı: kod 87.0, dil 84.0, matematik 50.0, mantik 50.0.

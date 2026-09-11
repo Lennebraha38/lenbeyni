@@ -15,7 +15,7 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 | **Akil Motoru** | `agentv2/akil_motoru.py` | Claude'un az-token/yuksek-mantik felsefesi + bizim bol-token: CoT yontemi, 5000 kelime hedefi, kendi kendini dogrulama |
 | **Model Routing** | `agentv2/model_routing.py` | Konuya gore uzman model: kod->north-mini-code, matematik/mantik->nemotron-550B, diger->dots-3 (2-4x Claude token butcesi) |
 | **Self-Correction** | `agentv2/self_correction.py` | Kod cevaplari sandbox'ta calistirilir -> syntax/runtime hatasi bulunursa model duzeltme turu yapar |
-| **Otomatik Skorer** | `agentv2/otomatik_skorer.py` | Test cevaplarini makineyle puanlar: kod=calistir, matematik=hesapla, dil=yapiskan metrikler |
+| **Otomatik Skorer** | `agentv2/otomatik_skorer.py` | Soru-bazlı beklenen yanıt (`soru_bankasi.HEDEFLER`) eşleştirir: matematik=sayısal, mantik/dil=anahtar kavram; kod=sandbox çalıştırma |
 | **Cogunluk Oyu** | `agentv2/cogunluk_oyu.py` | Ayni soruyu N kez sorar, en sik cevabi secer (dogrulugu istatistiksel artirir) |
 | Karşılama testi | `karsilastirma.py` | Turkce karsilastirma + rate-limit aware (retry + backoff) |
 | Benchmark | `agentv2/tam_zirve.py` + `soru_bankasi.py` | **150 soru** / 10 konu / 3 zorluk; `--kategori`, `--zorluk` filtreleri |
@@ -46,9 +46,13 @@ python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu: b
 ### Benchmark — gerçek ölçüm
 Ücretsiz modeller 429 ile kotalı olduğunda benchmark `ZIRVE_MODEL` ile acil
 yoldan çalışır (ör. `ZIRVE_MODEL=openai/gpt-4o-mini`). İlk gerçek koşu
-(50 soru, gpt-4o-mini, self-correction + routing): **71.3/100, 50/50 başarılı**,
-0 hata. Konu bazlı: kod 87.0 [YÜKSEK], dil 84.0 [YÜKSEK], matematik 50.0,
-mantik 50.0. Her skor `kayit/routing_log.jsonl`'e işlenir ve
+(50 soru, gpt-4o-mini, self-correction + routing): **71.3/100**. Skorlayıcı
+soru-bazlı beklenen yanıt tablosu (`soru_bankasi.HEDEFLER`) ile güçlendirilip
+cevap üretimi "Sonuç: <değer>" disiplinine alındıktan sonra ikinci koşu:
+**92.7/100, 50/50 başarılı, 0 hata**. Konu bazlı: dil 100.0, matematik 95.0,
+kod 88.0, mantik 77.0. (İlk koşudaki 50.0'lar skorlayıcı artefaktıydı;
+matematik yanıtları zaten doğruydu, ölçüm tablosu eski soru numaralarına
+kilitliydi.) Her skor `kayit/routing_log.jsonl`'e işlenir ve
 `model_routing.routing_rapor()` ile gerçek veri üzerinden model önerisi üretir.
 
 ## Kurulum
