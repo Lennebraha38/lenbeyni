@@ -43,6 +43,14 @@ python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu: b
 > Rate-limit notu: ücretsiz OpenRouter modelleri 429 dönebilir; `--kalan-bekle`
 > otomatik bekler. Zirve raporunu `agentv2/tam_zirve.py --sadece-skor` ile gör.
 
+### Benchmark — gerçek ölçüm
+Ücretsiz modeller 429 ile kotalı olduğunda benchmark `ZIRVE_MODEL` ile acil
+yoldan çalışır (ör. `ZIRVE_MODEL=openai/gpt-4o-mini`). İlk gerçek koşu
+(50 soru, gpt-4o-mini, self-correction + routing): **71.3/100, 50/50 başarılı**,
+0 hata. Konu bazlı: kod 87.0 [YÜKSEK], dil 84.0 [YÜKSEK], matematik 50.0,
+mantik 50.0. Her skor `kayit/routing_log.jsonl`'e işlenir ve
+`model_routing.routing_rapor()` ile gerçek veri üzerinden model önerisi üretir.
+
 ## Kurulum
 
 ```bash

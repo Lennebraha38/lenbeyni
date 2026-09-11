@@ -59,6 +59,10 @@ def api_iste(mesajlar, model, key, max_tokens=2048, deneme=3):
 def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
     """Tek bir soruyu tam test pipeline'indan gecir."""
     secilen_model, maxt = model_sec(konu)
+    # ZIRVE_MODEL ortam degiskeni varsa tum sorularda o modeli kullan (benchmark acil yol)
+    zor_model = os.environ.get("ZIRVE_MODEL", "").strip()
+    if zor_model:
+        secilen_model, maxt = zor_model, 32768
 
     # 1. Tek cevap (routing ile dogru model)
     sonuc = api_iste(

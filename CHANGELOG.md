@@ -4,6 +4,12 @@ Tüm önemli değişiklikler bu dosyada toplanır.
 
 ## [2.1.0] — Devam ediyor
 
+### İlk gerçek benchmark ölçümü
+- 50 soruluk koşu (gpt-4o-mini override) → **71.3/100, 50/50 başarılı, 0 hata**.
+  Konu bazlı: kod 87.0, dil 84.0, matematik 50.0, mantik 50.0.
+- `tam_zirve.py`: `ZIRVE_MODEL` ortam değişkeni — ücretsiz modeller 429 ile
+  kotalandığında acil yol olarak belirli bir modelle tüm soruları koşar.
+
 ### Güvenlik (yeni)
 - `agentv2/guvenlik.py`: SSRF (özel/CGNAT/metadata IP bloğu), tehlikeli komut
   blok listesi, Python AST taraması, path traversal engeli, prompt-injection
