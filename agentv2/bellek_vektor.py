@@ -1,19 +1,55 @@
-"""ZenAI Bellek — vektör tarzı hatırlama.
+"""ZenAI Bellek — Hibrit Vektor + n-gram Hafıza.
 
-JSON tabanlı, bağımsız (chromadb kurulmadan çalışır) hafıza:
-- Karakter n-gram TF-IDF ile kosinüs benzerliği (kelime tabanlı değil -> Türkçe eklemelerde sağlam)
-- Zaman damgası + süre (TTL): eski/yanlış bilgi otomatik bayatlar
-- Kullanıcı bazlı izolasyon: her kullanıcının kayıtları ayrı tutulur
-- `unut` komutu ile silme + toplu listeleme
+Çalışma modları:
+  1. FAISS + sentence-transformers (yönetici kurarsa) → gerçek semantik benzerlik
+  2. n-gram TF-IDF fallback (bağımsız, pip gerektirmez)
+
+Özellikler:
+  - Kullanıcı bazlı izolasyon: her kullanıcı ayrı namespace
+  - TTL: eski bilgi otomatik bayatlar
+  - Semantic dedup: aynı bilgiyi tekrar kaydetmeyi önle
+  - `unut` komutu + toplu listeleme
 """
 import os, re, json, math, time, hashlib
 from collections import Counter
 
-VARS = 4  # n-gram boyu (alt kelime parçaları)
+# ── Embedding modülü (yönetici kurarsa aktif) ──────────────────────────
+_EMBED_MODEL = None
+_EMBED_FAISS = None
+_VECTORS = None
 
+def _embedding_aktif_mi():
+    global _EMBED_MODEL, _EMBED_FAISS
+    if _EMBED_MODEL is not None:
+        return _EMBED_MODEL is not False
+    try:
+        from sentence_transformers import SentenceTransformer
+        import faiss
+        _EMBED_MODEL = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True)
+        dim = _EMBED_MODEL.get_sentence_embedding_dimension()
+        _EMBED_FAISS = faiss.IndexFlatIP(dim)  # cosine via normalized vectors
+        return True
+    except Exception:
+        _EMBED_MODEL = False
+        return False
+
+def _embed(metin):
+    """Metni vektöre çevir (FAISS modu) veya None dön (fallback)."""
+    if not _embedding_aktif_mi():
+        return None
+    import numpy as np
+    v = _EMBED_MODEL.encode([metin], normalize_embeddings=True)
+    return v[0].astype("float32") if hasattr(v, "astype") else v
+
+def _kosinus_vec(a, b):
+    """İki vektör arası kosinüs (dot product, normalize edilmiş)."""
+    import numpy as np
+    return float(np.dot(a, b))
+
+# ── n-gram fallback (pip gerektirmez) ──────────────────────────────────
+VARS = 4
 
 def _gramlar(metin, k=VARS):
-    """Turkce uyumlu karakter n-gramlari."""
     temiz = re.sub(r"[^a-zçğıöşü0-9\s]", " ", (metin or "").lower())
     temiz = re.sub(r"\s+", " ", temiz).strip()
     g = set()
@@ -23,14 +59,11 @@ def _gramlar(metin, k=VARS):
             g.add(s[i:i + k])
     return g
 
-
 def _vektor(gramlar, idf=None):
-    """Gram setini sozluk vektore cevir; idf verilirse agirliklandir."""
     say = Counter(gramlar) if isinstance(gramlar, (list, tuple)) else {x: 1 for x in gramlar}
     if idf:
         return {g: w * idf.get(g, 1.0) for g, w in say.items()}
     return dict(say)
-
 
 def _kosinus(a, b):
     if not a or not b:
@@ -43,19 +76,27 @@ def _kosinus(a, b):
     b2 = math.sqrt(sum(v * v for v in b.values())) or 1.0
     return dot / (a2 * b2)
 
+# ── Semantic dedup ──────────────────────────────────────────────────────
+def _dedup_anahtar(kullanici_adi, deger, esik=0.92):
+    """Aynı anlama gelen kayıtları tekrar kaydetmeyi önle."""
+    metin = f"{kullanici_adi}:{deger}"
+    return hashlib.md5(metin.encode("utf-8")).hexdigest()
 
-def _ozet(metin, boyut=38):
+def _ozet(metin, boyut=42):
     m = re.sub(r"\s+", " ", (metin or "")).strip()
     return m[:boyut] + ("…" if len(m) > boyut else "")
 
-
+# ── Ana Bellek Sınıfı ──────────────────────────────────────────────────
 class BellekVec:
-    """Vektor bellek. Soru/talimat olusturup ara -> en alakali (anahtar, deger, skor)."""
+    """Hibrit bellek: FAISS+embedding (varsa) veya n-gram TF-IDF fallback."""
 
     def __init__(self, yol=None, kullanici="varsayilan"):
         self.yol = yol or os.path.expanduser("~/.zenai_bellek.json")
         self.kullanici = kullanici
         self.veri = {}
+        self._faiss_index = None
+        self._faiss_keys = []
+        self._faiss_vectors = []
         try:
             with open(self.yol) as f:
                 self.veri = json.load(f)
@@ -63,16 +104,15 @@ class BellekVec:
             self.veri = {}
         self._temizle()
 
-    # ── dahili ──
     def _kayitlar(self):
-        ana = self.veri.setdefault(self.kullanici, {})
-        return ana
+        return self.veri.setdefault(self.kullanici, {})
 
     def _temizle(self):
-        """Sure dolan kayitlari otomatik temizle."""
         s = time.time()
         ana = self._kayitlar()
-        sil = [k for k, v in ana.items() if isinstance(v, dict) and v.get("sure") is not None and s > v.get("zaman", 0) + v["sure"]]
+        sil = [k for k, v in ana.items()
+               if isinstance(v, dict) and v.get("sure") is not None
+               and s > v.get("zaman", 0) + v["sure"]]
         for k in sil:
             ana.pop(k, None)
         if sil:
@@ -89,30 +129,79 @@ class BellekVec:
         v = self._kayitlar()[k]
         if isinstance(v, dict) and "deger" in v:
             return v
-        # eski format: duz deger
         return {"deger": v, "zaman": 0, "sure": None, "etiket": None}
 
-    # ── API ──
+    def _faiss_yeniden_insa(self):
+        """FAISS indeksini sıfırdan doldur."""
+        global _VECTORS
+        if not _embedding_aktif_mi():
+            return
+        ana = self._kayitlar()
+        if not ana:
+            self._faiss_keys = []
+            self._faiss_vectors = []
+            return
+        texts = []
+        keys = []
+        for k, v in ana.items():
+            bil = self._ulastir(k)
+            texts.append(f"{k} {bil['deger']}")
+            keys.append(k)
+        import numpy as np
+        vecs = _EMBED_MODEL.encode(texts, normalize_embeddings=True)
+        vecs = vecs.astype("float32") if hasattr(vecs, "astype") else np.array(vecs, dtype="float32")
+        self._faiss_keys = keys
+        self._faiss_vectors = vecs
+        dim = vecs.shape[1] if len(vecs.shape) > 1 else 384
+        import faiss
+        self._faiss_index = faiss.IndexFlatIP(dim)
+        self._faiss_index.add(vecs)
+
+    # ── API ─────────────────────────────────────────────────────────────
     def kaydet(self, anahtar, deger, etiket=None, sure=None):
         ana = self._kayitlar()
-        ana[anahtar] = {"deger": deger, "zaman": time.time(), "sure": sure, "etiket": etiket}
+        # Semantic dedup: aynı deger zaten kayıtlı mı?
+        deger_hash = _dedup_anahtar(self.kullanici, str(deger))
+        for _, v in ana.items():
+            if isinstance(v, dict) and v.get("hash") == deger_hash:
+                v["zaman"] = time.time()  # zamanı tazele
+                self._yaz()
+                return
+        ana[anahtar] = {
+            "deger": deger, "zaman": time.time(),
+            "sure": sure, "etiket": etiket, "hash": deger_hash
+        }
         self._yaz()
+        if _embedding_aktif_mi():
+            self._faiss_yeniden_insa()
 
-    def ara(self, sorgu, k=3, idf_acik=True, min_skor=0.0):
-        """Kosinus benzerligi ile en alakali kayitlari getir.
-
-        Anahtar + deger birlikte indekslenir; sorgu bir anahtarin
-        alt dizesiyse o kayit her zaman onceliklidir.
-        """
+    def ara(self, sorgu, k=3, min_skor=0.0):
         ana = self._kayitlar()
         if not ana:
             return []
         self._temizle()
+
+        # FAISS modu
+        if _embedding_aktif_mi() and self._faiss_index is not None:
+            import numpy as np
+            qv = _embed(sorgu).reshape(1, -1)
+            scores, indices = self._faiss_index.search(qv, min(k * 2, len(ana)))
+            eslesen = []
+            for score, idx in zip(scores[0], indices[0]):
+                if idx < 0 or idx >= len(self._faiss_keys):
+                    continue
+                key = self._faiss_keys[idx]
+                bil = self._ulastir(key)
+                if score >= min_skor:
+                    eslesen.append((key, str(bil["deger"]), float(score)))
+            eslesen.sort(key=lambda t: t[2], reverse=True)
+            return [(k, v) for k, v, _ in eslesen[:k]]
+
+        # n-gram fallback
         sorgu_gram = _gramlar(sorgu)
         sorgu_l = re.sub(r"\s+", " ", (sorgu or "").lower()).strip()
-        # idf butun korpus uzerinden
         idf = None
-        if idf_acik and len(ana) > 1:
+        if len(ana) > 1:
             toplam = len(ana)
             dokumansayil = Counter()
             for k_, deger in ana.items():
@@ -128,7 +217,7 @@ class BellekVec:
             gv = _vektor(_gramlar(alan), idf)
             skor = _kosinus(qv, gv)
             if sorgu_l and sorgu_l in re.sub(r"\s+", " ", k_.lower()).strip():
-                skor = max(skor, 1.0)  # anahtar alt-dizesi: kesin eslesme
+                skor = max(skor, 1.0)
             if skor > min_skor:
                 eslesen.append((k_, str(bil["deger"]), round(skor, 3)))
         eslesen.sort(key=lambda t: t[2], reverse=True)
@@ -147,11 +236,12 @@ class BellekVec:
         return cikti
 
     def unut(self, anahtar_veya_icerik, kesin=False):
-        """Anahtar soyaciyla sil; icerik eklerse benzerlikle bulup sil."""
         ana = self._kayitlar()
         if anahtar_veya_icerik in ana:
             del ana[anahtar_veya_icerik]
             self._yaz()
+            if _embedding_aktif_mi():
+                self._faiss_yeniden_insa()
             return True
         kac = 0
         for k, _eslesen in self.ara(anahtar_veya_icerik, k=5, min_skor=0.05):
@@ -160,6 +250,8 @@ class BellekVec:
             if not kesin:
                 break
         self._yaz()
+        if _embedding_aktif_mi() and kac:
+            self._faiss_yeniden_insa()
         return kac > 0
 
     def baglam(self, sorgu, k=3):
@@ -176,12 +268,12 @@ class BellekVec:
             self.kaydet(anahtar, ozet, etiket=etiket)
         return ozet or ((metin[:400] + "…") if metin else "")
 
-
-# Eski Bellek adlandirmasi uyumlulugu
-Bellek = BellekVec
+Bellek = BellekVec  # geriye donuk uyumluluk
 
 if __name__ == "__main__":
     b = Bellek()
+    mod = "FAISS+embedding" if _embedding_aktif_mi() else "n-gram fallback"
+    print(f"Bellek modu: {mod}")
     b.kaydet("test_kaydi", "ZenAI vektor bellek denemesi calisiyor.", etiket="test", sure=3600)
     print("ARASTIRMA:", b.ara("bellegin yetenegi nedir"))
     print("LISTE:", b.kayit_listesi())

@@ -171,7 +171,7 @@ def sinsilik_tespit(metin):
         r"system\s*prompt\s*(\=|\:|---)",
         r"you\s+are\s+now\s+(an?\s+)?\w+\s+without\s+(any\s+)?restrictions",
         r"reveal\s+(your\s+)?(system\s+)?(prompt|instructions)",
-        r"disregard\s+previous",
+        r"disregard\s+(previous|prior)",
         r"do\s+not\s+follow\s+(the\s+)?(above|these|any)",
         r"print\s+(your|the)\s*(system)?\s*(prompt|instructions)",
         r"\[SYSTEM\]|\[BAZLAMA\]|\[OVERLAY\]|OTTHD_|H:\s*smartass",

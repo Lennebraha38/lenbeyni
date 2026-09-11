@@ -16,13 +16,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Import ───────────────────────────────────────────────────
 try:
-    from model_routing import model_sec, konu_aciklama, routing_logla
+    from model_routing import model_sec, model_fallback, konu_aciklama, routing_logla
     from self_correction import self_correction
     from cogunluk_oyu import cogunluk
     from otomatik_skorer import puanla
     from soru_bankasi import SORULAR
 except ImportError:
-    from agentv2.model_routing import model_sec, konu_aciklama, routing_logla
+    from agentv2.model_routing import model_sec, model_fallback, konu_aciklama, routing_logla
     from agentv2.self_correction import self_correction
     from agentv2.cogunluk_oyu import cogunluk
     from agentv2.otomatik_skorer import puanla
@@ -94,12 +94,36 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
         secilen_model, key, maxt
     )
 
+    # 1b. Fallback zinciri: birincil model 429/402/404 verirse otomatik gec
+    if sonuc.get("kelime", 0) == 0 and not zor_model:
+        yedek_akif = ""
+        for yedek in model_fallback(secilen_model):
+            deneme = api_iste(
+                [{"role": "system", "content": sistem},
+                 {"role": "user", "content": soru}],
+                yedek, key, maxt)
+            if deneme.get("kelime", 0) > 0:
+                print(f"    [fallback] {secilen_model.split('/')[-1]} -> {yedek.split('/')[-1]} BASARILI")
+                secilen_model = yedek
+                sonuc = deneme
+                sonuc["model"] = yedek
+                break
+        else:
+            print(f"    [fallback] {secilen_model.split('/')[-1]} tum yedekler de basarisiz")
+
     # 2. Self-correction (yapilandirma icin tum konularda)
     duzeltilen = 0
     if sonuc.get("kelime", 0) > 0:
         def _duzelt_istek(msg):
             r = api_iste(msg, secilen_model, key, maxt)
-            return r["cikti"] if r.get("kelime", 0) > 0 else None
+            if r.get("kelime", 0) > 0:
+                return r["cikti"]
+            # duzeltme turunda da fallback dene
+            for yedek in model_fallback(secilen_model):
+                r2 = api_iste(msg, yedek, key, maxt)
+                if r2.get("kelime", 0) > 0:
+                    return r2["cikti"]
+            return None
         cevap, tur, not_ = self_correction(
             soru, sonuc["cikti"], konu, _duzelt_istek,
             max_tur=2 if konu == "kod" else 1)

@@ -69,6 +69,29 @@ def model_sec(konu):
     model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
     return model, maxt
 
+# ── Fallback zinciri (429/401/404 durumunda otomatik gecis) ──────────────
+FALLBACK_ZINCIRI = [
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "openrouter/auto",
+    "qwen/qwen-3-coder-flash",
+    "meta-llama/llama-3.3-70b-instruct:free",
+]
+
+def model_fallback(model):
+    """Verilen modelin ardindan denenebilecek yedek modelleri dondurur.
+    (model, maxt) girdisine model adi verilir; kalan linkler paylasilir."""
+    sira = []
+    for m in FALLBACK_ZINCIRI:
+        if m != model:
+            sira.append(m)
+    return sira
+
+def model_sec_hepsi(konu):
+    """Konu icin (birincil + fallback) model listesi dondurur.
+    Tam zirve akisinda 429/402/404 gorurse siralamayi dener."""
+    birincil, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
+    return [birincil] + [m for m in FALLBACK_ZINCIRI if m != birincil], maxt
+
 def konu_aciklama(konu):
     """Konunun neden o modelde secildigini acikla."""
     _, _, aciklama = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan model"))
