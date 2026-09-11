@@ -1,63 +1,63 @@
-"""Model Routing — konuya gore dogru modeli sec + tokeni bol tut.
-Claude "az token + yuksek mantik" yapiyor. Bizim formulumuz:
-  yuksek mantik + rakipten cok token = ustun cozum
+"""Model Routing — konuya göre doğru modeli seç + tokeni bol tut.
+Claude "az token + yüksek mantık" yapiyor. Bizim formulumuz:
+  yüksek mantık + rakip'ten çok token = üstün çözüm
 
-Token limitlerini yuksek tut (Claude 128K'dan 2x-4x daha fazla cikti).
+Token limitlerini yüksek tut (Claude 128K'dan 2x-4x daha fazla çıktı).
+Kod modülü: free tier ağırlıklı; önceki deepseek hesabı (bakiye sona erdi) → free kod uzmanına geri dönüldü.
 """
 import os
 
-# Konu bazli model haritasi: (model_id, max_tokens, aciklama)
-# Kod: free-tier anahtarda deepseek 402 (bakiye yok) -> free kod uzmanina geri.
+# Konu bazlı model haritası: (model_id, max_tokens, açıklama)
 KONU_MODELLERI = {
     "kod": (
         "cohere/north-mini-code:free",
-        65536,  # kod uzmani + genis token (deepseek bakiye olunca 402 -> free'ye don)
-        "Kod uzmani (free): syntax + calisan kod uret"
+        65536,  # kod uzmanı + geniş token (free tier)
+        "Kod uzmanı (free): syntax + çalışan kod üret"
     ),
     "matematik": (
         "nvidia/nemotron-3-ultra-550b-a55b:free",
-        65536,  # 4x Claude seviyesi — adim adim goster, hata bul
-        "Buyuk model: mantik agirlikli, uzun CoT cikti icin"
+        65536,  # 4x Claude seviyesi — adım adım göster, hata bul
+        "Büyük model: mantık ağırlıklı, uzun CoT çıktısı için"
     ),
     "mantik": (
         "nvidia/nemotron-3-ultra-550b-a55b:free",
-        65536,  # 4x — karmasik problem cozumleri icin
-        "Buyuk model: soyut dusunce, karmasik mantik agirlikli"
+        65536,  # 4x — karmaşık problem çözümleri için
+        "Büyük model: soyut düşünce, karmaşık mantık ağırlıklı"
     ),
     "bilim": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — bilimsel aciklama icin genis metin
-        "Genis baglam: bilimsel bilgi + ornek + detay"
+        48000,  # 3x — bilimsel açıklama için geniş metin
+        "Geniş bağlam: bilimsel bilgi + örnek + detay"
     ),
     "tarih": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — tarihsel olay zinciri icin uzun anlatim
-        "Tarihsel olaylar: neden-sonuc zinciri + donem baglami"
+        48000,  # 3x — tarihsel olay zinciri için uzun anlatım
+        "Tarihsel olaylar: neden-sonuç zinciri + dönem bağlamı"
     ),
     "dil": (
         "dots-studio/dots-3-note-preview:free",
-        24000,  # 2x — dil bilgisi aciklama + ornek
-        "Turkce dilbilgisi: kural + ornek + karsi ornek"
+        24000,  # 2x — dil bilgisi açıklama + örnek
+        "Türkçe dilbilgisi: kural + örnek + karşı örnek"
     ),
     "yaratici": (
         "dots-studio/dots-3-note-preview:free",
-        40000,  # 2.5x — uzun hikaye/masal icin
-        "Yaratici yazi: uzun anlatim + detay + atmosfer"
+        40000,  # 2.5x — uzun hikaye/masal için
+        "Yaratıcı yazı: uzun anlatım + detay + atmosfer"
     ),
     "kultur": (
         "dots-studio/dots-3-note-preview:free",
-        24000,  # 2x — bilgi + ornek + baglami
-        "Genel kultur: detayli bilgi + guncel ornekler"
+        24000,  # 2x — bilgi + örnek + bağlamsal
+        "Genel kültür: detaylı bilgi + güncel örnekler"
     ),
     "pratik": (
         "dots-studio/dots-3-note-preview:free",
         16000,  # 1.5x — pratik ama yeterli
-        "Pratik bilgi: uygulanabilir, kisa ama tam"
+        "Pratik bilgi: uygulanabilir, kısa ama tam"
     ),
     "teknoloji": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — teknik derinlik icin
-        "Teknoloji: derin analitik, teknik terim + ornek"
+        48000,  # 3x — teknik derinlik için
+        "Teknoloji: derin analitik, teknik terim + örnek"
     ),
 }
 
@@ -65,11 +65,11 @@ DEFAULT_MODEL = "dots-studio/dots-3-note-preview:free"
 DEFAULT_MAX = 32768
 
 def model_sec(konu):
-    """Konuya gore model ve max_tokens dondur."""
-    model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
+    """Konuya göre model ve max_tokens döndür."""
+    model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayılan"))
     return model, maxt
 
-# ── Fallback zinciri (429/401/404 durumunda otomatik gecis) ──────────────
+# ── Fallback zinciri (429/401/404 durumunda otomatik geçiş) ──────────────
 FALLBACK_ZINCIRI = [
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "openrouter/auto",
@@ -78,8 +78,8 @@ FALLBACK_ZINCIRI = [
 ]
 
 def model_fallback(model):
-    """Verilen modelin ardindan denenebilecek yedek modelleri dondurur.
-    (model, maxt) girdisine model adi verilir; kalan linkler paylasilir."""
+    """Verilen modelin ardındaki denenebilir yedek modelleri döndürür.
+    (model, maxt) girdisine model adı verilir; kalan linkler paylaşılır."""
     sira = []
     for m in FALLBACK_ZINCIRI:
         if m != model:
@@ -87,19 +87,19 @@ def model_fallback(model):
     return sira
 
 def model_sec_hepsi(konu):
-    """Konu icin (birincil + fallback) model listesi dondurur.
-    Tam zirve akisinda 429/402/404 gorurse siralamayi dener."""
-    birincil, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
+    """Konu için (birincil + fallback) model listesi döndürür.
+    Tam zirve akışında 429/402/404 görürse sıralamayı deneler."""
+    birincil, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayılan"))
     return [birincil] + [m for m in FALLBACK_ZINCIRI if m != birincil], maxt
 
 def konu_aciklama(konu):
-    """Konunun neden o modelde secildigini acikla."""
-    _, _, aciklama = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan model"))
+    """Konunun neden o modelde seçildiğini açıkla."""
+    _, _, aciklama = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayılan model"))
     return aciklama
 
-# ── Veri odakli routing: her gercek sonucu logla ──
+# ── Veri odaklı routing: her gerçek sonucu logla ──
 def routing_logla(konu, soru, model, skor, sure=None, kelime=None):
-    """Test sonucunu kayide isler; routing kurallari veriyle guncellenebilir."""
+    """Test sonucunu kayıta işler; routing kuralları veriyle güncellenebilir."""
     import os, time, json
     dizin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit")
     os.makedirs(dizin, exist_ok=True)
@@ -117,10 +117,11 @@ def routing_logla(konu, soru, model, skor, sure=None, kelime=None):
     return satir
 
 def routing_rapor():
-    """Loglardan hangi model hangi konuda kazaniyor ozetler."""
+    """Loglardan hangi model hangi konuda kazanıyor özetler."""
     import os, glob, json
     sayilar = {}
-    dosyalar = glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit", "routing_log.jsonl")) or glob.glob("kayit/routing_log.jsonl")
+    dizin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit")
+    dosyalar = glob.glob(os.path.join(dizin, "routing_log.jsonl")) or glob.glob("kayit/routing_log.jsonl")
     for dosya in dosyalar:
         try:
             with open(dosya) as f:
@@ -143,7 +144,7 @@ def routing_rapor():
     return rapor
 
 def model_profil(konu):
-    """Loglara gore konu icin en iyi modeli oner (veri varsa)."""
+    """Loglara göre konu için en iyi modeli öner (veri varsa)."""
     rapor = routing_rapor().get(konu or "")
     if rapor and rapor[0]["adet"] >= 3:
         return rapor[0]["model"]
