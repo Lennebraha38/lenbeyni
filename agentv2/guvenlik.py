@@ -41,17 +41,28 @@ TEHLIKELI_IMPORTLAR = {
     "fcntl", "signal", "mmap", "shutil", "pickle", "shelve", "marshal", "copy",
     "sqlite3", "importlib", "ctypes", "cffi", "base64", "hmac", "hashlib",
     "bcrypt", "sys", "atexit", "builtins",
+    # AG: sandbox SSRF bypass onlemi (socket yeterli degil, HTTP kutuphaneleri de blokla)
+    "requests", "urllib", "urllib2", "urllib3", "httpx", "aiohttp",
+    "http", "http.client", "httplib",
 }
 # sys/builtins: üst düzey erişim için işlemi bloklamak istiyoruz; not: json, re vb. serbest
 TEHLIKELI_CAGRILAR = {
     "system", "popen", "exec", "eval", "compile", "__import__", "input",
     "execfile", "globals", "locals", "vars", "open",
+    "getattr", "setattr", "delattr",  # MWE bypass zincirleri icin
 }
 
 def ip_ozel_mi(host):
     """Host IP'si ozel/ic-alan (local, tutucu, CGNAT, multicast) ise True."""
     if not host:
         return True
+    # Decimal IP normalizasyonu: 2130706433 -> 127.0.0.1
+    try:
+        n = int(host)
+        if 0 <= n <= 0xFFFFFFFF:
+            host = f"{(n >> 24) & 0xFF}.{(n >> 16) & 0xFF}.{(n >> 8) & 0xFF}.{n & 0xFF}"
+    except (ValueError, OverflowError):
+        pass
     try:
         info = socket.getaddrinfo(host, None, socket.AF_INET)
     except Exception:
@@ -73,30 +84,56 @@ def ip_ozel_mi(host):
 
 def url_guvenli(url):
     """SSRF onleme: sadece http/https, ozel/girilen alan ip'leri bloklanir."""
+    guvenli, _ = url_guvenli_ip(url)
+    return guvenli
+
+def url_guvenli_ip(url):
+    """SSRF onleme + DNS rebinding korumasi: (guvenli, cozulen_ip) dondurur.
+    Cozulen IP kullanilmalidir; ayni host farkli IP'ye dondurebilir (rebinding).
+    Donus: (True, ip_str) veya (False, None)
+    """
     from urllib.parse import urlparse
+    import ipaddress as _ip
     if not url or len(url) > 2048:
-        return False
+        return False, None
     if "\x00" in url or " " in url:
-        return False
+        return False, None
     p = urlparse(url if "://" in url else "https://" + url)
     if p.scheme not in ("http", "https"):
-        return False
+        return False, None
     if p.username or p.password:
-        return False
+        return False, None
     if p.port and p.port not in (80, 443):
-        return False
+        return False, None
     host = p.hostname or ""
-    # Protoxolo-relative / kisisellestirilmis
-    if host in ("", "localhost", "127.0.0.1", "::1"):
-        return False
-    # Yildiz/rakam karmasina izin deme; IPv6 ve sayisal kontrol
+    # Decimal IP normalizasyonu
     try:
-        ipaddress.ip_address(host)  # dogrudan IP ise birak
-    except ValueError:
-        pass  # domain -> cozumlemede kontrol
-    if ip_ozel_mi(host):
-        return False
-    return True
+        n = int(host)
+        if 0 <= n <= 0xFFFFFFFF:
+            host = f"{(n >> 24) & 0xFF}.{(n >> 16) & 0xFF}.{(n >> 8) & 0xFF}.{n & 0xFF}"
+    except (ValueError, OverflowError):
+        pass
+    if host in ("", "localhost", "127.0.0.1", "::1"):
+        return False, None
+    # DNS cozumu ve IP kontrolu (rebinding korumasi: cozulen IP'yi kaydet)
+    try:
+        bilgi = socket.getaddrinfo(host, None, socket.AF_INET)
+    except Exception:
+        try:
+            bilgi = socket.getaddrinfo(host, None, socket.AF_INET6)
+        except Exception:
+            return False, None
+    cozulen_ip = bilgi[0][4][0] if bilgi else None
+    for adres in bilgi:
+        ip = adres[4][0]
+        a = _ip.ip_address(ip)
+        if (a.is_private or a.is_loopback or a.is_link_local or a.is_multicast
+                or a.is_reserved or a.is_unspecified):
+            return False, None
+        if a.version == 4 and _ip.ip_network("100.64.0.0/10").supernet_of(
+                _ip.ip_network(f"{ip}/32")):
+            return False, None
+    return True, cozulen_ip
 
 def yorl_guvenli(yol, kokler=None):
     """Dosya okuma/calistirmani izin verilen koklere sabitler (path traversal onleme)."""
@@ -121,13 +158,27 @@ def komut_tehlikeli(emir):
     """Bash/komut metni tehlikeli kalipla eslesiyor mu?"""
     if not emir or len(emir) > 5000:
         return True
-    if TEHLIKELI_KOMUT_REGEX.search(emir):
+    # Shell hilelerini normallestir: ${IFS}, $IFS, degisken parcalamasi
+    temiz = re.sub(r"\$\{IFS\}", " ", emir, flags=re.I)
+    temiz = re.sub(r"\$\{?\w+\}?", " ", temiz, flags=re.I)  # $VAR, ${VAR}
+    temiz = re.sub(r";\s*\w+\s*=", "", temiz)  # a=rm;b=-rf tarzi atamalari sil
+    temiz = re.sub(r"&&", ";", temiz)
+    temiz = re.sub(r"\|\|", ";", temiz)
+    temiz = re.sub(r"\|", ";", temiz)
+    temiz = re.sub(r"\s+", " ", temiz).strip()
+    if TEHLIKELI_KOMUT_REGEX.search(temiz):
+        return True
+    # Atamali gizleme: `a=rm;b=-rf;$a $b /` gibi - atama varsa ve tehlikeli
+    # token bir yerde gecindiyse blokla (normalizasyon atamaları sildigi icin
+    # ham emirde ara)
+    OKEKE = r"\b(rm|mv|cp|dd|mkfs|sudo|chmod|chown|shutdown|reboot|halt|poweroff|wget|curl|nc|ncat|ssh|scp|ftp|telnet|kill|mount|umount|fdisk|mknod|passwd)\b"
+    if "=" in re.sub(r"(echo|let|test).*", "", emir) and re.search(OKEKE, emir, re.I):
         return True
     # ic ag hedefleyen ag araclari (SSRF benzeri)
-    if re.search(r"\b(curl|wget|nc|ncat|telnet|ssh|ftp)\b.*(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|localhost)", emir, re.I):
+    if re.search(r"\b(curl|wget|nc|ncat|telnet|ssh|ftp)\b.*(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|localhost)", temiz, re.I):
         return True
     # kritik dosya/kok erisimleri
-    if re.search(r"(^|[\s;&|])(rm|mv|cp|chmod|chown|ln|touch)\s+\S*(/|\.\.)", emir):
+    if re.search(r"(^|[\s;&|])(rm|mv|cp|chmod|chown|ln|touch)\s+\S*(/|\.\.)", temiz):
         return True
     return False
 
@@ -140,6 +191,13 @@ def python_tehlikeli(kod):
         agac = ast.parse(kod)
     except SyntaxError:
         return False  # syntax hatasi zaten sandbox'ta yakalanir; guvenlik icin sorun degil
+    # MWE bypass kalibi: __class__.__bases__[0].__subclasses__() gibi
+    # zincirleri tespit et
+    TEHLIKELI_DUNDERLER = {
+        "__class__", "__bases__", "__mro__", "__subclasses__",
+        "__globals__", "__builtins__", "__code__", "__import__",
+        "__getattribute__", "__setattr__", "__delattr__",
+    }
     for dugum in ast.walk(agac):
         # from X import ... : hassas moduller
         if isinstance(dugum, ast.ImportFrom):
@@ -151,6 +209,9 @@ def python_tehlikeli(kod):
         # os.system, os.popen, subprocess.* vb.
         if isinstance(dugum, ast.Attribute):
             nitel = dugum.attr
+            # MWE bypass zinciri (__class__, __bases__ vb.)
+            if nitel in TEHLIKELI_DUNDERLER:
+                return True
             if nitel in ("system", "popen", "spawn", "fork", "exec", "pipe", "Popen", "run", "call", "check_call", "check_output"):
                 return True
         # Cagri seviyesi: eval( / exec( / __import__(

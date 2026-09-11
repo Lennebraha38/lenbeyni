@@ -1,9 +1,9 @@
 # P1 Guvenlik testleri — gercek saldiri senaryolari
-import pytest, sys, os
+import pytest, sys, os, ipaddress as _ipaddr
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from agentv2.guvenlik import (
-    ip_ozel_mi, url_guvenli, yorl_guvenli,
+    ip_ozel_mi, url_guvenli, url_guvenli_ip, yorl_guvenli,
     komut_tehlikeli, python_tehlikeli, sinsilik_tespit,
 )
 
@@ -56,6 +56,71 @@ from agentv2.guvenlik import (
 def test_url_guvenli(url, expect):
     """SSRF: tehlikeli URL'ler False, guvenli URL'ler True donmeli."""
     assert url_guvenli(url) is expect, f"url_guvenli({url!r}) → {url_guvenli(url)}, beklenen {expect}"
+
+
+# ────────────────────────────────────────────────────────────
+#  Decimal-encoded IP — ip_ozel_mi / url_guvenli
+# ────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "host, expect",
+    [
+        # Decimal-encoded loopback / ozel IP'ler yakalanmali
+        ("2130706433", True),   # 127.0.0.1
+        ("0", True),            # 0.0.0.0
+        ("3232235521", True),   # 192.168.1.1
+        ("167772161", True),    # 10.0.0.1
+        # Decimal-encoded public IP guvenli
+        ("134744072", False),   # 8.8.8.8
+    ],
+    ids=[
+        "decimal_loopback", "decimal_unspecified",
+        "decimal_private_192", "decimal_private_10",
+        "decimal_public_8_8",
+    ],
+)
+def test_ip_ozel_mi_decimal(host, expect):
+    """Decimal tamsayi IP formatlari dogru siniflandirilmali."""
+    assert ip_ozel_mi(host) is expect, f"ip_ozel_mi({host!r}) → {ip_ozel_mi(host)}, beklenen {expect}"
+
+
+@pytest.mark.parametrize(
+    "url, expect",
+    [
+        ("http://2130706433/", False),   # decimal 127.0.0.1
+        ("http://167772161/", False),    # decimal 10.0.0.1
+    ],
+    ids=["decimal_loopback_url", "decimal_private_url"],
+)
+def test_url_guvenli_decimal_ip(url, expect):
+    """Decimal-encoded IP URL'leri url_guvenli'de de bloklanmali."""
+    assert url_guvenli(url) is expect, f"url_guvenli({url!r}) → {url_guvenli(url)}, beklenen {expect}"
+
+
+# ────────────────────────────────────────────────────────────
+#  url_guvenli_ip — (bool, ip_or_None) dondusu
+# ────────────────────────────────────────────────────────────
+def test_url_guvenli_ip_public_domain():
+    """Guvenli domain: (True, cozulen_ipv4) dondurur."""
+    guvenli, ip = url_guvenli_ip("https://example.com")
+    assert guvenli is True
+    assert ip is not None
+    assert _ipaddr.ip_address(ip).version == 4
+
+def test_url_guvenli_ip_loopback():
+    assert url_guvenli_ip("http://127.0.0.1") == (False, None)
+
+def test_url_guvenli_ip_ftp_scheme():
+    assert url_guvenli_ip("ftp://x") == (False, None)
+
+
+# ────────────────────────────────────────────────────────────
+#  Geri uyumluluk — url_guvenli tek bool dondurur (tuple degil)
+# ────────────────────────────────────────────────────────────
+def test_url_guvenli_backward_compat_plain_bool():
+    """url_guvenli hala duz bool dondurmeli, tuple degil."""
+    sonuc = url_guvenli("https://example.com")
+    assert sonuc is True
+    assert isinstance(sonuc, bool)
 
 
 # ────────────────────────────────────────────────────────────
@@ -165,6 +230,36 @@ def test_komut_tehlikeli(cmd, expect):
 
 
 # ────────────────────────────────────────────────────────────
+#  Shell IFS / degisken parcalama bypass — komut_tehlikeli
+# ────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "cmd, expect",
+    [
+        # ${IFS} ile bosluk atlama
+        ("rm${IFS}-rf${IFS}/", True),
+        # Degisken parcalama ile gizleme
+        ("a=rm;b=-rf;$a $b /", True),
+        # curl + IFS ile SSRF hedefi
+        ("curl${IFS}169.254.169.254", True),
+        # sudo + IFS
+        ("sudo${IFS}rm${IFS}file", True),
+        # Guvenli: normal degisken atamasi
+        ("x=2; echo $x", False),
+        # Guvenli: normal ls
+        ("ls -la /tmp", False),
+    ],
+    ids=[
+        "rm_ifs_rf", "variable_splitting_rm",
+        "curl_ifs_ssrf", "sudo_ifs_rm",
+        "safe_var_echo", "safe_ls_tmp",
+    ],
+)
+def test_komut_tehlikeli_shell_hileleri(cmd, expect):
+    """IFS / degisken parcalama gibi shell gizleme hileleri True donmeli."""
+    assert komut_tehlikeli(cmd) is expect, f"komut_tehlikeli({cmd!r}) → {komut_tehlikeli(cmd)}, beklenen {expect}"
+
+
+# ────────────────────────────────────────────────────────────
 #  Python AST — python_tehlikeli
 # ────────────────────────────────────────────────────────────
 @pytest.mark.parametrize(
@@ -214,6 +309,70 @@ def test_komut_tehlikeli(cmd, expect):
 )
 def test_python_tehlikeli(code, expect):
     """Python kodunda tehlikeli import/cagri True, guvenli False donmeli."""
+    assert python_tehlikeli(code) is expect, f"python_tehlikeli({code!r}) → {python_tehlikeli(code)}, beklenen {expect}"
+
+
+# ────────────────────────────────────────────────────────────
+#  Network import block (SSRF bypass: HTTP kutuphaneleri) — python_tehlikeli
+# ────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "code, expect",
+    [
+        # HTTP istemcileri — SSRF bypass icin bloklanmali
+        ("import requests", True),
+        ("from requests import get", True),
+        ("import urllib", True),
+        ("from urllib.request import urlopen", True),
+        ("import urllib3", True),
+        ("import httpx", True),
+        ("import aiohttp", True),
+        ("import http", True),
+        ("from http.client import HTTPConnection", True),
+        # Guvenli: standart veri kutuphaneleri serbest
+        ("import json", False),
+        ("import re", False),
+        ("import random", False),
+        ("import math", False),
+        # Guvenli: basit legacy kod
+        ('print("merhaba")', False),
+    ],
+    ids=[
+        "import_requests", "from_requests_get",
+        "import_urllib", "from_urllib_urlopen",
+        "import_urllib3", "import_httpx", "import_aiohttp",
+        "import_http", "from_http_client",
+        "safe_import_json", "safe_import_re",
+        "safe_import_random", "safe_import_math",
+        "safe_legacy_print",
+    ],
+)
+def test_python_tehlikeli_network_import_block(code, expect):
+    """HTTP/network kutuphaneleri bloklanmali, veri kutuphaneleri serbest olmali."""
+    assert python_tehlikeli(code) is expect, f"python_tehlikeli({code!r}) → {python_tehlikeli(code)}, beklenen {expect}"
+
+
+# ────────────────────────────────────────────────────────────
+#  MWE Python escape zinciri — python_tehlikeli
+# ────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "code, expect",
+    [
+        # MWE bypass zincirleri
+        ("().__class__.__bases__[0].__subclasses__()", True),
+        ('"".__class__.__mro__', True),
+        ("getattr(__builtins__, 'eval')", True),
+        ('setattr(obj, "attr", x)', True),
+        # Guvenli normal kod hala False
+        ("def f(x): return x + 1", False),
+    ],
+    ids=[
+        "mwe_subclasses_chain", "mwe_mro_chain",
+        "getattr_builtins_eval", "setattr_call",
+        "safe_normal_function",
+    ],
+)
+def test_python_tehlikeli_mwe_escape(code, expect):
+    """MWE bypass zincirleri (__class__, __mro__, getattr/setattr) bloklanmali."""
     assert python_tehlikeli(code) is expect, f"python_tehlikeli({code!r}) → {python_tehlikeli(code)}, beklenen {expect}"
 
 
