@@ -55,10 +55,10 @@ SORULAR = [
     ("dil", "Türkçede 'büyük ünlü uyumu' kuralını 10 kelimelik bir liste üzerinde göster.", "kolay"),
     ("dil", "Bir haber metni ile köşe yazısı arasındaki dil farkını 3 örnekle açıkla.", "orta"),
     # ── mantik ──
-    ("mantik", "Bir copcu gunde 3 sokak temizliyor, her sokak 40 dakika suruyor. 5 copcu 2 sokak temizlerse ne kadar surer?", "orta"),
+    ("mantik", "5 copcu gunde 20 sokak temizliyor. 3 copcu 12 sokak temizlemek icin kac gun calisir?", "orta"),
     ("mantik", "Bir dunyada tum kuzgunlar siyahtir. Beyaz bir kuzgun bulursak bu onermeyi nasil degisir?", "orta"),
     ("mantik", "Sudoku bulmaca cozumune nasil yaklasilir? Adim adim anlat.", "orta"),
-    ("mantik", "Klasik bilmece: Hangi soruyu herkes farkli cevaplar?", "kolay"),
+    ("mantik", "Bir sayinin 3 kati ile 2 kati arasindaki fark 10. Sayi kac?", "kolay"),
     ("mantik", "Eger bugun carsamba ise yarin gunlerden ne?", "kolay"),
     ("mantik", "3 musluk, 10 dakikada 90 litre dolduruyor. 6 musluk aynı debide 30 dakikada kaç litre doldurur?", "kolay"),
     ("mantik", "Bir otelde 100 oda var, hepsi kapalı. 1. turda tüm kapılar açılır, 2. turda her 2. kapı kapatılır, 3. turda her 3. kapı açılırsa kapatılır... 100. turda hangi kapılar açık kalır?", "zor"),
@@ -210,6 +210,10 @@ HEDEFLER = {
         {"tur": "metin", "sonuc": ["satır", "sutun", "kare", "ızgara"]},
     "Eger bugun carsamba ise yarin gunlerden ne?":
         {"tur": "metin", "sonuc": ["perşembe", "persembe"]},
+    "5 copcu gunde 20 sokak temizliyor. 3 copcu 12 sokak temizlemek icin kac gun calisir?":
+        {"tur": "sayi", "sonuc": ["1"]},
+    "Bir sayinin 3 kati ile 2 kati arasindaki fark 10. Sayi kac?":
+        {"tur": "sayi", "sonuc": ["10"]},
     # ── dil ── (kavram bonusu)
     "'Ki' baglacinin yazim kurallarini orneklerle anlat.":
         {"tur": "metin", "sonuc": ["ayrı yazılır", "bitişik"]},
@@ -221,4 +225,232 @@ HEDEFLER = {
         {"tur": "metin", "sonuc": ["virgül"]},
     "Noktalama: 'gelmedi dedi' ile 'gelmedi, dedi' arasındaki farkı açıkla.":
         {"tur": "metin", "sonuc": ["tırnak", "virgül", "aktarı"]},
+    # ── bilim ──
+    "Fotoelektrik etki nedir ve Einstein bunu nasil acikladi?":
+        {"tur": "metin", "sonuc": ["foton", "enerji", "esik", "eşik"]},
+    "DNA'nin yapisini kisa ve anlasilir sekilde anlat.":
+        {"tur": "metin", "sonuc": ["çift sarmal", "nukleotit", "baz", "amino"]},
+    "Yapay zeka ile makine ogrenmesi arasindaki fark nedir?":
+        {"tur": "metin", "sonuc": ["yapay zeka", "makine öğrenmesi", "algoritma"]},
+    "Iki fotonun birbirleriyle dolanik olmasi ne demek?":
+        {"tur": "metin", "sonuc": ["dolayik", "kuantum", "durum", "ölçüm"]},
+    "Kuantum bilgisayari nerede klasik bilgisayardan ustun olur?":
+        {"tur": "metin", "sonuc": ["kuantum", "bit", "faktoring", "şifre"]},
+    "Fotosentezde klorofilin rolünü kısaca açıkla.":
+        {"tur": "metin", "sonuc": ["ışık", "enerji", "clorofil", "yeşil"]},
+    "Newton'un üçüncü yasasını roket veya rekolt örneğiyle anlat.":
+        {"tur": "metin", "sonuc": ["eşit", "zıt", "kuvvet", "tepki"]},
+    "Ozmoz nedir? İki yarı geçirgen örnekle açıkla.":
+        {"tur": "metin", "sonuc": ["ozmoz", "geçirgen", "su", "basınç"]},
+    "CRISPR-Cas9 gen düzenlemesi nasıl çalışır? Adımlarıyla anlat.":
+        {"tur": "metin", "sonuc": ["crispr", "cas9", "dna", "kesme"]},
+    "Görünür ışık spektrumunda en yüksek frekans hangi renktir? Gerekçelendir.":
+        {"tur": "metin", "sonuc": ["mor", "frekans", "enerji"]},
+    "Termodinamiğin ikinci yasasını bir kupa kahve örneğiyle açıkla.":
+        {"tur": "metin", "sonuc": ["entropi", "ısı", "dağılma"]},
+    "Evrenin genişlemesi kanıtlarından ikisini yaz (kırmızıya kayma, kozmik mikrodalga).":
+        {"tur": "metin", "sonuc": ["kızılötesi", "kayma", "kozmik", "mikrodalga"]},
+    "Asit ve baz arasındaki pH ölçeğinde limon ve sabun nerede durur?":
+        {"tur": "metin", "sonuc": ["asit", "baz", "ph", "7"]},
+    "Yerçekimi dalgaları nereden gelir ve nasıl tespit edilir?":
+        {"tur": "metin", "sonuc": ["yerçekimi", "dalga", "ligo", "uzay"]},
+    "Plakalar tekraiği: depremlerin levha hareketiyle ilişkisi.":
+        {"tur": "metin", "sonuc": ["plaka", "hareket", "deprem", "levha"]},
+    # ── tarih ──
+    "Osmanli Devleti'nin kurulusu hangi donemde gerceklesti ve kim kurdu?":
+        {"tur": "metin", "sonuc": ["osman", "1299", "beylik"]},
+    "Ronesans neden Italya'da basladi?":
+        {"tur": "metin", "sonuc": ["italya", "florans", "sanat", "kültür"]},
+    "Birinci Dunya Savasi'nin ana nedenlerini madde madde yaz.":
+        {"tur": "metin", "sonuc": ["milliyetçilik", " İttifak", "cdn", "suikast"]},
+    "Cumhuriyet ne zaman ilan edildi ve neyi sembolize eder?":
+        {"tur": "metin", "sonuc": ["29 ekim", "1923", "cumhuriyet"]},
+    "Tarihte 'Guclu Devlet' kavrami hangi donemde ortaya cikti?":
+        {"tur": "metin", "sonuc": ["merkezi", "otorite", "devlet"]},
+    "İpek Yolu'nun tarihsel önemini 3 sonuçla özetle.":
+        {"tur": "metin", "sonuc": ["ticaret", "kültür", "İpek", "bağlantı"]},
+    "Sanayi Devrimi'nin toplumsal etkilerinden üçünü yaz.":
+        {"tur": "metin", "sonuc": ["fabrika", "işçi", "kentleşme"]},
+    "Magna Carta'nın 1215'teki anlamı bugünkü hukuk sisteme nasıl yansıdı?":
+        {"tur": "metin", "sonuc": ["magna cart", "hukuk", "özgürlük"]},
+    "Sami Fransız Devrimi'nin üç ana sloganını ve nedenlerini açıkla.":
+        {"tur": "metin", "sonuc": ["özgürlük", "eşitlik", "kardeşlik"]},
+    "Soğuk Savaş döneminde Berlin Duvarı'nın işlevi neydi?":
+        {"tur": "metin", "sonuc": ["duvar", "bölünme", "soğuk savaş"]},
+    "Roma İmparatorluğu'nun çöküş nedenlerinden ikisini derinlemesine analiz et.":
+        {"tur": "metin", "sonuc": ["göç", "ekonomi", "ordu"]},
+    "Türk Dil Devrimi'nin amaçlarını ve etkilerini özetle.":
+        {"tur": "metin", "sonuc": ["dil", "devrim", "harf", "türkçe"]},
+    "Haçlı Seferleri'nin ekonomi ve kültür üzerindeki iki etkisini yaz.":
+        {"tur": "metin", "sonuc": ["ticare", "kültür", "değişim"]},
+    "İnka veya Aztek uygarlıklarından birinin tarım yöntemlerini anlat.":
+        {"tur": "metin", "sonuc": ["tarım", "teras", "mısır"]},
+    "1950 Sonrası Avrupa Birliği'nin doğuş sürecini adım adım özetle.":
+        {"tur": "metin", "sonuc": ["ab", "birlik", "miş", "ansa"]},
+    # ── yaratici ──
+    "Maviden baslayip kizila donen bir sehir manzarasi hikayesi yaz.":
+        {"tur": "metin", "sonuc": ["manzara", "şehir", "renk"]},
+    "Bir masal kahramani icin benzersiz bir guc tasarla ve acikla.":
+        {"tur": "metin", "sonuc": ["kahraman", "güç", "masal"]},
+    "Iki kelime: 'feridun', 'telefon'. Ikisini birlestiren komik kisa hikaye yaz.":
+        {"tur": "metin", "sonuc": ["feridun", "telefon", "hikaye"]},
+    "Bir logo icin 3 fikir oner: kahve dukkani.":
+        {"tur": "metin", "sonuc": ["logo", "kahve", "fikir"]},
+    "5 maddelik 'dogayla uyumlu yasam' manifestosu yaz.":
+        {"tur": "metin", "sonuc": ["doğa", "yaşam", "sürdürülebilir"]},
+    "Bir deniz fenerinin gözünden 24 saatlik bir günü 5 cümleyle anlat.":
+        {"tur": "metin", "sonuc": ["fener", "gündüz", "gece", "deniz"]},
+    "Bir zaman makinesiyle 2090'a giden bir öğrencinin günlüğünden 3 kayıt yaz.":
+        {"tur": "metin", "sonuc": ["zaman", "2090", "günlük"]},
+    "'Sessizlik' temasını somut bir nesne (ör. boş tabak) üzerinden şiirsel anlat.":
+        {"tur": "metin", "sonuc": ["sessizlik", "şiir", "nesne"]},
+    "Bir süper kahramanın zayıf noktasını beklenmedik bir şey yap (ör. merdiven korkusu) ve hikaye kur.":
+        {"tur": "metin", "sonuc": ["süper", "kahraman", "zayıf", "hikaye"]},
+    "Bir ürün için beş duyuya birden hitap eden reklam metni yaz: yeni bir kahve.":
+        {"tur": "metin", "sonuc": ["kahve", "reklam", "duyu"]},
+    "Bir bilim kurgu hikayesine açılış paragrafı yaz: 'Kapı açıldığında...'":
+        {"tur": "metin", "sonuc": ["bilim kurgu", "açılış", "kapı"]},
+    "Bir şehrin kıştan ilkbahara geçişini metaforlarla anlat.":
+        {"tur": "metin", "sonuc": ["kış", "ilkbahar", "metafor", "şehir"]},
+    "İki rakip şirketin yapay zekası insanlaştırılırsa neler konuşur? Diyalog yaz.":
+        {"tur": "metin", "sonuc": ["yapay zeka", "diyalog", "şirket"]},
+    "Bir çocuk için 4 maddelik 'büyümenin kuralları' listesi yaz.":
+        {"tur": "metin", "sonuc": ["büyüme", "çocuk", "kural"]},
+    "Kayıp bir notanın peşindeki bir müzisyenin mini öyküsünü yaz.":
+        {"tur": "metin", "sonuc": ["müzik", "nota", "öykü"]},
+    # ── kultur ──
+    "Turk kahvesi nasil yapilir? Adim adim anlat.":
+        {"tur": "metin", "sonuc": ["kahve", "su", "şeker", "pişirme"]},
+    "Maskot kavrami nedir ve neden markalar icin onemlidir?":
+        {"tur": "metin", "sonuc": ["maskot", "marka", "tanınma"]},
+    "Bayrak yarisi nedir? Acikla.":
+        {"tur": "metin", "sonuc": ["bayrak", "yarış", "koşu"]},
+    "Bir turist icin Istanbul'da 3 gunluk gezi plani oner.":
+        {"tur": "metin", "sonuc": ["istanbul", "gezi", "müze"]},
+    "Dunyanin en kalabalik 5 sehrini isimlendir.":
+        {"tur": "metin", "sonuc": ["tokyo", "delhi", "şehir"]},
+    "Nevruz'un kültürel anlamını ve coğrafyasını açıkla.":
+        {"tur": "metin", "sonuc": ["nevruz", "bahar", "iran", "turk"]},
+    "Bir ülkenin milli mutfağında üç vazgeçilmez sosta ne bulunur? Örnek ver.":
+        {"tur": "metin", "sonuc": ["mutfak", "ulusal", "lezzet"]},
+    "Cami, kilise ve sinagog mimarisinde ortak sembolik öğe nedir?":
+        {"tur": "metin", "sonuc": ["kubbe", "mabet", "ibadet"]},
+    "'Mevlevi dönüşü' (sema) ritüelini saygılı ve bilimsel bir dille anlat.":
+        {"tur": "metin", "sonuc": ["sema", "dönüş", "mevlevi", "derviş"]},
+    "Atasözü ve deyim farkını iki çift örnekle açıkla.":
+        {"tur": "metin", "sonuc": ["atasözü", "deyim", "anlam", "fark"]},
+    "Bir UNESCO Dünya Mirası'nı ve korunma nedenini seçip anlat.":
+        {"tur": "metin", "sonuc": ["unesco", "miras", "koruma"]},
+    "Ramazan davulu geleneği nereden gelir ve günümüzde nasıl yaşar?":
+        {"tur": "metin", "sonuc": ["ramazan", "davul", "gelenek"]},
+    "Bir halk oyununun (ör. horon, zeybek) ritim ve figür özelliğini açıkla.":
+        {"tur": "metin", "sonuc": ["halk", "oyun", "ritim", "figür"]},
+    "Çayın bir ülke kültüründeki yerini örneklerle (Japon seremonisi gibi) karşılaştır.":
+        {"tur": "metin", "sonuc": ["çay", "seremoni", "kültür"]},
+    "Karikatürün siyasi tarihteki bir rolünü örnek olayla anlat.":
+        {"tur": "metin", "sonuc": ["karikatür", "siyasi", "eleştiri"]},
+    # ── pratik ──
+    "Araba lastigi ne zaman degistirilmeli? Abartma, kisa anlat.":
+        {"tur": "metin", "sonuc": ["lastik", "kış", "mevsim", "aşınma"]},
+    "Bir dakikada uykuya dalmak icin teknikler oner.":
+        {"tur": "metin", "sonuc": ["nefes", "rahatlama", "uyku"]},
+    "Yemekte limon suyu yerine ne kullanabilirim?":
+        {"tur": "metin", "sonuc": ["limon", "ekşi", "sirk", "yerine"]},
+    "Sunger sifirlamak icin en hizli yontem nedir?":
+        {"tur": "metin", "sonuc": ["sünger", "sıfırlama", "temiz"]},
+    "Iyi bir sabah rutini icin 3 madde oner.":
+        {"tur": "metin", "sonuc": ["sabah", "rutin", "sağlık"]},
+    "Bir odayı küçük bütçeyle ferahlatmanın 4 yolu.":
+        {"tur": "metin", "sonuc": ["oda", "bütçe", "dekorasyon"]},
+    "Seyahat ederken valiz hazırlamanın 5 kuralı.":
+        {"tur": "metin", "sonuc": ["valiz", "seyahat", "hazırlık"]},
+    "Islak telefonu kurtarma adımlarını yaz.":
+        {"tur": "metin", "sonuc": ["telefon", "ıslak", "kurutma"]},
+    "Ev ofiste dikkat dağınıklığını azaltacak 3 teknik.":
+        {"tur": "metin", "sonuc": ["odak", "dikkat", "teknik"]},
+    "Sebzeleri buzdolabında taze tutmanın püf noktaları.":
+        {"tur": "metin", "sonuc": ["sebze", "buzdolabı", "taze"]},
+    "Bir toplantıyı 15 dakikada etkili yönetme planı yaz.":
+        {"tur": "metin", "sonuc": ["toplantı", "yönetim", "plan"]},
+    "Kıyafetteki çay lekesini evde çıkarma yöntemleri.":
+        {"tur": "metin", "sonuc": ["leke", "çay", "temizleme"]},
+    "Yeni başlayan için adım adım koşu programı (4 hafta).":
+        {"tur": "metin", "sonuc": ["koşu", "program", "hafta"]},
+    "Bütçe tutmanın en sade 3 yöntemi (kalem-kağıt dahil).":
+        {"tur": "metin", "sonuc": ["bütçe", "kalem", "kağıt"]},
+    "Sürekli erteliyorsan deneyebileceğin '2 dakika' tekniğini açıkla.":
+        {"tur": "metin", "sonuc": ["erteleme", "2 dakika", "başla"]},
+    # ── teknoloji ──
+    "LLM olarak 'context window' nedir? Kisa ve net anlat.":
+        {"tur": "metin", "sonuc": ["context", "pencere", "token", "bağlam"]},
+    "Vektorel veritabani ne ise yarar? Ornek ver.":
+        {"tur": "metin", "sonuc": ["vektör", "benzerlik", "arama"]},
+    "Blockchain'in temel calisma mantigi nedir?":
+        {"tur": "metin", "sonuc": ["blok", "zincir", "dağıtık", "konsensüs"]},
+    "GPU neden onemlidir? Performans artisi nasil olur?":
+        {"tur": "metin", "sonuc": ["gpu", "paralel", "işlemci", "performans"]},
+    "Bir yapay zeka modelini nasil egitirsin? Adim adim.":
+        {"tur": "metin", "sonuc": ["eğitim", "veri", "model", "adım"]},
+    "HTTP ile HTTPS arasındaki farkı sertifika/şifreleme yönünden anlat.":
+        {"tur": "metin", "sonuc": ["https", "sertifika", "şifreleme", "ssl"]},
+    "DNS'in çalışma adımlarını (tarayıcıdan siteye) özetle.":
+        {"tur": "metin", "sonuc": ["dns", "çözümleme", "tarayıcı"]},
+    "Edge computing neden bulut bilişimin yerine değil de tamamlayıcısıdır?":
+        {"tur": "metin", "sonuc": ["edge", "bulut", "gecikme", "yakın"]},
+    "Sabit disk ile SSD arasındaki temel farkı hız/özen yönünden açıkla.":
+        {"tur": "metin", "sonuc": ["ssd", "disk", "hız", "mekanik"]},
+    "Mikroservis mimarisinin tek parçalı (monolith) yapıya göre artı/eksisini yaz.":
+        {"tur": "metin", "sonuc": ["mikroservis", "monolith", "esneklik"]},
+    "Bir CAPTCHA'nın amacı ve zayıf örnekleri nelerdir?":
+        {"tur": "metin", "sonuc": ["captcha", "bot", "doğrulama"]},
+    "OAuth 2.0 akışını (ör. üçüncü parti uygulama) sadeleştirilmiş adımlarla anlat.":
+        {"tur": "metin", "sonuc": ["oauth", "token", "yetkilendirme"]},
+    "Konteyner (Docker) ile geleneksel sanal makina farkı.":
+        {"tur": "metin", "sonuc": ["docker", "konteyner", "sanal makina", "kernel"]},
+    "RAG (retrieval-augmented generation) nedir ve neden kullanılır?":
+        {"tur": "metin", "sonuc": ["rag", "arama", "üretim", "bilgi"]},
+    "Bir sunucunun ölçeklenmesi: dikey mi yatay mı? Koşullarıyla anlat.":
+        {"tur": "metin", "sonuc": ["ölçekleme", "dikey", "yatay", "sunucu"]},
+    # ── dil (kavram bonusu) ──
+    "Bu cumledeki anlam bozuklugunu bul ve duzelt: 'Kitap okumayi cok seviyorum ama zamanim olmuyor, arkadaslarim kitap okur'":
+        {"tur": "metin", "sonuc": ["anlam", "bozukluk", "düzel"]},
+    "Bir paragrafi Turkce'den Ingilizce'ye cevir: 'Yaz mevsimi denize girmek icin en guzel zamandir.'":
+        {"tur": "metin", "sonuc": ["summer", "sea", "swim", "season"]},
+    "'Elma' kelimesinin mecaz anlamini cumlede kullan.":
+        {"tur": "metin", "sonuc": ["mecaz", "elma"]},
+    "'Oysa' ve 'oysaki' arasındaki kullanım farkını örneklerle açıkla.":
+        {"tur": "metin", "sonuc": ["oysaki", "oysa", "ayn"]},
+    "'Gitme' ve 'gitmem' kelimelerindeki anlam farkını olumsuzluk ve kipsellik yönünden anlat.":
+        {"tur": "metin", "sonuc": ["gitme", "gitmem", "emir"]},
+    "Bir iş mektubunda resmi dile örnek 3 cümle yaz (hitap, gövde, kapanış).":
+        {"tur": "metin", "sonuc": ["sayın", "hitap", "kapanış"]},
+    "Bir reklam sloganına virgülün etkisini iki karşıtlık örneğiyle göster.":
+        {"tur": "metin", "sonuc": ["virgül", "anlam", "slogan"]},
+    "Dolaylı ve doğrudan anlatımı iki cümleyle karşılaştır.":
+        {"tur": "metin", "sonuc": ["dolaylı", "doğrudan", "anlatım"]},
+    "Türkçede 'büyük ünlü uyumu' kuralını 10 kelimelik bir liste üzerinde göster.":
+        {"tur": "metin", "sonuc": ["ünlü", "uyumu", "kalın", "ince"]},
+    "Bir haber metni ile köşe yazısı arasındaki dil farkını 3 örnekle açıkla.":
+        {"tur": "metin", "sonuc": ["nesnel", "haber", "köşe"]},
+    # ── mantik ──
+    "3 musluk, 10 dakikada 90 litre dolduruyor. 6 musluk aynı debide 30 dakikada kaç litre doldurur?":
+        {"tur": "sayi", "sonuc": ["180"]},
+    "Bir otelde 100 oda var, hepsi kapalı. 1. turda tüm kapılar açılır, 2. turda her 2. kapı kapatılır, 3. turda her 3. kapı açılırsa kapatılır... 100. turda hangi kapılar açık kalır?":
+        {"tur": "metin", "sonuc": ["kare", "1", "4", "9", "16", "25", "36", "49", "64", "81", "100"]},
+    "Eğer A => B ve B => C doğruysa, A => C geçerliliğini doğruluk tablosuyla göster.":
+        {"tur": "metin", "sonuc": ["geçerli", "doğru", "modus"]},
+    "Bir saat 12:00'da doğru kuruldu, 3 saatte 5 dakika geri kalıyor. Gerçek saat 21:00 iken saat kaçı gösterir?":
+        {"tur": "metin", "sonuc": ["20:45", "20.45", "20 45", "15 dakika"]},
+    "Köpek, kedi ve kuş taşıyan bir adam nehri geçmek istiyor; kedi köpeği yiyor, kuş kediyi. Sıralama nedir?":
+        {"tur": "metin", "sonuc": ["kuş", "köpek", "kedi"]},
+    "'Bu cümle yanlıştır.' cümlesinin doğruluk değeri nedir? Paradoksu açıkla.":
+        {"tur": "metin", "sonuc": ["paradoks", "çelişki", "doğru"]},
+    "Üç kutu: biri yalnız elma, biri yalnız portakal, biri karışık. Hepsi yanlış etiketli. Tek elmayla bakarak kutuları bul.":
+        {"tur": "metin", "sonuc": ["elma", "karışık", "etiket"]},
+    "Saatte 90 km giden bir tren 270 km'lik yolu kaç saatte alır? Formülü ver.":
+        {"tur": "sayi", "sonuc": ["3"]},
+    "Bir sayının 3 katının 6 eksiği, o sayının 2 katının 4 fazlasına eşit. Sayı kaç?":
+        {"tur": "sayi", "sonuc": ["10"]},
+    "Bilardo topu ağırlık sorusu: 9 top var, biri ağır, eşit kollu teraziyle en az kaç tartımda bulunur?":
+        {"tur": "sayi", "sonuc": ["2"]},
 }

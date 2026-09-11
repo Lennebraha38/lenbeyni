@@ -92,7 +92,9 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
         def _duzelt_istek(msg):
             r = api_iste(msg, secilen_model, key, maxt)
             return r["cikti"] if r.get("kelime", 0) > 0 else None
-        cevap, tur, not_ = self_correction(soru, sonuc["cikti"], konu, _duzelt_istek)
+        cevap, tur, not_ = self_correction(
+            soru, sonuc["cikti"], konu, _duzelt_istek,
+            max_tur=2 if konu == "kod" else 1)
         if tur > 0:
             sonuc["cikti"] = cevap
             sonuc["kelime"] = len(cevap.split())

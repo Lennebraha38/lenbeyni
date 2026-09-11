@@ -117,21 +117,27 @@ def puan_matematik(cikti, hedef=None, beklenen=None):
         if re.search(r"[0-9][0-9.,]*\s*[+\-*/^×÷=]", cikti):
             return 0.6, "Islem adimlari var ama beklendik sonuc yok"
         return 0.3, "Sayisal cevap bulunamadi"
-    # tur == "metin"
+    # tur == "metin" -> kavram eslesmesi dogru cevabi ifade eder
     hit = _anahtar_esle(cikti, hedef["sonuc"])
     if hit:
-        return 0.9, "Kavram bulundu: " + ", ".join(hit)
+        return 1.0, "Kavram bulundu: " + ", ".join(hit)
     return 0.4, "Beklenen kavramlar yok"
 
 def puan_mantik(cikti, hedef=None):
-    """Yapisal + beklenen kavram/dogruluk puani."""
+    """Dogruluk agirlikli: beklenen kavram varsa yuksek taban + yapisal bonus."""
     yapi, not_ = puan_genel(cikti)
     if not hedef or not hedef.get("sonuc"):
         return yapi, not_
     hit = _anahtar_esle(cikti, hedef["sonuc"])
-    dogru = 1.0 if hit else 0.0
     not_ = ("Dogru: " + ", ".join(hit) + "; " + not_) if hit else (not_ + "; beklenen yok")
-    return round(0.6 * dogru + 0.4 * yapi, 2), not_
+    if not hit:
+        return round(0.3 * yapi, 2), not_
+    # Doğru kavram + yeterli yapi -> tam puan; doğru ama kisa -> 0.85
+    if yapi >= 0.5:
+        return 1.0, not_
+    if yapi >= 0.2:
+        return 0.9, not_
+    return 0.85, not_
 
 def puan_dil(cikti, hedef=None):
     """Dil kalitesi: uzunluk, Turkce harf, yapilandirma (+ beklenen kavram bonusu)."""
@@ -191,17 +197,30 @@ def puan_genel(cikti):
         skor += 0.2; notlar.append("kod blogu")
     return min(skor, 1.0), "; ".join(notlar) if notlar else "yetersiz"
 
+def puan_konu(cikti, hedef=None):
+    """Yapisal puanlama + HEDEFLER metin isabet tabani (diger konular icin)."""
+    yapi, not_ = puan_genel(cikti)
+    if not hedef or not hedef.get("sonuc"):
+        return yapi, not_
+    hit = _anahtar_esle(cikti, hedef["sonuc"])
+    not_ = ("Kavram: " + ", ".join(hit) + "; " + not_) if hit else (not_)
+    if hit:
+        # Dogru kavram: yapi kalitesine gore 0.85..1.0
+        taban = 0.85 + 0.15 * min(1.0, yapi / 0.7)
+        return round(taban, 2), not_
+    return yapi, not_
+
 KONU_PUANLAYICI = {
     "kod": puan_kod,
     "matematik": puan_matematik,
     "dil": puan_dil,
     "mantik": puan_mantik,
-    "bilim": puan_genel,
-    "tarih": puan_genel,
-    "yaratici": puan_genel,
-    "kultur": puan_genel,
-    "pratik": puan_genel,
-    "teknoloji": puan_genel,
+    "bilim": puan_konu,
+    "tarih": puan_konu,
+    "yaratici": puan_konu,
+    "kultur": puan_konu,
+    "pratik": puan_konu,
+    "teknoloji": puan_konu,
 }
 
 def puanla(sonuclar):
@@ -235,7 +254,7 @@ def puanla(sonuclar):
         elif konu == "mantik":
             p, not_ = puan_mantik(cikti, hedef)
         else:
-            p, not_ = puan_genel(cikti)
+            p, not_ = puan_konu(cikti, hedef)
         
         s["puan"] = round(p, 2)
         s["puan_notu"] = not_

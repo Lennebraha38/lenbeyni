@@ -36,12 +36,12 @@ def kod_dogrula(kod_metni):
         os.unlink(yol)
 
 def duzeltme_turu(cevap, konu, hata_bilgisi):
-    """Hata bilgisine gore duzeltme promptu olustur."""
+    """Kod hatasi icin duzeltme promptu: sadece calisan kod iste."""
     return (
-        f"Onceki cevabinda hata var:\n{hata_bilgisi}\n\n"
-        f"Lutfen su soruyu tekrar cevapla: "
-        f"Sadece calisan kodu ver, aciklama yazma. "
-        f"Kodu ```python ... ``` bloguna koy."
+        f"Onceki cevabindaki kod calismadi:\n{hata_bilgisi}\n\n"
+        f"Lutfen soruyu yeniden coz. KESIN KURAL: "
+        f"Sadece calisan kodu gonder, hicbir aciklama veya metin yazma. "
+        f"Kodu tek bir ```python ... ``` bloguna koy."
     )
 
 def self_correction(soru, cevap, konu, llm_fonk, max_tur=1):
