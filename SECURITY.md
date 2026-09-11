@@ -45,6 +45,22 @@ yollar reddedilir; mutlak kritik yollar (`/etc`, `/root`, ...) bloklanır.
   istemciden istemciye kalmaz ve sunucuya gönderilmez.
 - `.env*` dosyaları `.gitignore` içindedir; anahtar repo'ya işlenmez.
 
+### 5. Web rölesi (chat.js / mcp.js)
+- **CORS**: Yalnız `ZENAI_ORIGIN` allowlist'ine (varsayılan
+  `https://zenai-two.vercel.app`) `Access-Control-Allow-Origin` döner; tarayıcı
+  istekleri diğer köklerden 403 alır. `web/vercel.json` global wildcard
+  içermez.
+- **Opsiyonel token**: `ZENAI_ACCESS_TOKEN` env'i tanımlanırsa röle tüm
+  isteklerde `Authorization: Bearer ...` veya `x-zenai-token` ister (401).
+- **Rate limit**: Bellek içi pencere — IP başına 60 sn'de chat 30, MCP 60 istek
+  (429). Tek warm instance için tasarım korumasıdır.
+- **Boyut kapları**: `max_tokens` en fazla 16384, serileştirilmiş mesaj en
+  fazla 60K, MCP argümanları en fazla 20K karakter.
+- **SSRF**: `web/api/mcp.js` protokol/port/kimlik bilgisi doğrulaması yapar ve
+  hedefi DNS çözüp özel-CGNAT-metadata adreslerine (10/8, 172.16/12, 192.168,
+  169.254, 100.64/10, 127, multicast) engeller; DNS rebinding'e karşı DNS
+  çözümü sunucuda yapılır.
+
 ## Sorumlu Açıklama (Responsible Disclosure)
 
 Bir güvenlik açığında:
@@ -58,7 +74,7 @@ Her açık için sıralama: (a) düzelt, (b) regresyon testi yaz, (c) bu bölüm
 
 ```bash
 python3 -m pytest tests/test_guvenlik.py -q   # tüm güvenlik kuralları
-python3 -m pytest tests/ -q                    # tüm paket (41 test)
+python3 -m pytest tests/ -q                    # tüm paket (155 test)
 ```
 
 CI'ta ayrıca `pip-audit` (bağımlılık CVE) ve `npm audit` çalışır.

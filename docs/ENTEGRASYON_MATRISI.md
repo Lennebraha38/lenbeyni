@@ -30,6 +30,6 @@ Binlerce açık kaynak repo tek "Arac Katmanı"nda toplandı. Yaklaşım:
 
 ## Mimarisi
 ```
-Kullanici → lenbeyni_zeka.ajan() → mega beyin (OpenRouter) → [KOMUT] çıktısı
+Kullanici → zenai_zeka.ajan() → mega beyin (OpenRouter) → [KOMUT] çıktısı
         → arac katmani.yonlendir() → gercek islem → cevap → bellek
 ```

@@ -46,7 +46,7 @@ def duzeltme_turu(cevap, konu, hata_bilgisi):
 
 def self_correction(soru, cevap, konu, llm_fonk, max_tur=1):
     """Cevabi dogrula, gerekirse duzeltme turu calistir.
-    llm_fonk: lenbeyni_zeka.llm gibi bir fonksiyon (mesajlar->str)
+    llm_fonk: zenai_zeka.llm gibi bir fonksiyon (mesajlar->str)
     max_tur: kac kez duzeltme denensin (varsayilan 1)
     """
     if konu == "kod":

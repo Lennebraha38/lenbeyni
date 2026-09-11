@@ -11,18 +11,19 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 
 | Modül | Dosya | Ne yapar |
 |---|---|---|
-| Ajan döngüsü | `agentv2/lenbeyni_zeka.py` | `[ARAMA]` / `[SITE]` komutlarıyla web'i talimatla tarar |
+| Ajan döngüsü | `agentv2/zenai_zeka.py` | `[ARAMA]` / `[SITE]` komutlarıyla web'i talimatla tarar |
 | **Akil Motoru** | `agentv2/akil_motoru.py` | Claude'un az-token/yuksek-mantik felsefesi + bizim bol-token: CoT yontemi, 5000 kelime hedefi, kendi kendini dogrulama |
 | **Model Routing** | `agentv2/model_routing.py` | Konuya gore uzman model: kod->north-mini-code, matematik/mantik->nemotron-550B, diger->dots-3 (2-4x Claude token butcesi) |
 | **Self-Correction** | `agentv2/self_correction.py` | Kod cevaplari sandbox'ta calistirilir -> syntax/runtime hatasi bulunursa model duzeltme turu yapar |
-| **Otomatik Skorer** | `agentv2/otomatik_skorer.py` | Soru-bazlı beklenen yanıt (`soru_bankasi.HEDEFLER`) eşleştirir: matematik=sayısal, mantik/dil=anahtar kavram; kod=sandbox çalıştırma |
+| **Otomatik Skorer** | `agentv2/otomatik_skorer.py` | Soru-bazlı beklenen yanıt (`soru_bankasi.HEDEFLER`) eşleştirir: matematik=sayısal, mantik/dil=anahtar kavram; kod=sandbox çalıştırma. Doğruluk ağırlıklı: hedefsiz cevap ≤0.4 |
 | **Cogunluk Oyu** | `agentv2/cogunluk_oyu.py` | Ayni soruyu N kez sorar, en sik cevabi secer (dogrulugu istatistiksel artirir) |
 | Karşılama testi | `karsilastirma.py` | Turkce karsilastirma + rate-limit aware (retry + backoff) |
 | Benchmark | `agentv2/tam_zirve.py` + `soru_bankasi.py` | **150 soru** / 10 konu / 3 zorluk; `--kategori`, `--zorluk` filtreleri |
-| Deep Research | `agentv2/lenbeyni_zeka.py` (`rapor` modu) | Soruyu alt-başlıklara böler, kaynakları toplar, kaynaklı kurumsal rapor yazar |
+| Bağımsız doğrulama | `agentv2/dogrulama.py` + `dogrulama_seti.py` | 40 gerçek-soru **strict doğru/yanlış** (`puan_strict`); uzunluk/yapı puanı yok |
+| Deep Research | `agentv2/zenai_zeka.py` (`rapor` modu) | Soruyu alt-başlıklara böler, kaynakları toplar, kaynaklı kurumsal rapor yazar |
 | Bellek (vektör) | `agentv2/bellek_vektor.py` | Karakter n-gram benzerliğiyle hatırlar (`~/.zenai_bellek.json`); TTL + kullanıcı izolasyonu |
-| Güvenlik | `agentv2/guvenlik.py` + `SECURITY.md` | SSRF / kod / path / prompt-injection koruması — araç girişlerinde deny-by-default |
-| Web GUI | `web/` | Gemini/Claude seviyesi arayüz: konu→model yönlendirme rozeti, Akıl Motoru, AI Meclisi, **Skills ekleme**, **MCP bağlama** |
+| Güvenlik | `agentv2/guvenlik.py` + `SECURITY.md` | SSRF (DNS rebinding + decimal IP) / kod (AST + MWE) / shell (IFS hilesi) / path / prompt-injection — deny-by-default |
+| Web GUI | `web/` | Premium arayüz: konu→model rozeti, Akıl Motoru, AI Meclisi, **Skills**, **MCP**; opsiyonel token (`ZENAI_ACCESS_TOKEN`) + IP rate-limit |
 | Kod eğitimi | `egitim/` | QLoRA ile 7B/14B kod modeli fine-tune (Kaggle) |
 | Cihaz beyni | `ciday/` (tablet) | Ollama tabanlı, offline sohbet/kod |
 | Arac katmanı | `agentv2/araclar/` | 10+ yetenek: belge, kod sandbox, sistem, github, haber, hava, gorsel, guvenlik (browser-use/gpt-researcher/OpenCLI ozleri) |
@@ -30,7 +31,7 @@ Tabletten buluta uzanan iki kademeli beyin sistemi:
 ## Test
 
 ```bash
-python3 -m pytest tests/ -q          # 41 test (akil katmani + guvenlik + meclis + araclar + token tavani)
+python3 -m pytest tests/ -q          # 121 test (akil + guvenlik + skor + araclar + token)
 python3 agentv2/otomatik_skorer.py karsilastirma.json   # canli test skoru raporu
 python3 agentv2/cogunluk_oyu.py "soru" --tekrar 3       # majority vote
 python3 agentv2/tam_zirve.py --soru 10                  # zirve testi (ilk 10 soru)
@@ -38,38 +39,42 @@ python3 agentv2/tam_zirve.py --kategori kod             # sadece kod sorulari
 python3 agentv2/tam_zirve.py --zorluk zor               # sadece zor sorular
 python3 agentv2/tam_zirve.py --kalan-bekle              # rate-limit bekle, surekli dene
 python3 agentv2/meclis_hakemi.py "soru"                 # genisletilmis hakem paneli (12 kriter)
-python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu: baseline/cot/sc/kombinasyon/meclis
+python3 agentv2/akil_dongu_test.py "soru"               # 5 tur kalite olcumu
+python3 agentv2/dogrulama.py                            # bagimsiz 40 gercek soru (strict)
+python3 agentv2/dogrulama.py --adet 10 --kalan-bekle    # hizli + rate-limit uyumlu
 
 > Rate-limit notu: ücretsiz OpenRouter modelleri 429 dönebilir; `--kalan-bekle`
 > otomatik bekler. Zirve raporunu `agentv2/tam_zirve.py --sadece-skor` ile gör.
 
-### Benchmark — gerçek ölçüm
-Ücretsiz modeller 429 ile kotalı olduğunda benchmark `ZIRVE_MODEL` ile acil
-yoldan çalışır (ör. `ZIRVE_MODEL=openai/gpt-4o-mini`). İlk gerçek koşu
-(50 soru, gpt-4o-mini, self-correction + routing): **71.3/100**. Skorlayıcı
-soru-bazlı beklenen yanıt tablosu (`soru_bankasi.HEDEFLER`) ile güçlendirilip
-cevap üretimi "Sonuç: <değer>" disiplinine alındıktan sonra ikinci koşu:
-**92.7/100, 50/50 başarılı, 0 hata**. Konu bazlı: dil 100.0, matematik 95.0,
-kod 88.0, mantik 77.0. (İlk koşudaki 50.0'lar skorlayıcı artefaktıydı;
-matematik yanıtları zaten doğruydu, ölçüm tablosu eski soru numaralarına
-kilitliydi.) Her skor `kayit/routing_log.jsonl`'e işlenir ve
-`model_routing.routing_rapor()` ile gerçek veri üzerinden model önerisi üretir.
+### Benchmark — ölçüm nasıl okunmalı
+- **Ana ölçü: `dogrulama.py`** (40 gerçek soru, strict doğru/yanlış). Uzunluk
+  veya yapı puanı vermez; "gerçekten zeki mi" sorusunun dürüst cevabı budur.
+- **Zirve (`tam_zirve.py`, 150 soru)** tanı-reçete amaçlıdır: skorlayıcı
+  doğruluk ağırlıklıdır (hedefsiz cevap en fazla 0.4) ve hatalı sorular 0
+  sayılır; yine de bu, kendi soru bankasına göre üretilmiş bir ölçümdür ve
+  bağımsız doğrulamanın yerine geçmez.
+- Ücretsiz modeller 429 ile kotalıyken benchmark `ZIRVE_MODEL` ile acil yoldan
+  çalışır (ör. `ZIRVE_MODEL=openai/gpt-4o-mini`). Not: bazı modeller açık
+  kotalara tabidir ve her zaman kullanılamayabilir.
+- Her skor `kayit/routing_log.jsonl`'e işlenir ve
+  `model_routing.routing_rapor()` ile gerçek veri üzerinden model önerisi üretir.
 
 ## Kurulum
 
 ```bash
 pip install requests
 export OPENROUTER_KEY="sk-or-v1-..."
-python3 agentv2/lenbeyni_zeka.py "sorun" ajan
-python3 agentv2/lenbeyni_zeka.py "araştırma konusu" rapor
+python3 agentv2/zenai_zeka.py "sorun" ajan
+python3 agentv2/zenai_zeka.py "araştırma konusu" rapor
 ```
 
-## Web GUI: Gemini/Claude seviyesi arayüz
+## Web GUI: Premium sohbet arayüzü
 
 **ZERO-CONFIG** — kullanıcı tarayıcıda hiçbir key'le uğraşmaz (Gemini gibi):
 - **Sunucu rölesi** (`web/api/chat.js`): OpenRouter key'i sadece Vercel env'inde tutulur (`OPENROUTER_KEY`). Tarayıcıya key asla sızmaz.
 - **MCP rölesi** (`web/api/mcp.js`): Uzak MCP sunucularına JSON-RPC over HTTP ile alet listeleme/çağırma — key gerekmez.
 - Sunucu yoksa kullanıcı kendi key'ini girebilir (geliştirici modu). Key localStorage'da saklanır, sunucuya gitmez.
+- **Röle güvenliği**: CORS yalnız `ZENAI_ORIGIN` allowlist'ine (varsayılan `https://zenai-two.vercel.app`); IP başına 1 dk pencere rate-limit (chat 30 / mcp 60); opsiyonel `ZENAI_ACCESS_TOKEN` tanımlanırsa röle tüm isteklerde token ister; `max_tokens` 16K'da, mesaj boyutu 60K karakterde sınırlıdır.
 
 **Özellikler:**
 - **Akıl yönlendirme rozeti** — soruyu okuyup konu tespiti yapar, doğru modeli önerir (kod→north-mini, matematik→nemotron, vb.)

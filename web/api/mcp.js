@@ -6,6 +6,33 @@ const { lookup } = require("node:dns/promises");
 
 const MCP_HEADERS = { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" };
 
+// ── Ortak güvenlik: CORS allowlist + opsiyonel token + IP rate-limit ──
+function izinliOrigin(req) {
+  const izin = (process.env.ZENAI_ORIGIN || "https://zenai-two.vercel.app")
+    .split(",").map((s) => s.trim()).filter(Boolean);
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  return izin.includes(origin);
+}
+function tokenOnay(req) {
+  const beklenen = process.env.ZENAI_ACCESS_TOKEN;
+  if (!beklenen) return true;
+  const gelen = (req.headers["x-zenai-token"] || req.headers.authorization || "")
+    .replace(/^Bearer\s+/i, "").trim();
+  return gelen === beklenen;
+}
+const pencere = new Map();
+function rateLimit(req, maks = 60) {
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
+    || req.socket?.remoteAddress || "?";
+  const simdi = Date.now();
+  const esik = simdi - 60000;
+  const gelen = (pencere.get(ip) || []).filter((t) => t > esik);
+  if (gelen.length >= maks) { pencere.set(ip, gelen); return true; }
+  pencere.set(ip, gelen.concat([simdi]));
+  return false;
+}
+
 // ── SSRF koruması ──
 function ipOzelMi(ip) {
   const v6 = ip.includes(":");
@@ -44,14 +71,31 @@ async function ucGuvenli(uç) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin;
+  if (origin && izinliOrigin(req)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") return res.status(200).end();
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-zenai-token");
+  if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "POST gerekli" });
+
+  if (req.headers.origin && !izinliOrigin(req)) {
+    return res.status(403).json({ error: "Kaynak engellendi (CORS allowlist)" });
+  }
+  if (!tokenOnay(req)) {
+    return res.status(401).json({ error: "Yetkisiz: geçerli bir erişim belirteci gerekli" });
+  }
+  if (rateLimit(req)) {
+    return res.status(429).json({ error: "Çok fazla istek, 60 saniye sonra tekrar dene" });
+  }
 
   const { action, uc, proto = "http", alet, argumanlar } = req.body || {};
   if (!uc) return res.status(400).json({ error: "Uç nokta (uc) gerekli" });
+  if (JSON.stringify(argumanlar || {}).length > 20000) {
+    return res.status(400).json({ error: "Argümanlar çok büyük" });
+  }
   if (!["http", "sse"].includes(proto)) return res.status(400).json({ error: "Geçersiz protokol" });
   if (!(await ucGuvenli(uc))) return res.status(400).json({ error: "Güvenlik: izin verilmeyen uç nokta (SSRF önleme)" });
 

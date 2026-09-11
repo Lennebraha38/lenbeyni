@@ -157,7 +157,7 @@ def acik(soru, mod="ajan"):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Kullanim: python3 lenbeyni_zeka.py <soru> [ajan|rapor|chat]")
+        print("Kullanim: python3 zenai_zeka.py <soru> [ajan|rapor|chat]")
         sys.exit(1)
     if len(sys.argv) == 2:
         soru, mod = sys.argv[1], "ajan"

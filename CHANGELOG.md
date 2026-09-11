@@ -2,6 +2,44 @@
 
 Tüm önemli değişiklikler bu dosyada toplanır.
 
+## [2.2.0] — Devam ediyor
+
+### Ölçüm dürüstleştirme (bağımsız doğrulama)
+- `agentv2/otomatik_skorer.py`: `puan_dil`, `puan_konu`, `puan_mantik` artık
+  doğruluk ağırlıklı — HEDEFLER kavramı yoksa/tutmadıysa en fazla **0.4**;
+  uzunluk/yapı tek başına puana çevrilmiyor. `puanla()`: hatalı/başarısız
+  sorular **0 sayılır**, `ortalama_cevaplanan` ayrı raporlanır.
+- `agentv2/dogrulama_seti.py` (YENİ): HEDEFLER'den tamamen bağımsız **40 gerçek
+  soru** (matematik 8, bilim 5, tarih 5, kültür 6, dil 5, teknoloji 5, pratik 4,
+  mantık 2) — mutlak cevaplı, sızma (leak) riski yok.
+- `agentv2/dogrulama.py` (YENİ): strict koşucu — `puan_strict` (ya doğru ya
+  yanlış, uzunluk/puan yapısı yok), binlik ayıracı normalizasyonu
+  ("300.000"→"300000"), fallback zinciri, `--adet`, `--kalan-bekle`,
+  `kayit/dogrulama.json` çıktısı.
+- README benchmark bölümü yeniden yazıldı: ana ölçünün bağımsız `dogrulama.py`
+  olduğu, `tam_zirve`nin tanı/reçete amaçlı kaldığı netleştirildi.
+
+### Web rölesi güvenliği (chat.js / mcp.js)
+- CORS wildcard kaldırıldı: yalnız `ZENAI_ORIGIN` allowlist'i
+  (varsayılan `https://zenai-two.vercel.app`); `web/vercel.json` da wildcard
+  içermiyor.
+- Opsiyonel `ZENAI_ACCESS_TOKEN` (Bearer veya `x-zenai-token`).
+- IP bazlı bellek-içi rate limit: 60 sn'de chat 30 / MCP 60 istek.
+- `max_tokens` ≤16K, mesaj ≤60K, MCP argümanları ≤20K karakter.
+
+### Repo temizliği
+- `out.png` izlemeden çıkarıldı, `.db`/test-sonuç artıkları silindi.
+- `agentv2/lenbeyni_zeka.py` → `agentv2/zenai_zeka.py` (tüm import/başvurular
+  güncellendi; `test_lenbeyni`, `cogunluk_oyu`, `meclis_hakemi`,
+  `akil_dongu_test`, `self_correction`, README, ENTEGRASYON_MATRISI).
+
+### Not: önceki 92.7/100 iddiası
+Self-skor (92.7, 71.3) yalnızca kendi `HEDEFLER` tablosuna göre üretilmişti;
+yetersiz ölçümdü. Bağımsız not **65/100** (2026 genel değerlendirme). Bu
+sürümde skorlayıcı dürüstleştirildi ve gerçek doğruluk için bağımsız set
+eklendi. Kotalar açılınca (~12 Eylül sonrası) canlı `dogrulama.py` koşusu
+yayınlanacak.
+
 ## [2.1.0] — Devam ediyor
 
 ### Puan 71.3 → 92.7/100 (ikinci gerçek benchmark)

@@ -13,8 +13,9 @@ Katkı veren herkes bu kurallara uyar.
 ## Testler
 
 ```bash
-python3 -m pytest tests/ -q          # tam paket (41 test)
+python3 -m pytest tests/ -q          # tam paket (121 test)
 python3 -m pytest tests/test_guvenlik.py -q   # güvenlik kuralları
+python3 agentv2/dogrulama.py --adet 10        # bağımsız strict doğrulama (hızlı)
 cd web && npm run test:gui            # Playwright GUI doğrulaması
 ```
 

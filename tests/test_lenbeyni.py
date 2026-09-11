@@ -4,8 +4,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 def zeka():
-    import lenbeyni_zeka
-    return lenbeyni_zeka
+    import zenai_zeka
+    return zenai_zeka
 
 def test_import_ok():
     z = zeka()
@@ -40,7 +40,7 @@ def test_kamp_dosyalari_derlenir():
     py_compile.compile("egitim/egit_kod.py", doraise=True)
     py_compile.compile("egitim/kod_testi.py", doraise=True)
     py_compile.compile("agentv2/araclar/arac_katmani.py", doraise=True)
-    py_compile.compile("agentv2/lenbeyni_zeka.py", doraise=True)
+    py_compile.compile("agentv2/zenai_zeka.py", doraise=True)
 
 def test_yeni_araclar_derlenir():
     import py_compile, glob

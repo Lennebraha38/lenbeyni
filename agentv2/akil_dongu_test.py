@@ -34,7 +34,7 @@ def dongu_testi(soru, mock_cevap=None, canli=False):
     if canli:
         # Canli: gercek LLM kullan (rate-limit gerekli)
         try:
-            from lenbeyni_zeka import llm, OPENROUTER_KEY
+            from zenai_zeka import llm, OPENROUTER_KEY
             if not OPENROUTER_KEY:
                 print("OPENROUTER_KEY ayarli degil, mock gecisi")
                 canli = False
@@ -51,7 +51,7 @@ def dongu_testi(soru, mock_cevap=None, canli=False):
         )
         llm = MockLLM(mock_cevap).sor
     else:
-        from lenbeyni_zeka import llm
+        from zenai_zeka import llm
     
     from otomatik_skorer import puanla, puan_genel, puan_matematik, puan_kod
     

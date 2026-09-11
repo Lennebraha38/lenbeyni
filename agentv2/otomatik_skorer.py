@@ -127,7 +127,7 @@ def puan_mantik(cikti, hedef=None):
     """Dogruluk agirlikli: beklenen kavram varsa yuksek taban + yapisal bonus."""
     yapi, not_ = puan_genel(cikti)
     if not hedef or not hedef.get("sonuc"):
-        return yapi, not_
+        return round(min(yapi, 0.4), 2), not_ + "; hedef yok -> olculemez"
     hit = _anahtar_esle(cikti, hedef["sonuc"])
     not_ = ("Dogru: " + ", ".join(hit) + "; " + not_) if hit else (not_ + "; beklenen yok")
     if not hit:
@@ -140,36 +140,20 @@ def puan_mantik(cikti, hedef=None):
     return 0.85, not_
 
 def puan_dil(cikti, hedef=None):
-    """Dil kalitesi: uzunluk, Turkce harf, yapilandirma (+ beklenen kavram bonusu)."""
-    puan = 0.0
-    notlar = []
-    kelimeler = cikti.split()
-    if len(kelimeler) >= 30:
-        puan += 0.3
-        notlar.append("yeterli uzunluk")
-    elif len(kelimeler) >= 10:
-        puan += 0.15
-        notlar.append("kisa ama yeterli")
-    # Turkce harf kontrolu
-    turkce_harfler = len(re.findall(r'[çğıöşüÇĞİÖŞÜ]', cikti))
-    if turkce_harfler >= 3:
-        puan += 0.3
-        notlar.append(f"{turkce_harfler} Turkce harf")
-    # Yapilandirma (baslik/madde)
-    if re.search(r'^\s*[\-\*\d]+[\.\)]', cikti, re.MULTILINE):
-        puan += 0.2
-        notlar.append("yapistirilmis")
-    # En az bir cumle
-    if len(cikti) > 30:
-        puan += 0.2
-        notlar.append("anlasilir")
-    # Beklenen kavram bonusu (dogruluk ipucu)
-    if hedef and hedef.get("sonuc"):
-        hit = _anahtar_esle(cikti, hedef["sonuc"])
-        if hit:
-            puan = min(1.0, puan + 0.15)
-            notlar.append("beklenen kavram")
-    return min(puan, 1.0), "; ".join(notlar) if notlar else "yetersiz"
+    """Dil: dogruluk agirlikli — HEDEFLER kavrami yoksa tam puan verilmez.
+    Uzunluk/yapi tek basina puana cevrilmez; iletisim + dogruluk olculur."""
+    yapi, not_ = puan_genel(cikti)
+    if not hedef or not hedef.get("sonuc"):
+        return round(min(yapi, 0.4), 2), not_ + "; hedef yok -> olculemez"
+    hit = _anahtar_esle(cikti, hedef["sonuc"])
+    not_ = ("Anahtar: " + ", ".join(hit) + "; " + not_) if hit else (not_ + "; beklenen kavram yok")
+    if not hit:
+        return round(min(yapi, 0.4), 2), not_
+    if yapi >= 0.5:
+        return 1.0, not_
+    if yapi >= 0.25:
+        return 0.85, not_
+    return 0.75, not_
 
 def puan_genel(cikti):
     """Genel kalite: uzunluk + baslik + madde + tutarlilik."""
@@ -198,17 +182,18 @@ def puan_genel(cikti):
     return min(skor, 1.0), "; ".join(notlar) if notlar else "yetersiz"
 
 def puan_konu(cikti, hedef=None):
-    """Yapisal puanlama + HEDEFLER metin isabet tabani (diger konular icin)."""
+    """Yapisal puanlama + HEDEFLER metin isabeti (dogruluk agirlikli).
+    HEDEFLER yoksa maks 0.4: yapi tek basina dogruluk sayilmaz."""
     yapi, not_ = puan_genel(cikti)
     if not hedef or not hedef.get("sonuc"):
-        return yapi, not_
+        return round(min(yapi, 0.4), 2), not_ + "; hedef yok -> olculemez"
     hit = _anahtar_esle(cikti, hedef["sonuc"])
-    not_ = ("Kavram: " + ", ".join(hit) + "; " + not_) if hit else (not_)
-    if hit:
-        # Dogru kavram: yapi kalitesine gore 0.85..1.0
-        taban = 0.85 + 0.15 * min(1.0, yapi / 0.7)
-        return round(taban, 2), not_
-    return yapi, not_
+    not_ = ("Kavram: " + ", ".join(hit) + "; " + not_) if hit else not_
+    if not hit:
+        return round(min(yapi, 0.4), 2), not_
+    # Dogru kavram: yapi kalitesine gore 0.8..1.0
+    taban = 0.8 + 0.2 * min(1.0, yapi / 0.7)
+    return round(taban, 2), not_
 
 KONU_PUANLAYICI = {
     "kod": puan_kod,
@@ -223,12 +208,54 @@ KONU_PUANLAYICI = {
     "teknoloji": puan_konu,
 }
 
+def _norm_strict(s):
+    """Strict eslestirme icin normalize: kucuk harf, aksansiz, tokenlas."""
+    tr = {"ı": "i", "ç": "c", "ş": "s", "ğ": "g", "ü": "u", "ö": "o"}
+    s = (s or "").lower()
+    for a, b in tr.items():
+        s = s.replace(a, b)
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+def puan_strict(cikti, kabul):
+    """Tam dogruluk: kabul listesindeki cevap metinde dogrulandi mi (0 veya 1).
+    Uzunluk/yapi puani YOK — basit gercek sorulari icin olcu."""
+    if not kabul:
+        return 0.0, "kabul listesi yok"
+    nc = _norm_strict(cikti)
+    # Binlik ayrıcı birlestirme: "300.000"->"300000", "300 000"->"300000"
+    if any(len(t) == 3 for t in nc.split()):
+        nc = re.sub(r"\b(\d{1,3})[.,\s]+(\d{3})\b",
+                    lambda m: m.group(1) + m.group(2), nc)
+    for k in kabul:
+        nk = _norm_strict(k)
+        if not nk:
+            continue
+        # Saf sayi: sayisal karsilastirma (yazim farklarina tolerans)
+        if re.fullmatch(r"-?\d+[.,]?\d*", nk):
+            try:
+                kn = float(nk.replace(",", "."))
+            except ValueError:
+                continue
+            for s in re.findall(r"-?\d+[.,]?\d*", nc):
+                try:
+                    sn = float(s.replace(",", "."))
+                except ValueError:
+                    continue
+                if abs(sn - kn) < 1e-6 or (kn and abs(sn / kn - 1) < 0.02):
+                    return 1.0, f"eslesti: {k}"
+            continue
+        # Metin: normalize edilmis parca arayi (cogul/isim eki toleransli)
+        if nk in nc:
+            return 1.0, f"eslesti: {k}"
+    return 0.0, "eslesmedi"
+
 def puanla(sonuclar):
     """Tum sonuclari puanla, ozet rapor dondur. Basarisizlari atla."""
     rapor = []
     basarili = 0
     hatali = 0
     toplam = 0.0
+    toplam_soru = len(sonuclar) or 1
     for s in sonuclar:
         konu = s.get("konu", "genel")
         cikti = s.get("cikti", "")
@@ -261,8 +288,9 @@ def puanla(sonuclar):
         toplam += p
         rapor.append(s)
     
-    # Basarili sorularin ortalamasi
-    genel_puan = round((toplam / basarili) * 100, 1) if basarili else 0
+    # Genel puan: hatali sorular 0 kabul edilir (dürüst ölçüm).
+    genel_puan = round((toplam / toplam_soru) * 100, 1)
+    ort_cevaplanan = round((toplam / basarili) * 100, 1) if basarili else 0
     
     # Konu bazli ozet (sadece basarili)
     konu_ort = {}
@@ -283,6 +311,7 @@ def puanla(sonuclar):
     
     return {
         "genel_puan": genel_puan,
+        "ortalama_cevaplanan": ort_cevaplanan,
         "basarili_soru": basarili,
         "hatali_soru": hatali,
         "konu_ozet": konu_ozet,
@@ -307,7 +336,7 @@ if __name__ == "__main__":
     print(f"\n{'='*55}")
     print(f"  OTOMATIK SKOR RAPORU — {veri.get('model', '?')}")
     print(f"{'='*55}")
-    print(f"  GENEL: {rapor['genel_puan']}/100 (basarili: {rapor['basarili_soru']}, hatali: {rapor['hatali_soru']})\n")
+    print(f"  GENEL: {rapor['genel_puan']}/100 (basarili: {rapor['basarili_soru']}, hatali: {rapor['hatali_soru']}, cevaplanan ort: {rapor['ortalama_cevaplanan']}/100)\n")
     
     for konu, bilgi in sorted(rapor['konu_ozet'].items()):
         emoji = "YUKSEK" if bilgi['ortalama'] >= 0.7 else "ORTA" if bilgi['ortalama'] >= 0.4 else "DUSUK"

@@ -1,31 +1,92 @@
 // ZenAI sunucu rölesi (Vercel Serverless).
 // Kullanıcı ASLA key görmez/girmez — key sadece burada (env OPENROUTER_KEY).
+// Güvenlik: opsiyonel ZENAI_ACCESS_TOKEN, IP bazlı rate-limit, CORS allowlist,
+// max_tokens/mesaj boyutu sınırı (kötüye kullanım koruması).
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
+const MAKS_TOKEN = 16384;      // istemcinin isteyebileceği üst sınır
+const MAKS_MESAJ = 60000;      // serileştirilmiş mesaj boyutu (karakter)
+const ALAN_BASINA = 30;        // 60 sn'de IP başına maks istek
+
+// ── CORS: sadece izin verilen kökler ──
+function izinliOrigin(req) {
+  const izin = (process.env.ZENAI_ORIGIN || "https://zenai-two.vercel.app")
+    .split(",").map((s) => s.trim()).filter(Boolean);
+  const origin = req.headers.origin;
+  if (!origin) return true; // sunucu-tarafı / curl — CORS başlığı zaten yok
+  return izin.includes(origin);
+}
+
+// ── Opsiyonel token: ZENAI_ACCESS_TOKEN tanımlıysa zorunlu ──
+function tokenOnay(req) {
+  const beklenen = process.env.ZENAI_ACCESS_TOKEN;
+  if (!beklenen) return true;
+  const gelen = (req.headers["x-zenai-token"] || req.headers.authorization || "")
+    .replace(/^Bearer\s+/i, "").trim();
+  return gelen === beklenen;
+}
+
+// ── Basit pencere throttling (bellek içi; tek warm instance). ──
+const pencere = new Map();
+function rateLimit(req, maks = ALAN_BASINA) {
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
+    || req.socket?.remoteAddress || "?";
+  const simdi = Date.now();
+  const esik = simdi - 60000;
+  const gelen = (pencere.get(ip) || []).filter((t) => t > esik);
+  if (gelen.length >= maks) { pencere.set(ip, gelen); return true; }
+  pencere.set(ip, gelen.concat([simdi]));
+  return false;
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS başlıklarını her yanıt için tek noktadan kur
+  const origin = req.headers.origin;
+  if (origin && izinliOrigin(req)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-zenai-token");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "POST gerekli" });
+
+  if (req.headers.origin && !izinliOrigin(req)) {
+    return res.status(403).json({ error: "Kaynak engellendi (CORS allowlist)" });
+  }
+  if (!tokenOnay(req)) {
+    return res.status(401).json({ error: "Yetkisiz: geçerli bir erişim belirteci gerekli" });
+  }
+  if (rateLimit(req)) {
+    return res.status(429).json({ error: "Çok fazla istek, 60 saniye sonra tekrar dene" });
+  }
 
   const KEY = process.env.OPENROUTER_KEY || "";
   if (!KEY) {
     return res.status(500).json({ error: "Sunucuda OPENROUTER_KEY yok. Vercel -> Settings -> Environment Variables -> OPENROUTER_KEY ekle." });
   }
-  if (req.method !== "POST") return res.status(405).json({ error: "POST gerekli" });
 
-  const { model, messages, temperature = 0.7, max_tokens = 16384, stream = false } = req.body || {};
-  if (!model || !messages) return res.status(400).json({ error: "model ve messages gerekli" });
+  const { model, messages, temperature = 0.7, max_tokens = 8192, stream = false } = req.body || {};
+  if (!model || !messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "model ve messages gerekli" });
+  }
+  const mt = Math.min(Number(max_tokens) || 8192, MAKS_TOKEN);
+  const temp = Math.min(Math.max(Number(temperature) || 0.7, 0), 2);
+  let govdeBoyu = 0;
+  try { govdeBoyu = JSON.stringify(messages).length; } catch { govdeBoyu = MAKS_MESAJ + 1; }
+  if (govdeBoyu > MAKS_MESAJ) {
+    return res.status(400).json({ error: "Mesaj çok büyük" });
+  }
 
   try {
     const r = await fetch(OPENROUTER, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KEY },
-      body: JSON.stringify({ model, messages, temperature, max_tokens, stream }),
+      body: JSON.stringify({ model, messages, temperature: temp, max_tokens: mt, stream }),
     });
 
     if (stream) {
-      // SSE'yi oldugu gibi bayraktan gecir
+      // SSE'yi olduğu gibi bayraktan geçir
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");

@@ -204,7 +204,7 @@ def meclis_uret(soru, modeller=None):
     
     cevaplar = []
     try:
-        from lenbeyni_zeka import llm, OPENROUTER_KEY
+        from zenai_zeka import llm, OPENROUTER_KEY
         canli = bool(OPENROUTER_KEY)
     except ImportError:
         canli = False

@@ -11,7 +11,7 @@ import os, sys, json, re, time
 from collections import Counter
 
 sys.path.insert(0, os.path.dirname(__file__))
-from lenbeyni_zeka import llm, MEGA_MODEL
+from zenai_zeka import llm, MEGA_MODEL
 
 def cevap_ozet(cikti):
     """Cevaptan ozet cek: temel sonuc/anahtar kelime."""
