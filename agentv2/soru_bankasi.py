@@ -8,13 +8,13 @@ kategori bazli yetkinlik raporu uretmemizi saglar.
 SORULAR = [
     # ── kod ──
     ("kod", "Python ile bir dosyanin ilk 5 satirini okuyan fonksiyon yaz.", "kolay"),
-    ("kod", "Basit bir web sunucusu (HTTP) Python ile nasil yazilir? Ornek ver.", "orta"),
+    ("kod", "Python'da http.server ile calisip 1 saniye sonra kapanan kisa bir HTTP sunucusu yaz (sunucuyu ayri thread'te baslat).", "orta"),
     ("kod", "Bir listeyi kucukten buyuge siralama algoritmasini acikla (quicksort).", "orta"),
-    ("kod", "SQL'de iki tabloyu birlestirmenin (JOIN) turlerini acikla.", "orta"),
+    ("kod", "SQL'deki INNER JOIN mantigini Python'da sqlite3 ile calisan ornekle goster (iki tabloyu ortak kimlik uzerinden birlestir).", "orta"),
     ("kod", "Regex ile e-posta adresi dogrulayan ornek yaz.", "kolay"),
     ("kod", "Python'da bir sözlüğü anahtarlara göre sıralayıp ilk 3 değeri döndüren kod yaz.", "kolay"),
     ("kod", "Bir metnin tam tersini (reverse) döndüren Python fonksiyonu yaz ve karmaşıklığını söyle.", "kolay"),
-    ("kod", "HTTP GET ile bir API'den JSON çekip alanları filtreleyen Python kodu yaz.", "orta"),
+    ("kod", "HTTP GET ile bir API'den JSON cekip alanlari filtreleyen Python kodu yaz (sadece urllib kullan, ek kutuphane yukleme).", "orta"),
     ("kod", "Bir sınıfın özel metotlarını (dunder) 3 örnekle açıkla ve hangi durumda tetiklendiğini anlat.", "orta"),
     ("kod", "Python'da 'yield' nedir? Generatörler belleği neden verimli kullanır?", "orta"),
     ("kod", "Özyinelemeli (recursive) bir Fibonacci fonksiyonu yaz ve iteratif sürümle karşılaştır.", "orta"),

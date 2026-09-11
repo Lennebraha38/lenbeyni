@@ -80,8 +80,16 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
         maxt = int(os.environ.get("ZIRVE_MAXTOKENS", "32768"))
 
     # 1. Tek cevap (routing ile dogru model)
+    sistem = BENCH_SISTEM
+    if konu == "kod":
+        sistem += (
+            "\n5) Kod sorularinda SADECE calisan Python kodu ver: tek bir ```python "
+            "blogu, aciklama/soz metni yok. Kod 10 saniyede bitmeli, ek kutuphane "
+            "yuklemek yok (standart kutuphaneler yeterli), dosya/dis bagimliligina "
+            "gerek yok."
+        )
     sonuc = api_iste(
-        [{"role": "system", "content": BENCH_SISTEM},
+        [{"role": "system", "content": sistem},
          {"role": "user", "content": soru}],
         secilen_model, key, maxt
     )
