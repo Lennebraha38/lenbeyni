@@ -137,6 +137,26 @@ def test_skorer_matematik():
     rapor = puanla(sonuclar)
     assert rapor["sonuclar"][0]["puan"] >= 0.5
 
+def test_skorer_beklenen_matematik():
+    from agentv2.otomatik_skorer import puanla
+    soru = "2+7*3-8/2 isleminin sonucu kactir? Adim adim goster."
+    dogru = [{"no": 1, "konu": "matematik", "soru": soru,
+              "cikti": "7*3=21\n8/2=4\n2+21=23\n23-4=19\nSonuc: 19", "kelime": 8}]
+    yanlis = [{"no": 1, "konu": "matematik", "soru": soru,
+               "cikti": "7*3=21\nSonuc: 41", "kelime": 4}]
+    assert puanla(dogru)["sonuclar"][0]["puan"] == 1.0
+    assert puanla(yanlis)["sonuclar"][0]["puan"] <= 0.6
+
+def test_skorer_beklenen_mantik():
+    from agentv2.otomatik_skorer import puanla
+    soru = "Eger bugun carsamba ise yarin gunlerden ne?"
+    yerinde = [{"no": 1, "konu": "mantik", "soru": soru,
+                "cikti": "Yarin persembe. Günler: Çarşamba -> Perşembe.", "kelime": 8}]
+    belirsiz = [{"no": 1, "konu": "mantik", "soru": soru,
+                 "cikti": "Gün sıralamasına bakarız, haftanın dördüncü günü.", "kelime": 8}]
+    # dogru kavram gorunen cevap, gormeyenden yuksek puan alir
+    assert puanla(yerinde)["sonuclar"][0]["puan"] > puanla(belirsiz)["sonuclar"][0]["puan"]
+
 # ── Cogunluk Oyu ────────────────────────────────────────────
 def test_cogunluk_ozet_cevir():
     from agentv2.cogunluk_oyu import cevap_ozet

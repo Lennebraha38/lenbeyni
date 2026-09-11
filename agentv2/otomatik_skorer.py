@@ -47,36 +47,94 @@ def puan_kod(kod_metni):
     finally:
         os.unlink(yol)
 
-def puan_matematik(cikti, beklenen=None):
-    """Cevap icindeki sayilari bul, beklenen sonucla karsilastir."""
-    if not beklenen:
-        return 0.5, "Beklenen sonuc tanimsiz"
-    # Cevaptaki tum sayilari cek
-    sayilar = re.findall(r'[-+]?\d*\.?\d+', cikti.replace(" ", ""))
-    bek_num = None
-    try:
-        bek_num = float(beklenen)
-    except ValueError:
-        # Kesir 1/36 gibi
-        if "/" in beklenen:
-            try:
-                p, b = beklenen.split("/")
-                bek_num = float(p) / float(b)
-            except Exception:
-                pass
-    if bek_num is None:
-        return 0.5, "Beklenen sayisal degil"
-    for s in sayilar:
+# ── Soru-bazlı beklenti erişimi ────────────────────────────────
+_HEDEFLER = None
+def _hedef_get(soru):
+    """Sorunun beklenen yanıt tablosundaki kaydini dondurur (yoksa None)."""
+    global _HEDEFLER
+    if _HEDEFLER is None:
+        _HEDEFLER = {}
         try:
-            sv = float(s)
-            if abs(sv - bek_num) < 0.01 or (bek_num != 0 and abs(sv/bek_num - 1) < 0.02):
-                return 1.0, f"Dogru: {s}"
-        except ValueError:
-            continue
-    return 0.2, f"Bulunamadi (beklenen: {beklenen})"
+            from soru_bankasi import HEDEFLER
+            _HEDEFLER = HEDEFLER
+        except ImportError:
+            try:
+                from agentv2.soru_bankasi import HEDEFLER
+                _HEDEFLER = HEDEFLER
+            except ImportError:
+                _HEDEFLER = {}
+    return _HEDEFLER.get(soru or "")
 
-def puan_dil(cikti):
-    """Dil kalitesi: uzunluk, Turkce harf, yapilandirma."""
+def _anahtar_esle(cikti, kelimeler):
+    """Anahtar kavramlardan en az biri metinde var mi? (LaTeX/kok formlari normalizeli)"""
+    kucuk = (cikti or "").lower()
+    # sqrt(3), \sqrt{3}, \\sqrt{3}, kök 3 -> √3 kanonik formuna indir
+    kucuk = re.sub(r"\\*sqrt\s*\{?\s*([0-9a-zçğıöşü]+)\}?", r"√\1", kucuk)
+    kucuk = re.sub(r"k[oö]k\s*([0-9)] )", r"√\1", kucuk)
+    return [k for k in kelimeler if k.lower() in kucuk]
+
+def _sayi_esle(cikti, bek_str):
+    """Beklenen deger (tam sayi/kesir/ondalik) metinde var mi?"""
+    if not bek_str:
+        return False
+    temiz = re.sub(r"[{}()\\\[\]_]", " ", cikti).replace(" ", "")
+    if bek_str in temiz:
+        return True
+    try:
+        if "/" in bek_str and re.fullmatch(r"[0-9]+/[0-9]+", bek_str):
+            p, b = bek_str.split("/")
+            bek = float(p) / float(b)
+        else:
+            bek = float(bek_str.replace(",", "."))
+        for s in set(re.findall(r"[0-9]+[.,]?[0-9]*", temiz)):
+            try:
+                sv = float(s.replace(",", "."))
+            except ValueError:
+                continue
+            if abs(sv - bek) < 1e-6 or (bek and abs(sv / bek - 1) < 0.02):
+                return True
+    except Exception:
+        pass
+    return False
+
+def puan_matematik(cikti, hedef=None, beklenen=None):
+    """Beklenen sonucu (HEDEFLER tablosundan) eslestir; yoksa yapisal puan."""
+    if beklenen:  # eski uyumluluk yolu
+        if _sayi_esle(cikti, beklenen):
+            return 1.0, f"Dogru: {beklenen}"
+        return 0.2, f"Bulunamadi (beklenen: {beklenen})"
+    if not hedef:
+        # sinav tanimsiz -> matematiksel yapi ipudu ile puanla
+        if re.search(r"[0-9][0-9.,]*\s*[+\-*/^×÷=]", cikti):
+            return 0.6, "Matematiksel islem/item mevcut (beklenti yok)"
+        if re.findall(r"[0-9]", cikti):
+            return 0.5, "Sayi mevcut (beklenti yok)"
+        return 0.3, "Beklenen sonuc tanimsiz"
+    if hedef["tur"] == "sayi":
+        eslenen = [h for h in hedef["sonuc"] if _sayi_esle(cikti, h)]
+        if eslenen:
+            return 1.0, "Beklenen deger bulundu: " + ", ".join(eslenen)
+        if re.search(r"[0-9][0-9.,]*\s*[+\-*/^×÷=]", cikti):
+            return 0.6, "Islem adimlari var ama beklendik sonuc yok"
+        return 0.3, "Sayisal cevap bulunamadi"
+    # tur == "metin"
+    hit = _anahtar_esle(cikti, hedef["sonuc"])
+    if hit:
+        return 0.9, "Kavram bulundu: " + ", ".join(hit)
+    return 0.4, "Beklenen kavramlar yok"
+
+def puan_mantik(cikti, hedef=None):
+    """Yapisal + beklenen kavram/dogruluk puani."""
+    yapi, not_ = puan_genel(cikti)
+    if not hedef or not hedef.get("sonuc"):
+        return yapi, not_
+    hit = _anahtar_esle(cikti, hedef["sonuc"])
+    dogru = 1.0 if hit else 0.0
+    not_ = ("Dogru: " + ", ".join(hit) + "; " + not_) if hit else (not_ + "; beklenen yok")
+    return round(0.6 * dogru + 0.4 * yapi, 2), not_
+
+def puan_dil(cikti, hedef=None):
+    """Dil kalitesi: uzunluk, Turkce harf, yapilandirma (+ beklenen kavram bonusu)."""
     puan = 0.0
     notlar = []
     kelimeler = cikti.split()
@@ -99,6 +157,12 @@ def puan_dil(cikti):
     if len(cikti) > 30:
         puan += 0.2
         notlar.append("anlasilir")
+    # Beklenen kavram bonusu (dogruluk ipucu)
+    if hedef and hedef.get("sonuc"):
+        hit = _anahtar_esle(cikti, hedef["sonuc"])
+        if hit:
+            puan = min(1.0, puan + 0.15)
+            notlar.append("beklenen kavram")
     return min(puan, 1.0), "; ".join(notlar) if notlar else "yetersiz"
 
 def puan_genel(cikti):
@@ -131,7 +195,7 @@ KONU_PUANLAYICI = {
     "kod": puan_kod,
     "matematik": puan_matematik,
     "dil": puan_dil,
-    "mantik": puan_genel,
+    "mantik": puan_mantik,
     "bilim": puan_genel,
     "tarih": puan_genel,
     "yaratici": puan_genel,
@@ -149,6 +213,7 @@ def puanla(sonuclar):
     for s in sonuclar:
         konu = s.get("konu", "genel")
         cikti = s.get("cikti", "")
+        soru = s.get("soru", "")
         no = s.get("no", 0)
         
         # Hata/basarisiz/sıfır kelime kontrol
@@ -160,13 +225,15 @@ def puanla(sonuclar):
             continue
         
         basarili += 1
-        
+        hedef = _hedef_get(soru)
         if konu == "kod":
             p, not_ = puan_kod(cikti)
         elif konu == "matematik":
-            p, not_ = puan_matematik(cikti, MATEMATIK_BEKLENEN.get(no))
+            p, not_ = puan_matematik(cikti, hedef)
         elif konu == "dil":
-            p, not_ = puan_dil(cikti)
+            p, not_ = puan_dil(cikti, hedef)
+        elif konu == "mantik":
+            p, not_ = puan_mantik(cikti, hedef)
         else:
             p, not_ = puan_genel(cikti)
         

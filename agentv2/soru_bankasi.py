@@ -167,3 +167,58 @@ SORULAR = [
     ("teknoloji", "RAG (retrieval-augmented generation) nedir ve neden kullanılır?", "orta"),
     ("teknoloji", "Bir sunucunun ölçeklenmesi: dikey mi yatay mı? Koşullarıyla anlat.", "zor"),
 ]
+
+# ── Beklenen yanıt tablosu (otomatik skorer için) ─────────────
+# tur: "sayi" (sayısal/kesirli cevap) | "metin" (anahtar kavram varlığı)
+# sonuc: kabul edilebilir değer/kavram listesi (büyük-küçük harf duyarsız eşleşir)
+HEDEFLER = {
+    # ── matematik ──
+    "2+7*3-8/2 isleminin sonucu kactir? Adim adim goster.":
+        {"tur": "sayi", "sonuc": ["19"]},
+    "Bir dortgenin ic acilarinin toplami neden 360 derecedir?":
+        {"tur": "metin", "sonuc": ["360"]},
+    "Pi sayisinin kesirli yaklasik degerini ve neden dogru oldugunu anlat.":
+        {"tur": "metin", "sonuc": ["22/7", "3.14", "3,14"]},
+    "Bir sayinin asal olup olmadigini bulmanin en hizli yolu nedir?":
+        {"tur": "metin", "sonuc": ["karekök", "kare kok", "karekok"]},
+    "Olasilik: 6 yuzlu zar 2 kez atilinca iki kez 6 gelme ihtimali?":
+        {"tur": "sayi", "sonuc": ["1/36", "0.027", "2.7"]},
+    "%20 zam yapılan 150 TL'lik ürün, sonra %20 indirimle kaç TL olur?":
+        {"tur": "sayi", "sonuc": ["144"]},
+    "f(x)=3x+2 doğrusunun grafiğinin eğimi ve y-keseni nedir? Açıkla.":
+        {"tur": "sayi", "sonuc": ["3", "2"]},
+    "Üslerle çalışma: 2^10 u 2^3 un uslu yonunden ifade edip hesapla.":
+        {"tur": "sayi", "sonuc": ["1024"]},
+    "Bir küpün köşegen uzunluğu formülünü türet.":
+        {"tur": "metin", "sonuc": ["√3", "kök 3", "karekök 3", "kökü 3"]},
+    "Ortalama değer teoremini bir örnekle açıkla (kalkülüs).":
+        {"tur": "metin", "sonuc": ["ortalama değer", "türev", "sürekl"]},
+    "log2(64) + log3(81) kactir? Adim adim coz.":
+        {"tur": "sayi", "sonuc": ["10"]},
+    "Bir aritmetik dizinin ilk 50 terimini toplayan formülü ver (n=50, a1=3, d=2).":
+        {"tur": "sayi", "sonuc": ["2600"]},
+    "Pascal üçgeni ile (a+b)^4 açılımını yaz.":
+        {"tur": "metin", "sonuc": ["a^4", "a⁴", "4a", "6a"]},
+    "Karmaşık sayılar: (3+4i)(3-4i) işleminin sonucu ve anlamı nedir?":
+        {"tur": "sayi", "sonuc": ["25"]},
+    "Bayes teoremini tıbbi bir test örneğiyle açıkla (yanlış pozitif olgusunu içersin).":
+        {"tur": "metin", "sonuc": ["bayes", "olasılık"]},
+    # ── mantik ──
+    "Bir dunyada tum kuzgunlar siyahtir. Beyaz bir kuzgun bulursak bu onermeyi nasil degisir?":
+        {"tur": "metin", "sonuc": ["yanlış", "yanlis", "karşı örnek", "karsi ornek", "tümel"]},
+    "Sudoku bulmaca cozumune nasil yaklasilir? Adim adim anlat.":
+        {"tur": "metin", "sonuc": ["satır", "sutun", "kare", "ızgara"]},
+    "Eger bugun carsamba ise yarin gunlerden ne?":
+        {"tur": "metin", "sonuc": ["perşembe", "persembe"]},
+    # ── dil ── (kavram bonusu)
+    "'Ki' baglacinin yazim kurallarini orneklerle anlat.":
+        {"tur": "metin", "sonuc": ["ayrı yazılır", "bitişik"]},
+    "'da/de' bağlacının bitişik mi ayrı mı yazıldığını 2 örnekle ve gerekçesiyle anlat.":
+        {"tur": "metin", "sonuc": ["ayrı"]},
+    "'Degil' veya 'degil' hangisi dogru? Turkce imla kurallarini acikla.":
+        {"tur": "metin", "sonuc": ["değil", "ayrı"]},
+    "'Beni, eve giderken aradı' cümlesindeki virgülün anlamı nasıl değiştirdiğini yaz.":
+        {"tur": "metin", "sonuc": ["virgül"]},
+    "Noktalama: 'gelmedi dedi' ile 'gelmedi, dedi' arasındaki farkı açıkla.":
+        {"tur": "metin", "sonuc": ["tırnak", "virgül", "aktarı"]},
+}

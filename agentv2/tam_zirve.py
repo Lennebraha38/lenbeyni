@@ -31,6 +31,16 @@ except ImportError:
 KONULAR = sorted({k for k, _, _ in SORULAR})
 ZORLUKLAR = ("kolay", "orta", "zor")
 
+BENCH_SISTEM = (
+    "Turkce; yapilandirilmis, net ve dogru cevap ver.\n"
+    "Kurallar:\n"
+    "1) Her cevap en az 3 madde veya adim icersin.\n"
+    "2) Sayisal/kesin cevapli sorularda islem adimlarini goster ve en sonda "
+    "'Sonuc: <deger>' satiri ile bitir (deger mutlaka sayi veya tek kelime olsun).\n"
+    "3) Mantik ve dil sorularinda once dogrudan cevabi yaz, sonra gerekceyi madde madde ver.\n"
+    "4) Uydurma yapma; emin degilsen 'Emin degilim' diye belirt."
+)
+
 def api_iste(mesajlar, model, key, max_tokens=2048, deneme=3):
     """Rate-limit aware API cagirisi."""
     import requests
@@ -66,14 +76,14 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
 
     # 1. Tek cevap (routing ile dogru model)
     sonuc = api_iste(
-        [{"role": "system", "content": "Turkce, net ve dogru cevap ver."},
+        [{"role": "system", "content": BENCH_SISTEM},
          {"role": "user", "content": soru}],
         secilen_model, key, maxt
     )
 
-    # 2. Self-correction (kod/matematik icin)
+    # 2. Self-correction (yapilandirma icin tum konularda)
     duzeltilen = 0
-    if sonuc.get("kelime", 0) > 0 and konu in ("kod", "matematik", "mantik"):
+    if sonuc.get("kelime", 0) > 0:
         def _duzelt_istek(msg):
             r = api_iste(msg, secilen_model, key, maxt)
             return r["cikti"] if r.get("kelime", 0) > 0 else None
