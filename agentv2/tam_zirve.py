@@ -54,7 +54,11 @@ def api_iste(mesajlar, model, key, max_tokens=2048, deneme=3):
             }, headers={"Authorization": "Bearer " + key}, timeout=120)
             sure = round(time.time()-t0, 1)
             if r.status_code == 200:
-                c = r.json()["choices"][0]["message"]["content"]
+                msg = r.json()["choices"][0]["message"]
+                c = msg.get("content")
+                if isinstance(c, list):  # Gemini part-dizisi formatı
+                    c = " ".join(p.get("text", "") for p in c if isinstance(p, dict))
+                c = c or ""
                 return {"sure": sure, "kelime": len(c.split()), "cikti": c[:5000], "model": model}
             elif r.status_code == 429:
                 bekle = (2 ** tur) * 3
@@ -72,7 +76,8 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
     # ZIRVE_MODEL ortam degiskeni varsa tum sorularda o modeli kullan (benchmark acil yol)
     zor_model = os.environ.get("ZIRVE_MODEL", "").strip()
     if zor_model:
-        secilen_model, maxt = zor_model, 32768
+        secilen_model = zor_model
+        maxt = int(os.environ.get("ZIRVE_MAXTOKENS", "32768"))
 
     # 1. Tek cevap (routing ile dogru model)
     sonuc = api_iste(

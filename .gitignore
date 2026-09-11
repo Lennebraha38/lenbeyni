@@ -18,3 +18,5 @@ zirve_sonuc*.json
 node_modules/
 .pytest_cache/
 veritabani.db
+example.db
+ornek.db
