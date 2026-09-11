@@ -1,4 +1,4 @@
-"""Zenai Guvenlik Katmani testleri: SSRF, komut, Python AST, path, injection."""
+"""ZenAI Guvenlik Katmani testleri: SSRF, komut, Python AST, path, injection."""
 import os
 import sys
 

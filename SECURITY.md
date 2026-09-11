@@ -1,6 +1,6 @@
-# Zenai Güvenlik Politikası
+# ZenAI Güvenlik Politikası
 
-Zenai, kod çalıştırma, web erişimi, dosya okuma ve uzak MCP uçlarına bağlanma
+ZenAI, kod çalıştırma, web erişimi, dosya okuma ve uzak MCP uçlarına bağlanma
 yetenekleri olan bir asistan olduğundan, çok katmanlı güvenlik kuralları uygular.
 Bu kurallar **varsayılan olarak reddet** (`deny-by-default`) ilkesine dayanır.
 

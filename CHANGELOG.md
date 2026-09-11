@@ -57,8 +57,8 @@ Tüm önemli değişiklikler bu dosyada toplanır.
 - `CONTRIBUTING.md`, `CHANGELOG.md`, `.env.example` genişletildi.
 - README: test sayıları, benchmark 150 soru, `~/.zenai_bellek.json` yolu güncellendi.
 
-## [2.0.0] — Zenai rebrand + Vercel deploy
-- LenBeyni → **Zenai** marka değişimi (web, agentv2, docs).
+## [2.0.0] — ZenAI rebrand + Vercel deploy
+- LenBeyni → **ZenAI** marka değişimi (web, agentv2, docs).
 - Canlı adres: `https://zenai-two.vercel.app`
 - Design System 2.0 (tokens, nebula arkaplan, cam paneller).
 - Rebrand öncesi tüm geliştirme tarihçesi `git log` içindedir.

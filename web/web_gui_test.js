@@ -1,4 +1,4 @@
-// Zenai web GUI — Playwright doğrulama testi
+// ZenAI web GUI — Playwright doğrulama testi
 // Kullanım: NODE_PATH=$(npm root -g) node web/web_gui_test.js
 const { chromium } = require("playwright");
 

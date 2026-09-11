@@ -1,4 +1,4 @@
-"""Zenai Tam Zirve Testi — tek komutla tum sistemi calistir.
+"""ZenAI Tam Zirve Testi — tek komutla tum sistemi calistir.
 Akil motoru + model routing + self-correction + cogunluk oyu + meclis hakemi.
 Rate-limit aware: aralarda bekleme, kismi sonuc kaydetme, kalan hak sureci.
 
@@ -203,7 +203,7 @@ def _kaydet(sonuclar, toplam, cikti):
         json.dump({"toplam": toplam, "sonuclar": sonuclar}, f, ensure_ascii=False, indent=1)
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description="Zenai tam zirve testi")
+    p = argparse.ArgumentParser(description="ZenAI tam zirve testi")
     p.add_argument("--soru", type=int, default=150)
     p.add_argument("--cogunluk", action="store_true")
     p.add_argument("--kalan-bekle", action="store_true")

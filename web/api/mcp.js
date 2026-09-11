@@ -1,4 +1,4 @@
-// Zenai MCP Rölesi (Vercel Serverless).
+// ZenAI MCP Rölesi (Vercel Serverless).
 // Tarayıcıdan uzak MCP sunucularına JSON-RPC over HTTP ile alet listeleme/çağırma.
 // CORS ve anahtar sorunlarını sunucu tarafında çözer; key tarayıcıya asla sızmaz.
 // Güvenlik: SSRF önleme — iç ağ/özel IP uçlarına bağlanma engellenir.
@@ -86,7 +86,7 @@ async function mcpIste(uc, proto, payload) {
     // SSE: önce /initialize + /notifications gönder, sonra tekrar iste
     await fetch(uc, { method: "POST", headers: MCP_HEADERS, body: JSON.stringify({
       jsonrpc: "2.0", id: 0, method: "initialize",
-      params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "lenbeyni", version: "1.0" } },
+      params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "ZenAI", version: "1.0" } },
     }) });
   }
   const r = await fetch(uc, { method: "POST", headers: MCP_HEADERS, body: JSON.stringify(payload) });

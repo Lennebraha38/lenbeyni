@@ -1,4 +1,4 @@
-"""Zenai Bellek — vektör tarzı hatırlama.
+"""ZenAI Bellek — vektör tarzı hatırlama.
 
 JSON tabanlı, bağımsız (chromadb kurulmadan çalışır) hafıza:
 - Karakter n-gram TF-IDF ile kosinüs benzerliği (kelime tabanlı değil -> Türkçe eklemelerde sağlam)
@@ -182,7 +182,7 @@ Bellek = BellekVec
 
 if __name__ == "__main__":
     b = Bellek()
-    b.kaydet("test_kaydi", "Zenai vektor bellek denemesi calisiyor.", etiket="test", sure=3600)
+    b.kaydet("test_kaydi", "ZenAI vektor bellek denemesi calisiyor.", etiket="test", sure=3600)
     print("ARASTIRMA:", b.ara("bellegin yetenegi nedir"))
     print("LISTE:", b.kayit_listesi())
     b.unut("test_kaydi")

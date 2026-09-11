@@ -1,4 +1,4 @@
-// Zenai sunucu rölesi (Vercel Serverless).
+// ZenAI sunucu rölesi (Vercel Serverless).
 // Kullanıcı ASLA key görmez/girmez — key sadece burada (env OPENROUTER_KEY).
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 

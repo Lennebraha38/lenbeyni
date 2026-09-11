@@ -1,4 +1,4 @@
-"""Zenai Soru Bankasi — 150 soru, 10 konu, 3 zorluk (kolay/orta/zor).
+"""ZenAI Soru Bankasi — 150 soru, 10 konu, 3 zorluk (kolay/orta/zor).
 
 Her kayit: (konu, soru, zorluk)
 Zorluk seviyeleri benchmark'in istatistiksel gucunu artirir ve

@@ -1,4 +1,4 @@
-# Zenai Geliştirme Rehberi
+# ZenAI Geliştirme Rehberi
 
 Katkı veren herkes bu kurallara uyar.
 

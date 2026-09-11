@@ -1,4 +1,4 @@
-"""Zenai Guvenlik Katmani.
+"""ZenAI Guvenlik Katmani.
 
 Tum guvenlik kurallari tek yerde:
 - SSRF onleme (url_guvenli / ip_ozel_mi)

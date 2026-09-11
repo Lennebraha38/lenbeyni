@@ -1,4 +1,4 @@
-"""Zenai - yerel + mega beyin. Ajan dongusu ve Deep Research."""
+"""ZenAI - yerel + mega beyin. Ajan dongusu ve Deep Research."""
 import os, re, sys
 
 ENV_KEY = os.environ.get("OPENROUTER_KEY", "")

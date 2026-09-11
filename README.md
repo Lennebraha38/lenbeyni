@@ -1,7 +1,7 @@
-# Zenai
+# ZenAI
 
 **Yerel + Mega Beyin mimarisiyle çalışan Türkçe yapay zeka asistan projesi.**
-*(eski adı: LenBeyni — rebrand)*
+*Resmî adı: ZenAI (eski adı: LenBeyni — rebrand)*
 
 Tabletten buluta uzanan iki kademeli beyin sistemi:
 - **Yerel beyin** (Ollama): 7B/14B kod modeli — offline, kendi donanımında

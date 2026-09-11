@@ -12,7 +12,7 @@ Onu **bir tablette, maksimum ve ücretsiz** kullanabilirim. Uzun zaman sürebili
 2. Ama "tablette ücretsiz çalışan gerçekten zeki asistan" **MÜMKÜN**:
    zekâ her zaman aynı cihazda OLMAK zorunda değil; sistem bunu dağıtır.
 
-## Mimari — "Zenai" (hedef çözüm)
+## Mimari — "ZenAI" (hedef çözüm)
 ```
 [Tablet/Termux — benim cihazım, ücretsiz]
   1. Yerel beyin ......... Lennebraha-8b / Coder-14B-hybrid (GGUF, offline taban)
@@ -35,7 +35,7 @@ Onu **bir tablette, maksimum ve ücretsiz** kullanabilirim. Uzun zaman sürebili
 - [ ] Yöneltici — `yoneltici.py`: soru sınıfı + ücretsiz bulut API köprüleri
 - [ ] Bellek + RAG — tablet dosya + notlar + retrieve
 - [ ] Araç döngüsü — kod çalıştırma/retry (Termux python sandbox)
-- [ ] Entegrasyon — tek komutla tablette "Zenai"
+- [ ] Entegrasyon — tek komutla tablette "ZenAI"
 
 ## Ölçüm/kanıt (jüriye)
 Her katman ölçülebilir: yerel offline skoru, yöneltici mutlak doğruluk, bulut-zekâ pas oranı,
