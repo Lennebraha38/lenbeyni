@@ -1,0 +1,10 @@
+# ZenAI Voice — sesli bot ekstraları (satır içi yorumlar üretim paketleridir)
+# pipecat-ai çekirdeği + isteğe bağlı donanım/yapay zeka servisleri.
+# 0-maliyet: tamamı açık kaynak/modeller, ücretli API gerektirmez.
+pipecat-ai>=1.10          # orkestrasyon
+pipecat-ai[webrtc]>=1.10  # tarayıcı -> bot ses hattı (WebRTC, opus)
+pipecat-ai[silero]>=1.10  # VAD (konuşma algılama + barge-in)
+pipecat-ai[whisper]>=1.10 # lokal STT (mihuai/turkish-stt veya faster-whisper)
+pipecat-ai[piper]>=1.10   # lokal Türkçe TTS (Piper TR)
+# İsteğe bağlı: orijinal STT ağırlığı
+# huggingface_hub>=0.23    # turkish-stt indirmek için

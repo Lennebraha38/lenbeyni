@@ -1,0 +1,31 @@
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: voice/docker/Dockerfile
+    ports: ["8787:8787"]
+    environment:
+      ZENAI_GATEWAY: ""
+    restart: unless-stopped
+
+  # Opsiyonel: sesli bot (WebRTC + Piper TTS)
+  # Ekstra paketleri yükler, resource dày üretir.
+  # bot:
+  #   build:
+  #     context: ../..
+  #     dockerfile: voice/docker/Dockerfile
+  #   entrypoint: ["python","-m","voice.bot.run","--transport","webrtc","--port","8788"]
+  #   ports: ["8788:8788"]
+  #   environment:
+  #     ZENAI_GATEWAY: "http://gateway:8787"
+  #     PIPECAT_EXTRA: "webrtc,piper,whisper,silero"
+  #   restart: unless-stopped
+
+  hud:
+    image: nginx:alpine
+    volumes: ["../../voice/hud:/usr/share/nginx/html:ro"]
+    ports: ["8080:80"]
+    depends_on: [gateway]
+    restart: unless-stopped
+    command: >
+      nginx -g 'daemon off;'
