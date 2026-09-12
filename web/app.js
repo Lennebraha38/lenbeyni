@@ -132,7 +132,6 @@ function dilAt(yeni) {
   dil = yeni || (dil === "tr" ? "en" : "tr");
   localStorage.setItem("lb_dil", dil);
   uygulaI18n();
-  if ($("oneriGrid")) onerilerCiz();
   modelPiliCiz();
   skillListesiCiz();
   mcpListesiCiz();
@@ -957,27 +956,6 @@ function modelPiliCiz(konu) {
   $("routingRoz").classList.add("acik");
 }
 
-// ── Öneri kartları ────────────────────────────────────
-const ONERILER = [
-  { ik: "💡", t: "Bana 5 günlük üretken bir sabah rutini öner" },
-  { ik: "📝", t: "Python'da telefon rehberi uygulaması nasıl yazılır?" },
-  { ik: "🌍", t: "Karbon ayak izimi azaltmak için neler yapabilirim?" },
-  { ik: "📜", t: "Bir masal kahramanı için benzersiz bir güç tasarla" },
-  { ik: "🧠", t: "Akıl Motoru ile kritik düşünme nedir?" },
-  { ik: "⚽", t: "İstanbul'da 3 günlük gezi planı hazırla" },
-];
-function onerilerCiz() {
-  const kutu = $("oneriGrid");
-  if (!kutu) return;
-  ONERILER.forEach((o, i) => {
-    const div = document.createElement("div");
-    div.className = "oneri";
-    div.innerHTML = `<span class="oneri-ikon">${o.ik}</span>${o.t}`;
-    div.onclick = () => { $("giris").value = o.t; $("giris").focus(); otomatikBoyut(); };
-    kutu.appendChild(div);
-  });
-}
-
 // ── Girdi boyutlandırma ───────────────────────────────
 const girisEl = $("giris");
 function otomatikBoyut() {
@@ -1137,7 +1115,6 @@ function bagla() {
     }
   } catch (e) { }
   modelPiliCiz();
-  onerilerCiz();
   skillListesiCiz();
   mcpListesiCiz();
   bagla();
