@@ -72,7 +72,7 @@ let skills = depo.get("skills", [
   { ad: "Matematikçi", ikon: "📐", icerik: "Sen titiz bir matematikçisin. Her adımı göster, mantığını açıkla, sonucu net ver." },
   { ad: "Yaratıcı Yazar", ikon: "✍️", icerik: "Sen hikâye anlatıcısısın. Canlı betimleme, gerçekçi diyalog ve akıcı kurgu kur. Amaç okuyucuyu içine çekmek." },
 ]);
-let aktifSkilller = depo.get("aktifSkilller", [0, 1]);
+let aktifSkilller = depo.get("aktifSkilller", []);
 
 function skillKaydet() {
   depo.set("skills", skills);
@@ -221,7 +221,7 @@ async function sunucuKontrol() {
 }
 
 function gecerliKey() { return $("apiKey").value.trim(); }
-function gecerliMaxTok() { return 32768; }
+function gecerliMaxTok() { return 16384; }
 
 function mesajEkle(role, icerik, meta) {
   const chat = $("chat");
@@ -479,13 +479,13 @@ function sorudakiUrl(s) {
 // ── Ana gönderim akışı ────────────────────────────────
 async function sistemPromptu(konu, soyut) {
   const parcalar = [
-    "Sen ZenAI'sin — Gemini/Claude seviyesi bir zeka asistanı. Türkçe, net ve rakiplerinden daha kapsamlı cevap ver.",
-    "HEDEF: Shally, kısa kesme aramadan konunun tüm yönlerini ele al. Bol madde, başlık, örnek ve açıklama kullan. Claude'un 'kısa cevap' alışkanlığının ötesine geç.",
+    "Sen ZenAI'sin — Türkçe bir asistan. Doğrudan, net ve özlü cevap ver.",
+    "UZUNLUK KURALI: Önce tek cümlelik doğrudan cevap. Sonra gerekirse 3-5 kısa madde veya kısa adım adım akış (konu uzunsa). Bol tekrar, lüzumsuz giriş/bitiş cümlesi, gereksiz başlık yığını yapma. Çoğu soru 100-250 kelimeyle biter; 400 kelimeyi aşma.",
   ];
   if (soyut) {
     const y = KONU_YONTEM[konu] || KONU_YONTEM.pratik;
     parcalar.push("YÖNTEM: " + y);
-    parcalar.push("ADIM ADIM: (1) önce düşün, (2) kapsamlı yaz, (3) kendi cevabını yeniden oku, eksik/hata varsa düzelt.");
+    parcalar.push("AKIŞ: görünür adımları kısa tut; her adımı 1-2 cümleyle ver, sonucu en sonda tek cümleyle kapat.");
   }
   const skillCikarlari = skillIcerikleri();
   if (skillCikarlari.length) parcalar.push("AKTİF SKILLER:\n" + skillCikarlari.map((s) => "• " + s).join("\n"));
@@ -495,7 +495,7 @@ async function sistemPromptu(konu, soyut) {
       "\nBir alet çağırmak için satır şu formatta olmalı: TOOL_CALL: aletAdı (parametre=değer, ...)\n" +
       "Sonucu aldıktan sonra nihai cevabını ver.");
   }
-  parcalar.push("Cevaplarını **markdown** ile biçimlendir (başlık, madde, kod bloğu, tablo).");
+  parcalar.push("Cevaplarını **markdown** ile hafifçe biçimlendir (gerekirse başlık, madde, kod bloğu).");
   return parcalar.join("\n\n");
 }
 
@@ -647,13 +647,14 @@ async function meclisTuru(soru, key) {
 
 // ── Model seçimi ──────────────────────────────────────
 function konuModel(secili, konu) {
-  if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return KONU_MODELLERI[konu];
+  const sinir = (m) => [m[0], Math.min(m[1], 16384)];
+  if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return sinir(KONU_MODELLERI[konu]);
   const sabit = {
-    "dots-studio/dots-3-note-preview:free": ["dots-studio/dots-3-note-preview:free", 48000],
-    "nvidia/nemotron-3-ultra-550b-a55b:free": ["nvidia/nemotron-3-ultra-550b-a55b:free", 65536],
-    "poolside/laguna-s-2.1:free": ["poolside/laguna-s-2.1:free", 32768],
+    "dots-studio/dots-3-note-preview:free": sinir(["dots-studio/dots-3-note-preview:free", 48000]),
+    "nvidia/nemotron-3-ultra-550b-a55b:free": sinir(["nvidia/nemotron-3-ultra-550b-a55b:free", 65536]),
+    "poolside/laguna-s-2.1:free": sinir(["poolside/laguna-s-2.1:free", 32768]),
   };
-  return sabit[secili] || ["dots-studio/dots-3-note-preview:free", 48000];
+  return sabit[secili] || sinir(["dots-studio/dots-3-note-preview:free", 48000]);
 }
 function modelSecili() {
   return localStorage.getItem("lb_model") || "dots-studio/dots-3-note-preview:free";

@@ -63,7 +63,7 @@ body::before {
     radial-gradient(700px 460px at 108% 10%, rgba(79,209,197,.10), transparent 60%),
     radial-gradient(800px 600px at 50% 120%, rgba(188,171,255,.10), transparent 60%);
 }
-#app { position: relative; z-index: 1; display: flex; height: 100vh; }
+#app { position: relative; z-index: 1; display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
 ::selection { background: rgba(124,129,255,.35); }
 
@@ -79,6 +79,7 @@ body::before {
   background: linear-gradient(180deg, rgba(255,255,255,.018), transparent 40%), var(--bg-elev);
   border-right: 1px solid var(--cizgi);
   display: flex; flex-direction: column;
+  min-height: 0;
 }
 .side-top { padding: 14px 14px 8px; }
 .yeni-konus {
@@ -135,7 +136,7 @@ body::before {
 .sw input:checked + i::before { left: 16px; background: #fff; }
 
 /* ── ANA ALAN ─────────────────────────────────────────── */
-#main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
 
 #ustBar {
   height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
@@ -180,8 +181,8 @@ body::before {
 .temiz-btn:hover, .acili-btn:hover { background: rgba(255,255,255,.06); color: var(--zk); }
 
 /* ── SOHBET ──────────────────────────────────────────── */
-#chat { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
-.bos-merkez { display: flex; align-items: center; justify-content: center; }
+#chat { flex: 1; overflow-y: auto; scroll-behavior: smooth; min-height: 0; min-width: 0; padding-bottom: 8px; }
+.bos-merkez { display: flex; }
 #chat:has(.msg), #chat:has(.meclis-wrap) { display: block; }
 #chat:has(.msg)::before, #chat:has(.meclis-wrap)::before {
   content: ""; position: fixed; left: 272px; right: 0; top: 60px; height: 60px;
@@ -314,7 +315,7 @@ body::before {
 @keyframes yanip { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
 /* ── Hoş geldin ──────────────────────────────────────── */
-.karsilama { text-align: center; max-width: 720px; padding: 30px 26px; }
+.karsilama { text-align: center; max-width: 720px; padding: 30px 26px; margin: auto; }
 .karsilama-logo {
   position: relative; width: 84px; height: 84px; margin: 0 auto 22px; border-radius: 26px;
   background: var(--vmg);
@@ -356,7 +357,7 @@ body::before {
 }
 
 /* ── Girdi alanı ─────────────────────────────────────── */
-.girdi-kutu-wrap { padding: 0 24px 16px; position: relative; z-index: 6; }
+.girdi-kutu-wrap { padding: 0 24px 16px; position: relative; z-index: 6; flex-shrink: 0; }
 .girdi-cubuk {
   max-width: 840px; margin: 0 auto; display: flex; align-items: flex-end; gap: 6px;
   background: rgba(22,22,31,.9); border: 1px solid var(--cizgi-2); border-radius: 22px; padding: 9px;
@@ -401,7 +402,7 @@ body::before {
 
 /* ── SAĞ PANEL ──────────────────────────────────────── */
 #panel {
-  width: 352px; min-width: 352px; overflow-y: auto;
+  width: 352px; min-width: 352px; overflow-y: auto; min-height: 0;
   background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 30%), var(--bg-elev);
   border-left: 1px solid var(--cizgi);
 }
@@ -516,6 +517,10 @@ body::before {
   .meclis-grid { grid-template-columns: 1fr; }
   .girdi-kutu-wrap { padding: 0 12px 12px; }
   .msjy .msg-icerik { padding: 12px 14px; }
+  .logo-yazi { display: none; }
+  .routing-ok { display: none; }
+  #ustBar { padding: 0 12px; gap: 6px; }
+  .msg-yuzde, .meclis-wrap { padding: 4px 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01s !important; transition-duration: .01s !important; }
