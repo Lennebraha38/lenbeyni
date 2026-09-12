@@ -347,7 +347,13 @@
     }
 
     function baglan() {
-      gateway = ($('cfg-gateway').value || '').replace(/\/$/, '');
+      const girilen = ($('cfg-gateway').value || '').trim().replace(/\/$/, '');
+      /* Vercel yayini: ayni origin uzerinden /api/voice (CORS'suz, 0 maliyet).
+       * Lokal: http://127.0.0.1:8787 gibi tam adres girilir. */
+      const ayniOrigin = location.origin.startsWith('http') &&
+        !girilen && location.pathname.indexOf('/voice/hud') >= 0;
+      gateway = girilen ||
+        (ayniOrigin ? location.origin + '/api/voice/completions' : 'http://127.0.0.1:8787');
       wsUrl = ($('cfg-ws').value || '').trim();
       durum.sus();
       setDurum();
