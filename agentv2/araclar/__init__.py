@@ -13,6 +13,9 @@ Komut formati:
   [LISTE]klasor,*.py[/LISTE]     - dosya listele
 """
 import os, re
+from typing import Optional, Callable, List
+
+__all__ = ["yonlendir", "_izinli_yol", "_gorsel_isle", "_gorsel_dosya"]
 
 try:
     from .guvenlik import yorl_guvenli
@@ -22,11 +25,11 @@ except Exception:
     except Exception:
         yorl_guvenli = lambda p: p
 
-def _izinli_yol(yol):
+def _izinli_yol(yol: str) -> Optional[str]:
     guvenli = yorl_guvenli(yol)
     return guvenli if guvenli else None
 
-def yonlendir(metin):
+def yonlendir(metin: str) -> str:
     """Tum [X]...[/X] komutlarini isler, sonuclari biriktirir."""
     sonuc = []
 
@@ -103,7 +106,9 @@ def yonlendir(metin):
         return ""
     return "\n\n".join(sonuc)
 
-def _gorsel_isle(par):
+__all__ = ["yonlendir", "_izinli_yol", "_gorsel_isle", "_gorsel_dosya"]
+
+def _gorsel_isle(par: Tuple[str, str]) -> str:
     import os, sys
     try:
         from .gorsel import fraktal_png, svg_ureteci
@@ -117,7 +122,7 @@ def _gorsel_isle(par):
         return "Gorsel: " + fraktal_png(boyut, 30, "/tmp/lb_fraktal.png")
     return "Gorsel: " + fraktal_png(128, 30, "/tmp/lb_svg.png")
 
-def _gorsel_dosya(yol):
+def _gorsel_dosya(yol: str) -> str:
     try:
         if not os.path.exists(yol):
             return f"{yol} dosya yok"

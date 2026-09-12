@@ -11,16 +11,17 @@ Kullanim: python3 akil_dongu_test.py <soru> [canli]   # canli=rate-limit varsa c
 """
 import os, sys, json, time, re
 from collections import Counter
+from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Mock LLM: rate-limit olmadan test ────────────────────────
 class MockLLM:
     """Rate-limit olmadan test icin mock model."""
-    def __init__(self, cevap_sablonu):
+    def __init__(self, cevap_sablonu: str) -> None:
         self.cevap = cevap_sablonu
         self.cagri = 0
-    def sor(self, mesajlar, **kw):
+    def sor(self, mesajlar, **kw: Any) -> str:
         self.cagri += 1
         son = mesajlar[-1]["content"] if mesajlar else ""
         # Self-correction istenirse duzeltilmis versiyon dondur
@@ -29,7 +30,7 @@ class MockLLM:
         return self.cevap
 
 # ── Dongu testi asil mantigi ──────────────────────────────────
-def dongu_testi(soru, mock_cevap=None, canli=False):
+def dongu_testi(soru: str, mock_cevap: Optional[str] = None, canli: bool = False) -> Tuple[List[Dict[str, Any]], str]:
     """Dongu testi: ayni soruyu farkli tekniklerle test et, karsilastir."""
     if canli:
         # Canli: gercek LLM kullan (rate-limit gerekli)
@@ -127,7 +128,7 @@ def dongu_testi(soru, mock_cevap=None, canli=False):
     
     return sonuclar, soru
 
-def rapor_olustur(sonuclar, soru):
+def rapor_olustur(sonuclar: List[Dict[str, Any]], soru: str) -> str:
     """Dongu testi sonuclarini raporlayin."""
     print(f"\n{'='*60}")
     print(f"  DONGU TEST RAPORU")

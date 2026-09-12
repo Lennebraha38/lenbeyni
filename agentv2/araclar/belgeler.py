@@ -1,7 +1,8 @@
 """Format: PDF, DOCX, CSV, JSON, XLSX analizi. (pdfplumber/PyPDF2 yerine hafif ozdusurum)"""
 import json, csv, io, os, zlib, re
 
-def pdf_metin(yol):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def pdf_metin(yol: str) -> str:
     out = []
     with open(yol, "rb") as f:
         data = f.read()
@@ -17,7 +18,7 @@ def pdf_metin(yol):
             continue
     return " ".join(out)[:6000]
 
-def belge(yol):
+def belge(yol: str) -> str:
     if yol.endswith(".pdf"): return pdf_metin(yol)
     if yol.endswith(".json"): return json.dumps(json.load(open(yol)), ensure_ascii=False)[:6000]
     if yol.endswith(".csv"):
@@ -26,7 +27,7 @@ def belge(yol):
     with open(yol, "r", errors="ignore") as f:
         return f.read()[:6000]
 
-def veri_ozet(llm, yol):
+def veri_ozet(llm, yol: str) -> str:
     return llm([
         {"role":"system","content":"Veriyi ozetle, tablo/ana hatlar cikar. Turkce."},
         {"role":"user","content":belge(yol)}], max_tokens=1200)

@@ -12,14 +12,15 @@ import subprocess, os, sys
 
 HAFIF = True   # Playwright yoksa True
 
-def _pw():
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def _pw() -> Any:
     try:
         from playwright.sync_api import sync_playwright
         return sync_playwright
     except Exception:
         return None
 
-def otomatik(parcalar, llm=None):
+def otomatik(parcalar, llm: Optional[Callable] = None) -> str:
     islem = parcalar[0].strip().lower() if parcalar else ""
     hedef = parcalar[1].strip() if len(parcalar) > 1 else ""
     ek = parcalar[2].strip() if len(parcalar) > 2 else ""
@@ -37,7 +38,7 @@ def otomatik(parcalar, llm=None):
             {"role": "user", "content": hedef[:6000]}], max_tokens=2000) or "ozetleme yok"
     return _hafif(islem, hedef)
 
-def _playwright(pw, islem, hedef, ek):
+def _playwright(pw, islem: str, hedef: str, ek) -> str:
     with pw() as p:
         tar = p.chromium.launch(headless=True)
         sayfa = tar.new_page()
@@ -65,7 +66,7 @@ def _playwright(pw, islem, hedef, ek):
         tar.close()
         return "[TARAYICI] bilinmeyen islem"
 
-def _hafif(islem, hedef):
+def _hafif(islem: str, hedef: str = "") -> str:
     if islem == "ac" and hedef.startswith("http"):
         try:
             r = subprocess.run(["curl", "-sL", "-A", "Mozilla/5.0", "--max-time", "15", "-o", "/tmp/lb_sayfa.html", hedef], timeout=20)

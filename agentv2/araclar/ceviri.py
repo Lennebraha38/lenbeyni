@@ -1,7 +1,8 @@
 """Ceviri + dil araclari."""
 import requests
 
-def cevir(metin, hedef="tr"):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def cevir(metin: str, hedef: str = "tr") -> str:
     try:
         r = requests.post("https://api-free.deepl.com/v2/translate", json={
             "text": [metin], "target_lang": hedef.upper(),

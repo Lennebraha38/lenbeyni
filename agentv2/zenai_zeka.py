@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """ZenAI - yerel + mega beyin. Ajan dongusu ve Deep Research."""
 import os, re, sys
 
@@ -8,10 +9,12 @@ try:
     from araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
     from araclar import yonlendir
     from akil_motoru import sistem_promptu, birim_mantik_skoru
+    from model_routing import OPENROUTER_URL
 except ImportError:
     from agentv2.araclar.arac_katmani import sayfa, web_ara, derin_arastirma, komut, Bellek
     from agentv2.araclar import yonlendir
     from agentv2.akil_motoru import sistem_promptu, birim_mantik_skoru
+    from agentv2.model_routing import OPENROUTER_URL
 
 MEGA_MODEL = "dots-studio/dots-3-note-preview:free"
 PLAN_MODEL = "poolside/laguna-s-2.1:free"
@@ -26,23 +29,23 @@ MODEL_TAVANI = {
     "cohere/north-mini-code:free": 8192,
 }
 
-def _tavan(model, istenen):
+def _tavan(model: str, istenen: int) -> int:
     """Modelin tavani ile kullanici istegini dengeler."""
     tav = MODEL_TAVANI.get(model, 65536)
     return min(max(istenen or 65536, 1), tav)
 
-def uzunluk(model, seviye="normal"):
+def uzunluk(model: str, seviye: str = "normal") -> int:
     """Pratik cevap uzunlugu: normal(16K), kisa(4K), uzun(65K)."""
     uzunluklar = {"kisa": 4096, "normal": 16384, "uzun": 65536}
     return _tavan(model, uzunluklar.get(seviye, 16384))
 
-def llm(mesajlar, model=MEGA_MODEL, max_tokens=None, seviye="normal", stream=True):
+def llm(mesajlar, model: str = MEGA_MODEL, max_tokens: Optional[int] = None, seviye: str = "normal", stream: bool = True) -> str:
     if not OPENROUTER_KEY:
         return None
     import requests, json
     if max_tokens is None:
         max_tokens = uzunluk(model, seviye)
-    r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+    r = requests.post(OPENROUTER_URL, json={
         "model": model, "messages": mesajlar, "temperature": 0.7,
         "max_tokens": _tavan(model, max_tokens), "stream": stream
     }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=600)
@@ -67,7 +70,7 @@ def llm(mesajlar, model=MEGA_MODEL, max_tokens=None, seviye="normal", stream=Tru
             continue
     return "".join(parcalar) or None
 
-def ajan(soru):
+def ajan(soru: str) -> str:
     belleklik = Bellek()
     ilgili = belleklik.ara(soru)
     baglam = "\n\n".join(f"{k}: {v}" for k, v in ilgili) if ilgili else ""
@@ -136,16 +139,16 @@ def ajan(soru):
                      {"role": "user", "content": "ARAC SONUCLARI:\n" + "\n".join(sonuclar) + "\nDevam et ve kullaniciya cevap ver."}]
     return "Araclar islendi."
 
-def rapor(soru):
+def rapor(soru: str) -> None:
     belleklik = Bellek()
     sonuc = derin_arastirma(llm, soru)
     belleklik.ozet_ata(llm, sonuc, "rapor_" + re.sub(r"[^a-z0-9]", "_", soru.lower())[:40])
     return sonuc
 
-def chat(soru):
+def chat(soru: str) -> str:
     return ajan(soru)
 
-def acik(soru, mod="ajan"):
+def acik(soru: str, mod: str = "ajan") -> str:
     if mod == "rapor":
         return rapor(soru)
     if mod == "chat":

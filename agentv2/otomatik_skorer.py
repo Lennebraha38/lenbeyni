@@ -3,6 +3,7 @@ Kod: sandbox'da calistir, matematik: beklenen sonucla karsilastir, dil: yapiskan
 Kullanim: python3 otomatik_skorer.py karsilastirma.json
 """
 import os, sys, json, re, ast, subprocess, tempfile, math
+from typing import Optional, Tuple, List, Dict, Any
 
 # ── Sabit beklenen sonuclar ──────────────────────────────────────────
 MATEMATIK_BEKLENEN = {
@@ -12,7 +13,7 @@ MATEMATIK_BEKLENEN = {
 }
 # Asagidaki soru indeksleri 1-bazlidir (JSON'daki 'no' alanina eslesir)
 
-def kod_ayarla(kod_metni):
+def kod_ayarla(kod_metni: str) -> str:
     """Markdown/karma metinden Python kod blogunu cikar."""
     # ```python ... ``` blogunu bul
     blok = re.search(r'```(?:python)?\s*\n(.*?)```', kod_metni, re.DOTALL)
@@ -24,7 +25,7 @@ def kod_ayarla(kod_metni):
         return blok.group(1).strip()
     return kod_metni
 
-def puan_kod(kod_metni):
+def puan_kod(kod_metni: str) -> Tuple[float, str]:
     """Kod calistirilabilir mi? Syntax hatasi var mi?"""
     temiz = kod_ayarla(kod_metni)
     try:
@@ -49,7 +50,7 @@ def puan_kod(kod_metni):
 
 # ── Soru-bazlı beklenti erişimi ────────────────────────────────
 _HEDEFLER = None
-def _hedef_get(soru):
+def _hedef_get(soru: str) -> Optional[Dict[str, Any]]:
     """Sorunun beklenen yanıt tablosundaki kaydini dondurur (yoksa None)."""
     global _HEDEFLER
     if _HEDEFLER is None:
@@ -65,7 +66,7 @@ def _hedef_get(soru):
                 _HEDEFLER = {}
     return _HEDEFLER.get(soru or "")
 
-def _anahtar_esle(cikti, kelimeler):
+def _anahtar_esle(cikti: str, kelimeler: List[str]) -> List[str]:
     """Anahtar kavramlardan en az biri metinde var mi? (LaTeX/kok formlari normalizeli)"""
     kucuk = (cikti or "").lower()
     # sqrt(3), \sqrt{3}, \\sqrt{3}, kök 3 -> √3 kanonik formuna indir
@@ -73,7 +74,7 @@ def _anahtar_esle(cikti, kelimeler):
     kucuk = re.sub(r"k[oö]k\s*([0-9)] )", r"√\1", kucuk)
     return [k for k in kelimeler if k.lower() in kucuk]
 
-def _sayi_esle(cikti, bek_str):
+def _sayi_esle(cikti: str, bek_str: str) -> bool:
     """Beklenen deger (tam sayi/kesir/ondalik) metinde var mi?"""
     if not bek_str:
         return False
@@ -97,7 +98,7 @@ def _sayi_esle(cikti, bek_str):
         pass
     return False
 
-def puan_matematik(cikti, hedef=None, beklenen=None):
+def puan_matematik(cikti: str, hedef: Optional[Dict[str, Any]] = None, beklenen: Optional[str] = None) -> Tuple[float, str]:
     """Beklenen sonucu (HEDEFLER tablosundan) eslestir; yoksa yapisal puan."""
     if beklenen:  # eski uyumluluk yolu
         if _sayi_esle(cikti, beklenen):
@@ -123,7 +124,7 @@ def puan_matematik(cikti, hedef=None, beklenen=None):
         return 1.0, "Kavram bulundu: " + ", ".join(hit)
     return 0.4, "Beklenen kavramlar yok"
 
-def puan_mantik(cikti, hedef=None):
+def puan_mantik(cikti: str, hedef: Optional[Dict[str, Any]] = None) -> Tuple[float, str]:
     """Dogruluk agirlikli: beklenen kavram varsa yuksek taban + yapisal bonus."""
     yapi, not_ = puan_genel(cikti)
     if not hedef or not hedef.get("sonuc"):
@@ -139,7 +140,7 @@ def puan_mantik(cikti, hedef=None):
         return 0.9, not_
     return 0.85, not_
 
-def puan_dil(cikti, hedef=None):
+def puan_dil(cikti: str, hedef: Optional[Dict[str, Any]] = None) -> Tuple[float, str]:
     """Dil: dogruluk agirlikli — HEDEFLER kavrami yoksa tam puan verilmez.
     Uzunluk/yapi tek basina puana cevrilmez; iletisim + dogruluk olculur."""
     yapi, not_ = puan_genel(cikti)
@@ -155,7 +156,7 @@ def puan_dil(cikti, hedef=None):
         return 0.85, not_
     return 0.75, not_
 
-def puan_genel(cikti):
+def puan_genel(cikti: str) -> Tuple[float, str]:
     """Genel kalite: uzunluk + baslik + madde + tutarlilik."""
     skor = 0.0
     notlar = []
@@ -181,7 +182,7 @@ def puan_genel(cikti):
         skor += 0.2; notlar.append("kod blogu")
     return min(skor, 1.0), "; ".join(notlar) if notlar else "yetersiz"
 
-def puan_konu(cikti, hedef=None):
+def puan_konu(cikti: str, hedef: Optional[Dict[str, Any]] = None) -> Tuple[float, str]:
     """Yapisal puanlama + HEDEFLER metin isabeti (dogruluk agirlikli).
     HEDEFLER yoksa maks 0.4: yapi tek basina dogruluk sayilmaz."""
     yapi, not_ = puan_genel(cikti)
@@ -208,7 +209,7 @@ KONU_PUANLAYICI = {
     "teknoloji": puan_konu,
 }
 
-def _norm_strict(s):
+def _norm_strict(s: Optional[str]) -> str:
     """Strict eslestirme icin normalize: kucuk harf, aksansiz, tokenlas."""
     tr = {"ı": "i", "ç": "c", "ş": "s", "ğ": "g", "ü": "u", "ö": "o"}
     s = (s or "").lower()
@@ -216,7 +217,7 @@ def _norm_strict(s):
         s = s.replace(a, b)
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
-def puan_strict(cikti, kabul):
+def puan_strict(cikti: str, kabul: List[str]) -> Tuple[float, str]:
     """Tam dogruluk: kabul listesindeki cevap metinde dogrulandi mi (0 veya 1).
     Uzunluk/yapi puani YOK — basit gercek sorulari icin olcu."""
     if not kabul:
@@ -249,7 +250,7 @@ def puan_strict(cikti, kabul):
             return 1.0, f"eslesti: {k}"
     return 0.0, "eslesmedi"
 
-def puanla(sonuclar):
+def puanla(sonuclar: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Tum sonuclari puanla, ozet rapor dondur. Basarisizlari atla."""
     rapor = []
     basarili = 0
@@ -318,7 +319,7 @@ def puanla(sonuclar):
         "sonuclar": rapor
     }
 
-def en_iyi_kacinma(soru_no, ciktilar):
+def en_iyi_kacinma(soru_no: int, ciktilar: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """Ayni sorudan N tane cevap varsa en iyi puanlani sec."""
     if not ciktilar:
         return None

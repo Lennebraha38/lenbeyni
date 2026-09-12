@@ -11,7 +11,7 @@ import os, sys, json, time, argparse
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from model_routing import model_sec, model_fallback, DEFAULT_MODEL
+from model_routing import model_sec, model_fallback, DEFAULT_MODEL, OPENROUTER_URL
 from otomatik_skorer import puan_strict
 from dogrulama_seti import INDEPENDENT
 
@@ -23,10 +23,11 @@ STRICT_SISTEM = (
 )
 
 
-def tek_dogrula(soru, model, key):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def tek_dogrula(soru: str, model: str, key: str) -> Tuple[str, str]:
     import requests
     try:
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+        r = requests.post(OPENROUTER_URL, json={
             "model": model,
             "messages": [
                 {"role": "system", "content": STRICT_SISTEM},
@@ -44,7 +45,7 @@ def tek_dogrula(soru, model, key):
     return f"[HTTP {r.status_code}]", model
 
 
-def dogrula(adet=None, kalan_bekle=False):
+def dogrula(adet: Optional[int] = None, kalan_bekle: bool = False) -> Dict[str, Any]:
     key = os.environ.get("OPENROUTER_KEY", "")
     if not key:
         print("OPENROUTER_KEY yok.")

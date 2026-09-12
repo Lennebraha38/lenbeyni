@@ -5,6 +5,7 @@ Model Routing: konuya gore dogru modeli secer.
 Self-Correction: hatali cevap bulursa duzeltme turu calistirir.
 """
 import os, sys, json, time, re
+from typing import Any, Dict, List, Optional, Tuple
 
 # Routing ve self-correction modulleri
 _syd = os.path.dirname(__file__)
@@ -13,10 +14,10 @@ if _syd not in sys.path:
 if os.path.join(_syd, "agentv2") not in sys.path:
     sys.path.insert(0, os.path.join(_syd, "agentv2"))
 try:
-    from model_routing import model_sec, konu_aciklama
+    from model_routing import model_sec, konu_aciklama, OPENROUTER_URL
     from self_correction import self_correction
 except ImportError:
-    from agentv2.model_routing import model_sec, konu_aciklama
+    from agentv2.model_routing import model_sec, konu_aciklama, OPENROUTER_URL
     from agentv2.self_correction import self_correction
 
 SORULAR = [
@@ -82,12 +83,12 @@ SORULAR = [
     ("teknoloji", "Bir yapay zeka modelini nasil egitirsin? Adim adim."),
 ]
 
-def test_et(o, model, key, max_tokens=1024, deneme=3):
+def test_et(o: Dict[str, Any], model: str, key: str, max_tokens: int = 1024, deneme: int = 3) -> Tuple[Optional[str], int]:
     import requests
     for tur in range(deneme):
         t0 = time.time()
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+            r = requests.post(OPENROUTER_URL, json={
                 "model": model,
                 "messages": [{"role": "system", "content": "Turkce, net ve dogru cevap ver."},
                              {"role": "user", "content": o}],
@@ -107,11 +108,11 @@ def test_et(o, model, key, max_tokens=1024, deneme=3):
             return {"sure": round(time.time()-t0,1), "kelime": 0, "cikti": f"[HATA: {e}]"}
     return {"sure": 0, "kelime": 0, "cikti": "[HTTP 429: rate-limit asildi, tum denemeler tükendi]"}
 
-def _sor(mesajlar, model, key, max_tokens=1024):
+def _sor(mesajlar: List[Dict[str, str]], model: str, key: str, max_tokens: int = 1024) -> str:
     """Self-correction duzeltme turlari icin dogrudan soru sorma."""
     import requests
     try:
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+        r = requests.post(OPENROUTER_URL, json={
             "model": model,
             "messages": mesajlar,
             "max_tokens": max_tokens, "temperature": 0.2,

@@ -1,7 +1,8 @@
 """Hava durumu + kutuphane API baglayicilari."""
 import requests
 
-def hava(sehir):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def hava(sehir: str) -> str:
     try:
         r = requests.get(
             "https://api.open-meteo.com/v1/forecast",
@@ -12,7 +13,7 @@ def hava(sehir):
         return f"[Hava hatasi: {e}]"
     return "[Hava verisi yok]"
 
-def hava_koordinat(lat, lon):
+def hava_koordinat(lat: float, lon: float) -> str:
     try:
         r = requests.get("https://api.open-meteo.com/v1/forecast",
             params={"latitude": lat, "longitude": lon,

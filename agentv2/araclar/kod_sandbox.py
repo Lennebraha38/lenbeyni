@@ -16,9 +16,10 @@ except ImportError:
         _komut_t = lambda c: False
         _python_t = lambda k: False
 
-def _kisa_limit():
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def _kisa_limit() -> Callable[[], None]:
     """Alt islem icin cpu+as limitleri (programin sistemi bogmamasi icin)."""
-    def _set():
+    def _set() -> None:
         try:
             resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
             resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
@@ -26,7 +27,7 @@ def _kisa_limit():
             pass
     return _set
 
-def python_kod(kod, timeout=15):
+def python_kod(kod: str, timeout: int = 15) -> str:
     if _python_t(kod):
         return "[GUVENLIK Bloklandi: Python kodunda tehlikeli islem tespit edildi]"
     tmpdir = tempfile.mkdtemp(prefix="zenai_py_")
@@ -56,7 +57,7 @@ def python_kod(kod, timeout=15):
         except Exception:
             pass
 
-def bash_kod(emir, timeout=20):
+def bash_kod(emir: str, timeout: int = 20) -> str:
     if _komut_t(emir):
         return "[GUVENLIK Bloklandi: bash komutu tehlikeli kalip iceriyor]"
     try:
@@ -70,7 +71,7 @@ def bash_kod(emir, timeout=20):
     except Exception as e:
         return f"[Bash hatasi: {e}]"
 
-def node_kod(kod, timeout=15):
+def node_kod(kod: str, timeout: int = 15) -> str:
     if _python_t(kod):
         return "[GUVENLIK Bloklandi: node kodunda tehlikeli islem tespit edildi]"
     tmpdir = tempfile.mkdtemp(prefix="zenai_js_")

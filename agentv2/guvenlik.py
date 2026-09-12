@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """ZenAI Guvenlik Katmani.
 
 Tum guvenlik kurallari tek yerde:
@@ -52,7 +53,7 @@ TEHLIKELI_CAGRILAR = {
     "getattr", "setattr", "delattr",  # MWE bypass zincirleri icin
 }
 
-def ip_ozel_mi(host):
+def ip_ozel_mi(host: str) -> bool:
     """Host IP'si ozel/ic-alan (local, tutucu, CGNAT, multicast) ise True."""
     if not host:
         return True
@@ -82,12 +83,12 @@ def ip_ozel_mi(host):
             return True
     return False
 
-def url_guvenli(url):
+def url_guvenli(url: str) -> bool:
     """SSRF onleme: sadece http/https, ozel/girilen alan ip'leri bloklanir."""
     guvenli, _ = url_guvenli_ip(url)
     return guvenli
 
-def url_guvenli_ip(url):
+def url_guvenli_ip(url: str) -> Tuple[bool, Optional[str]]:
     """SSRF onleme + DNS rebinding korumasi: (guvenli, cozulen_ip) dondurur.
     Cozulen IP kullanilmalidir; ayni host farkli IP'ye dondurebilir (rebinding).
     Donus: (True, ip_str) veya (False, None)
@@ -135,7 +136,7 @@ def url_guvenli_ip(url):
             return False, None
     return True, cozulen_ip
 
-def yorl_guvenli(yol, kokler=None):
+def yorl_guvenli(yol: str, kokler: Optional[List[str]] = None) -> Optional[str]:
     """Dosya okuma/calistirmani izin verilen koklere sabitler (path traversal onleme)."""
     if not yol:
         return None
@@ -154,7 +155,7 @@ def yorl_guvenli(yol, kokler=None):
             return tam
     return None
 
-def komut_tehlikeli(emir):
+def komut_tehlikeli(emir: str) -> bool:
     """Bash/komut metni tehlikeli kalipla eslesiyor mu?"""
     if not emir or len(emir) > 5000:
         return True
@@ -171,8 +172,8 @@ def komut_tehlikeli(emir):
     # Atamali gizleme: `a=rm;b=-rf;$a $b /` gibi - atama varsa ve tehlikeli
     # token bir yerde gecindiyse blokla (normalizasyon atamaları sildigi icin
     # ham emirde ara)
-    OKEKE = r"\b(rm|mv|cp|dd|mkfs|sudo|chmod|chown|shutdown|reboot|halt|poweroff|wget|curl|nc|ncat|ssh|scp|ftp|telnet|kill|mount|umount|fdisk|mknod|passwd)\b"
-    if "=" in re.sub(r"(echo|let|test).*", "", emir) and re.search(OKEKE, emir, re.I):
+    ATAMALI_KOMUTLAR = r"\b(rm|mv|cp|dd|mkfs|sudo|chmod|chown|shutdown|reboot|halt|poweroff|wget|curl|nc|ncat|ssh|scp|ftp|telnet|kill|mount|umount|fdisk|mknod|passwd)\b"
+    if "=" in re.sub(r"(echo|let|test).*", "", emir) and re.search(ATAMALI_KOMUTLAR, emir, re.I):
         return True
     # ic ag hedefleyen ag araclari (SSRF benzeri)
     if re.search(r"\b(curl|wget|nc|ncat|telnet|ssh|ftp)\b.*(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|localhost)", temiz, re.I):
@@ -182,7 +183,7 @@ def komut_tehlikeli(emir):
         return True
     return False
 
-def python_tehlikeli(kod):
+def python_tehlikeli(kod: str) -> bool:
     """AST ile tehlikeli import/cagri/attr analizi. Tehlikeli ise True."""
     import ast
     if not kod or len(kod) > 8000:
@@ -223,7 +224,7 @@ def python_tehlikeli(kod):
                 return True
     return False
 
-def sinsilik_tespit(metin):
+def sinsilik_tespit(metin: str) -> bool:
     """Model ciktisinda/icerikte yaygin prompt-injection kaliplarini koku."""
     if not metin:
         return False

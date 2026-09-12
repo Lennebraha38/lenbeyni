@@ -24,7 +24,8 @@ except Exception:
 BASLIK = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36"}
 
 # ---------- browser-use: tarayici / site ----------
-def sayfa(url, maxlen=4000):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def sayfa(url: str, maxlen: int = 4000) -> str:
     if not url.startswith("http"): url = "https://" + url
     if not url_guvenli(url):
         return "[GUVENLIK Bloklandi: engellenen URL (ic ag/SSRF onleme)]"
@@ -36,7 +37,7 @@ def sayfa(url, maxlen=4000):
     return f"[{r.status_code}] {r.url}\n" + metin[:maxlen]
 
 # ---------- gpt-researcher: derin arastirma ----------
-def derin_arastirma(llm, soru, derinlik=3):
+def derin_arastirma(llm, soru: str, derinlik: int = 3) -> str:
     plan = llm([{"role":"system","content":"Soruyu max 3 alt-basliga ayir. Format: [SORU] ..."},
                 {"role":"user","content":soru}], max_tokens=300)
     altlar = re.findall(r"\[SORU\]\s*(.+)", plan or "") or [soru]
@@ -54,7 +55,7 @@ def derin_arastirma(llm, soru, derinlik=3):
         {"role":"user","content":f"SORU: {soru}\n\nVERI:\n{kaynak[:14000]}"}], seviye="uzun")
     return rapor or kaynak[:1500]
 
-def web_ara(sorgu):
+def web_ara(sorgu: str) -> str:
     for motor in ["https://html.duckduckgo.com/html/?q=", "https://lite.duckduckgo.com/lite/?q="]:
         try:
             r = requests.get(motor + quote_plus(sorgu), timeout=20, headers=BASLIK)
@@ -71,7 +72,7 @@ def web_ara(sorgu):
     return ""
 
 # ---------- OpenCLI: komut calistirma ----------
-def komut(emir, timeout=20):
+def komut(emir: str, timeout: int = 20) -> str:
     if komut_tehlikeli(emir):
         return "[GUVENLIK Bloklandi: tehlikeli komut kalibi]"
     try:
@@ -81,7 +82,7 @@ def komut(emir, timeout=20):
         return f"[Komut hatasi: {e}]"
 
 # ---------- OpenClaw: mesaj raporlama dongusu ----------
-def kanal_ozetle(llm, kanal_turu, mesajlar):
+def kanal_ozetle(llm, kanal_turu: str, mesajlar) -> str:
     return llm([
         {"role":"system","content":f"{kanal_turu} mesaj akisini ana basliklara odet. Turkce."},
         {"role":"user","content":mesajlar[:6000]}], max_tokens=1000)

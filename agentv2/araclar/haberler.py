@@ -4,7 +4,8 @@ from xml.etree import ElementTree as ET
 
 BASLIK = {"User-Agent": "Mozilla/5.0"}
 
-def rss(akislar, max_unsur=15):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def rss(akislar, max_unsur: int = 15) -> str:
     tum = []
     for akis in akislar:
         try:
@@ -20,7 +21,7 @@ def rss(akislar, max_unsur=15):
             continue
     return "\n".join(tum[:max_unsur]) or "[RSS bos]"
 
-def haber_sistemi(llm, konular):
+def haber_sistemi(llm, konular) -> str:
     akislar = {
         "teknoloji": ["https://www.hurriyet.com.tr/rss/teknoloji.xml",
                       "https://www.donanimhaber.com/rss.xml",

@@ -11,18 +11,19 @@ Kullanim:
   python3 tam_zirve.py --sadece-skor        # sadece onceki sonuclari skorla
 """
 import os, sys, json, time, re, argparse
+from typing import Optional, Tuple, List, Dict, Any
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Import ───────────────────────────────────────────────────
 try:
-    from model_routing import model_sec, model_fallback, konu_aciklama, routing_logla
+    from model_routing import model_sec, model_fallback, konu_aciklama, routing_logla, OPENROUTER_URL
     from self_correction import self_correction
     from cogunluk_oyu import cogunluk
     from otomatik_skorer import puanla
     from soru_bankasi import SORULAR
 except ImportError:
-    from agentv2.model_routing import model_sec, model_fallback, konu_aciklama, routing_logla
+    from agentv2.model_routing import model_sec, model_fallback, konu_aciklama, routing_logla, OPENROUTER_URL
     from agentv2.self_correction import self_correction
     from agentv2.cogunluk_oyu import cogunluk
     from agentv2.otomatik_skorer import puanla
@@ -41,13 +42,13 @@ BENCH_SISTEM = (
     "4) Uydurma yapma; emin degilsen 'Emin degilim' diye belirt."
 )
 
-def api_iste(mesajlar, model, key, max_tokens=2048, deneme=3):
+def api_iste(mesajlar: List[Dict[str, str]], model: str, key: str, max_tokens: int = 2048, deneme: int = 3) -> Dict[str, Any]:
     """Rate-limit aware API cagirisi."""
     import requests
     for tur in range(deneme):
         t0 = time.time()
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+            r = requests.post(OPENROUTER_URL, json={
                 "model": model,
                 "messages": mesajlar,
                 "max_tokens": max_tokens, "temperature": 0.3,
@@ -70,7 +71,7 @@ def api_iste(mesajlar, model, key, max_tokens=2048, deneme=3):
             return {"sure": 0, "kelime": 0, "cikti": f"[HATA: {e}]"}
     return {"sure": 0, "kelime": 0, "cikti": "[429 tum denemeler tukendi]"}
 
-def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
+def tek_soru_test(soru_no: int, konu: str, soru: str, key: str, zorluk: str = "orta", cogunluk_modu: bool = False) -> Dict[str, Any]:
     """Tek bir soruyu tam test pipeline'indan gecir."""
     secilen_model, maxt = model_sec(konu)
     # ZIRVE_MODEL ortam degiskeni varsa tum sorularda o modeli kullan (benchmark acil yol)
@@ -114,7 +115,7 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
     # 2. Self-correction (yapilandirma icin tum konularda)
     duzeltilen = 0
     if sonuc.get("kelime", 0) > 0:
-        def _duzelt_istek(msg):
+        def _duzelt_istek(msg: str) -> Optional[str]:
             r = api_iste(msg, secilen_model, key, maxt)
             if r.get("kelime", 0) > 0:
                 return r["cikti"]
@@ -149,7 +150,7 @@ def tek_soru_test(soru_no, konu, soru, key, zorluk="orta", cogunluk_modu=False):
         **sonuc
     }
 
-def sorulari_sec(sayi, kategori=None, zorluk=None):
+def sorulari_sec(sayi: int, kategori: Optional[str] = None, zorluk: Optional[str] = None) -> List[Dict[str, Any]]:
     """Sorulari filtreler; cok secilirse sayi kadar ornekler."""
     havuz = SORULAR
     if kategori:
@@ -160,8 +161,7 @@ def sorulari_sec(sayi, kategori=None, zorluk=None):
         havuz = havuz[:sayi]
     return havuz
 
-def tam_zirve(sayi=50, cogunluk=False, kalan_bekle=False, sadece_skor=False,
-              kategori=None, zorluk=None):
+def tam_zirve(sayi: int = 50, cogunluk: bool = False, kalan_bekle: bool = False, sadece_skor: bool = False, kategori: Optional[str] = None, zorluk: Optional[str] = None) -> Optional[Dict[str, Any]]:
     key = os.environ.get("OPENROUTER_KEY", "")
     cikti_yol = os.environ.get("LB_CIKTI", "/tmp/opencode/zirve_sonuc.json")
 
@@ -232,7 +232,7 @@ def tam_zirve(sayi=50, cogunluk=False, kalan_bekle=False, sadece_skor=False,
         routing_logla(s.get("konu"), s.get("soru", ""), s.get("model", ""),
                       s.get("puan", 0), sure=s.get("sure"), kelime=s.get("kelime"))
 
-def _kaydet(sonuclar, toplam, cikti):
+def _kaydet(sonuclar: List[Dict[str, Any]], toplam: int, cikti: str) -> None:
     with open(cikti, "w") as f:
         json.dump({"toplam": toplam, "sonuclar": sonuclar}, f, ensure_ascii=False, indent=1)
 

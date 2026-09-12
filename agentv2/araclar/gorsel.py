@@ -1,8 +1,9 @@
 """Gorsel: gercek calisan PNG uretici (saf python, zlib). SVG uretici."""
 import struct, zlib
 
-def _png(genislik, yukseklik, piksel_verisi):
-    def kismet(tip, veri):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def _png(genislik: int, yukseklik: int, piksel_verisi) -> bytes:
+    def kismet(tip: str, veri: str) -> str:
         k = tip + veri
         return struct.pack(">I", len(veri)) + k + struct.pack(">I", zlib.crc32(k) & 0xffffffff)
     ustd = b""
@@ -15,7 +16,7 @@ def _png(genislik, yukseklik, piksel_verisi):
             + kismet(b"IDAT", zlib.compress(ustd))
             + kismet(b"IEND", b""))
 
-def fraktal_png(boyut=128, max_it=40, yol_="fraktal.png"):
+def fraktal_png(boyut: int = 128, max_it: int = 40, yol_: str = "fraktal.png") -> str:
     import math, os
     data = bytearray()
     for y in range(boyut):
@@ -34,13 +35,13 @@ def fraktal_png(boyut=128, max_it=40, yol_="fraktal.png"):
         f.write(_png(boyut, boyut, bytes(data)))
     return yol_
 
-def svg_ureteci(baslik, renk="#3b82f6", genislik=400, yukseklik=200):
+def svg_ureteci(baslik: str, renk: str = "#3b82f6", genislik: int = 400, yukseklik: int = 200) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{genislik}" height="{yukseklik}">'
             f'<rect width="100%" height="100%" fill="{renk}"/>'
             f'<text x="50%" y="50%" font-size="28" fill="white" text-anchor="middle" '
             f'dy=".3em" font-family="sans-serif">{baslik}</text></svg>')
 
-def ikon(yazi, yol_="ikon.svg"):
+def ikon(yazi: str, yol_: str = "ikon.svg") -> str:
     import os
     os.makedirs(os.path.dirname(yol_) or ".", exist_ok=True)
     with open(yol_, "w") as f:

@@ -74,7 +74,7 @@ Her açık için sıralama: (a) düzelt, (b) regresyon testi yaz, (c) bu bölüm
 
 ```bash
 python3 -m pytest tests/test_guvenlik.py -q   # tüm güvenlik kuralları
-python3 -m pytest tests/ -q                    # tüm paket (155 test)
+python3 -m pytest tests/ -q                    # tüm paket (160 test)
 ```
 
 CI'ta ayrıca `pip-audit` (bağımlılık CVE) ve `npm audit` çalışır.

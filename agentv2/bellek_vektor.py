@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """ZenAI Bellek — Hibrit Vektor + n-gram Hafıza.
 
 Çalışma modları:
@@ -18,7 +19,7 @@ _EMBED_MODEL = None
 _EMBED_FAISS = None
 _VECTORS = None
 
-def _embedding_aktif_mi():
+def _embedding_aktif_mi() -> bool:
     global _EMBED_MODEL, _EMBED_FAISS
     if _EMBED_MODEL is not None:
         return _EMBED_MODEL is not False
@@ -33,7 +34,7 @@ def _embedding_aktif_mi():
         _EMBED_MODEL = False
         return False
 
-def _embed(metin):
+def _embed(metin: str) -> Optional[Any]:
     """Metni vektöre çevir (FAISS modu) veya None dön (fallback)."""
     if not _embedding_aktif_mi():
         return None
@@ -41,7 +42,7 @@ def _embed(metin):
     v = _EMBED_MODEL.encode([metin], normalize_embeddings=True)
     return v[0].astype("float32") if hasattr(v, "astype") else v
 
-def _kosinus_vec(a, b):
+def _kosinus_vec(a: Any, b: Any) -> float:
     """İki vektör arası kosinüs (dot product, normalize edilmiş)."""
     import numpy as np
     return float(np.dot(a, b))
@@ -49,7 +50,7 @@ def _kosinus_vec(a, b):
 # ── n-gram fallback (pip gerektirmez) ──────────────────────────────────
 VARS = 4
 
-def _gramlar(metin, k=VARS):
+def _gramlar(metin: str, k: int = VARS) -> set:
     temiz = re.sub(r"[^a-zçğıöşü0-9\s]", " ", (metin or "").lower())
     temiz = re.sub(r"\s+", " ", temiz).strip()
     g = set()
@@ -59,13 +60,13 @@ def _gramlar(metin, k=VARS):
             g.add(s[i:i + k])
     return g
 
-def _vektor(gramlar, idf=None):
+def _vektor(gramlar, idf: Optional[Dict[str, float]] = None) -> Dict[str, float]:
     say = Counter(gramlar) if isinstance(gramlar, (list, tuple)) else {x: 1 for x in gramlar}
     if idf:
         return {g: w * idf.get(g, 1.0) for g, w in say.items()}
     return dict(say)
 
-def _kosinus(a, b):
+def _kosinus(a: Dict[str, float], b: Dict[str, float]) -> float:
     if not a or not b:
         return 0.0
     ortak = set(a) & set(b)
@@ -77,12 +78,12 @@ def _kosinus(a, b):
     return dot / (a2 * b2)
 
 # ── Semantic dedup ──────────────────────────────────────────────────────
-def _dedup_anahtar(kullanici_adi, deger, esik=0.92):
+def _dedup_anahtar(kullanici_adi: str, deger: str, esik: float = 0.92) -> str:
     """Aynı anlama gelen kayıtları tekrar kaydetmeyi önle."""
     metin = f"{kullanici_adi}:{deger}"
     return hashlib.md5(metin.encode("utf-8")).hexdigest()
 
-def _ozet(metin, boyut=42):
+def _ozet(metin: str, boyut: int = 42) -> str:
     m = re.sub(r"\s+", " ", (metin or "")).strip()
     return m[:boyut] + ("…" if len(m) > boyut else "")
 
@@ -90,7 +91,7 @@ def _ozet(metin, boyut=42):
 class BellekVec:
     """Hibrit bellek: FAISS+embedding (varsa) veya n-gram TF-IDF fallback."""
 
-    def __init__(self, yol=None, kullanici="varsayilan"):
+    def __init__(self, yol: Optional[str] = None, kullanici: str = "varsayilan") -> None:
         self.yol = yol or os.path.expanduser("~/.zenai_bellek.json")
         self.kullanici = kullanici
         self.veri = {}
@@ -104,10 +105,10 @@ class BellekVec:
             self.veri = {}
         self._temizle()
 
-    def _kayitlar(self):
+    def _kayitlar(self) -> Dict[str, Any]:
         return self.veri.setdefault(self.kullanici, {})
 
-    def _temizle(self):
+    def _temizle(self) -> None:
         s = time.time()
         ana = self._kayitlar()
         sil = [k for k, v in ana.items()
@@ -118,20 +119,20 @@ class BellekVec:
         if sil:
             self._yaz()
 
-    def _yaz(self):
+    def _yaz(self) -> None:
         try:
             with open(self.yol, "w") as f:
                 json.dump(self.veri, f, ensure_ascii=False, indent=1)
         except Exception:
             pass
 
-    def _ulastir(self, k):
+    def _ulastir(self, k: str) -> Dict[str, Any]:
         v = self._kayitlar()[k]
         if isinstance(v, dict) and "deger" in v:
             return v
         return {"deger": v, "zaman": 0, "sure": None, "etiket": None}
 
-    def _faiss_yeniden_insa(self):
+    def _faiss_yeniden_insa(self) -> None:
         """FAISS indeksini sıfırdan doldur."""
         global _VECTORS
         if not _embedding_aktif_mi():
@@ -158,7 +159,7 @@ class BellekVec:
         self._faiss_index.add(vecs)
 
     # ── API ─────────────────────────────────────────────────────────────
-    def kaydet(self, anahtar, deger, etiket=None, sure=None):
+    def kaydet(self, anahtar: str, deger: str, etiket: Optional[str] = None, sure: Optional[float] = None) -> None:
         ana = self._kayitlar()
         # Semantic dedup: aynı deger zaten kayıtlı mı?
         deger_hash = _dedup_anahtar(self.kullanici, str(deger))
@@ -175,7 +176,7 @@ class BellekVec:
         if _embedding_aktif_mi():
             self._faiss_yeniden_insa()
 
-    def ara(self, sorgu, k=3, min_skor=0.0):
+    def ara(self, sorgu: str, k: int = 3, min_skor: float = 0.0) -> List[Tuple[str, str, float]]:
         ana = self._kayitlar()
         if not ana:
             return []
@@ -223,7 +224,7 @@ class BellekVec:
         eslesen.sort(key=lambda t: t[2], reverse=True)
         return [(k, v) for k, v, _ in eslesen[:k]]
 
-    def kayit_listesi(self, etiket=None):
+    def kayit_listesi(self, etiket: Optional[str] = None) -> List[Dict[str, Any]]:
         self._temizle()
         cikti = []
         for k, v in self._kayitlar().items():
@@ -235,7 +236,7 @@ class BellekVec:
         cikti.sort(key=lambda x: x["zaman"], reverse=True)
         return cikti
 
-    def unut(self, anahtar_veya_icerik, kesin=False):
+    def unut(self, anahtar_veya_icerik: str, kesin: bool = False) -> bool:
         ana = self._kayitlar()
         if anahtar_veya_icerik in ana:
             del ana[anahtar_veya_icerik]
@@ -254,11 +255,11 @@ class BellekVec:
             self._faiss_yeniden_insa()
         return kac > 0
 
-    def baglam(self, sorgu, k=3):
+    def baglam(self, sorgu: str, k: int = 3) -> str:
         ilgili = self.ara(sorgu, k=k)
         return "\n\n".join(f"{k}: {v}" for k, v in ilgili) if ilgili else ""
 
-    def ozet_ata(self, llm, metin, anahtar, etiket="ozet"):
+    def ozet_ata(self, llm, metin: str, anahtar: str, etiket: str = "ozet") -> str:
         try:
             ozet = llm([{"role": "system", "content": "Bunu 3 maddede ozetle, Turkce."},
                         {"role": "user", "content": str(metin)[:4000]}], max_tokens=400)

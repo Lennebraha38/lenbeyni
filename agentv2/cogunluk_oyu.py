@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """Coklugun Oyu — ayni soruyu N kez sor, en sik cevabi sec.
 Matematik/mantik/kod dogrulugunu istatistiksel olarak artirir.
 Cok az extra token harcar (N=3 icin 3x, ama sure onde).
@@ -13,7 +14,7 @@ from collections import Counter
 sys.path.insert(0, os.path.dirname(__file__))
 from zenai_zeka import llm, MEGA_MODEL
 
-def cevap_ozet(cikti):
+def cevap_ozet(cikti: str) -> str:
     """Cevaptan ozet cek: temel sonuc/anahtar kelime."""
     # Matematik icin: sayi cek
     sayilar = re.findall(r'[-+]?\d*\.?\d+', cikti)
@@ -30,7 +31,7 @@ def cevap_ozet(cikti):
     # Genel: ilk 100 karakter ozet
     return cikti[:100].replace("\n", " ")
 
-def cogunluk(soru, tekrar=3, model=None):
+def cogunluk(soru: str, tekrar: int = 3, model: Optional[str] = None) -> Dict[str, Any]:
     """Soruyu tekrar kez sor, en sik ozetli cevabi dondur."""
     model = model or MEGA_MODEL
     cevaplar = []

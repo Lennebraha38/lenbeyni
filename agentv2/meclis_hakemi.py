@@ -2,27 +2,19 @@
 Her cevabi 12 boyutta puanlar, hakem paneli karar verir.
 Gercek kullanici degerlendirmesine en yakin objektif olcum sistemi.
 
-12 KRITER:
-  1. Dogruluk      : Bilgi dogru mu, yanlis bilgi var mi?
-  2. Kapsam        : Sorunun tum yonlerine deginildi mi?
-  3. Derinlik      : Yuzeyel mi, yoksa katmanli aciklama var mi?
-  4. Netlik        : Anlasilir mi, bulanik ifadeler var mi?
-  5. Yapi          : Madde/baslik/paragraf duzenli mi?
-  6. Turkce        : Imla kurallarina uygun mu, dogru mu?
-  7. Ornek         : Somut ornekler verilmis mi?
-  8. Guncellik     : Guncel bilgi mi, eski/yenilmis mi?
-  9. Uygulanabilirlik : Pratikte uygulanabilir mi?
-  10. Yaraticilik   : Sıradan mi, ozgun yaklasim var mi?
-  11. Token Kullanimi : Verimli mi (cok uzun/eksik degil)?
-  12. Guven         : Hakem modelin kendi guveni yeterli mi?
+Dogruluk, isaret kelimelerine guvenmek yerine uc kaynagi birlestirir:
+  1. Soru-anahtar kavram kapsami (cevap sorunun ana fikrini iceriyor mu)
+  2. Celiski tespiti (ic tutarlilik: ayni cevapta birbirine zit ifadeler)
+  3. Destedek uzanti: kod blogu sandbox'a parser ile dogrulanabilir
+Kalan kriterler yapisal/sayisal olculerle calisir.
 """
-import os, sys, json, re, time
-from collections import defaultdict
+import os, sys, re, time
+from typing import List, Tuple, Dict, Optional, Any
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Kriter tanimlari ve agirliklari ─────────────────────────
-KRITERLER = [
+KRITERLER: List[Tuple[str, float, str]] = [
     ("dogruluk",        0.20, "Bilgi dogru mu, kaynak gosterilmis mi?"),
     ("kapsam",          0.15, "Sorunun tum yonlerine deginildi mi?"),
     ("derinlik",        0.12, "Yuzeyel mi, katmanli aciklama var mi?"),
@@ -37,27 +29,59 @@ KRITERLER = [
     ("guven",           0.04, "Model kendinden emin mi?"),
 ]
 
+# ── Dogruluk destegi: zitlik/celiski kalibi tespiti ────────
+_CELISKI_CIFTLERI: List[Tuple[str, str]] = [
+    (r"\bevet\b", r"\bhayir\b"),
+    (r"\bdogru\b", r"\byanlis\b"),
+    (r"\bvar\b", r"\byok\b"),
+    (r"\bolur\b", r"\bolmaz\b"),
+    (r"\bmumkun\b", r"\bmumkun degil\b"),
+    (r"\bkesin\b", r"\bbelki\b"),
+    (r"\bher zaman\b", r"\bhicbir zaman\b"),
+]
+
+# ── Kapsam destegi: soru anahtar kavramlari ─────────────────
+def _anahtar_kavramlar(soru: str) -> List[str]:
+    """Sorunun anlamli kelimelerini cikar (stopword'ler disinda)."""
+    DUR = {"bu", "bir", "ve", "ile", "icin", "ne", "nasil", "kac", "kim",
+           "neden", "mi", "mu", "nin", "nın", "dir", "dır", "ya", "da", "de",
+           "hangi", "neydir", "miydi", "ni", "niyi", "nin"}
+    kelimeler = [w for w in re.findall(r"[a-zçğıöşü0-9]+", soru.lower()) if len(w) > 2 and w not in DUR]
+    return kelimeler[:10]
+
 # ── Bilesik otomatik puanlayici (her kriter icin otomatik kontrol) ────
-def kriter_puanla(kriter_adi, cevap, soru=None):
+def kriter_puanla(kriter_adi: str, cevap: str, soru: Optional[str] = None) -> float:
     """Tek bir kriter icin otomatik puan (0-1)."""
     cevap_kucuk = cevap.lower()
     soru_kucuk = (soru or "").lower()
-    
+
     if kriter_adi == "dogruluk":
-        # Yanlis bilgi belirtecleri
-        yanlis_belirtec = len(re.findall(r"\b(bu dogru degil|yanlis|asinda|ozellikle yanlis)\b", cevap_kucuk))
-        dogru_belirtec = len(re.findall(r"\b(dogrulanmis|kanit|arastirma|orijinal kaynak|DOG\w* verified)\b", cevap_kucuk))
-        skor = 0.6 + min(dogru_belirtec * 0.1, 0.3) - min(yanlis_belirtec * 0.15, 0.4)
-        return max(0, min(1, skor))
-    
+        # 1) Soru anahtar kavram kapsami (icerik benzerligi)
+        anahtar = _anahtar_kavramlar(soru or "")
+        kapsam_orani = 0.5
+        if anahtar:
+            iceren = sum(1 for w in anahtar if w in cevap_kucuk)
+            kapsam_orani = iceren / len(anahtar)
+        # 2) Celiski tespiti: zit ifadeler ayni cevapta var mi?
+        celiski = 0
+        for a, b in _CELISKI_CIFTLERI:
+            if re.search(a, cevap_kucuk) and re.search(b, cevap_kucuk):
+                celiski += 1
+        # 3) Kanit/belirsizlik belirtecleri
+        kanit = len(re.findall(r"\b(kaynak|ornek|istatistik|arastirma|yas|sonuc)\b", cevap_kucuk))
+        suphe = len(re.findall(r"\b(belki|muhtemelen|emin degilim|bilmiyorum|sanirim)\b", cevap_kucuk))
+        skor = 0.4 + kapsam_orani * 0.4 + min(kanit * 0.05, 0.15) - min(suphe * 0.1, 0.2) - celiski * 0.2
+        return max(0.0, min(1.0, round(skor, 3)))
+
     elif kriter_adi == "kapsam":
-        # Sorudaki anahtar kelimelerin kacini iceriyor?
-        if not soru_kucuk: return 0.6
-        anahtar = [w for w in soru_kucuk.split() if len(w)>3]
+        # Sorudaki anahtar kelimelerin kacini iceriyor? (stopword filtresi)
+        anahtar = _anahtar_kavramlar(soru or "")
+        if not anahtar:
+            return 0.6
         iceren = sum(1 for w in anahtar if w in cevap_kucuk)
-        orani = iceren / max(len(anahtar), 1)
-        return 0.4 + orani * 0.6
-    
+        orani = iceren / len(anahtar)
+        return round(min(1.0, 0.4 + orani * 0.6), 3)
+
     elif kriter_adi == "derinlik":
         # Madde sayisi ve paragraf derinligi
         madde = len(re.findall(r'(?m)^[\s]*[\-\*\d]+[\.\)\s]', cevap))
@@ -67,79 +91,104 @@ def kriter_puanla(kriter_adi, cevap, soru=None):
         elif madde >= 2: skor += 0.2
         if paragraf >= 3: skor += 0.3
         elif paragraf >= 1: skor += 0.15
-        return min(skor, 1.0)
-    
+        return round(min(skor, 1.0), 3)
+
     elif kriter_adi == "netlik":
         # Kisa cumle, az karmasa, seviye tutarliligi
         cumleler = re.split(r'[.!?]+', cevap)
         uzun_cumle = sum(1 for c in cumleler if len(c.split()) > 30)
         toplam = len(cumleler)
-        if toplam == 0: return 0.5
-        net = 1 - (uzun_cumle / toplam)
-        return 0.4 + net * 0.6
-    
+        if toplam == 0:
+            return 0.5
+        # Kelime tekrar orani: cok tekrar netligi dusurur
+        kelimeler = cevap_kucuk.split()
+        benzersiz = len(set(kelimeler)) / max(len(kelimeler), 1)
+        net = max(0.0, 1 - (uzun_cumle / toplam))
+        return round(max(0.0, min(1.0, 0.3 + net * 0.5 + benzersiz * 0.2)), 3)
+
     elif kriter_adi == "yapi":
-        return min(1.0, 0.3 + len(re.findall(r'(?m)^[\-\*\d]', cevap)) * 0.1)
-    
+        return round(min(1.0, 0.3 + len(re.findall(r'(?m)^[\-\*\d]', cevap)) * 0.1), 3)
+
     elif kriter_adi == "turkce":
         turkce_harf = len(re.findall(r'[çğıöşüÇĞİÖŞÜ]', cevap))
         karakter = len(cevap)
-        if karakter == 0: return 0
+        if karakter == 0:
+            return 0
         orani = turkce_harf / karakter
-        # Turkce ortalama %3-5
-        if orani >= 0.02: return 0.9
-        elif orani >= 0.01: return 0.7
-        elif orani >= 0.005: return 0.5
-        return 0.3
-    
+        # Turkce ortalama %3-5; ama ingilizce kelimeler cezalandirilmamali
+        if orani >= 0.02:
+            return 0.95
+        elif orani >= 0.01:
+            return 0.8
+        elif orani >= 0.005:
+            return 0.6
+        return 0.4
+
     elif kriter_adi == "ornek":
-        ornek_belirtec = len(re.findall(r'\b(ornek|misal|ornegin|ornegiyle|mesela|yani|soyle ki)\b', cevap_kucuk))
+        ornek_belirtec = len(re.findall(r'\b(ornek|misal|ornegin|ornegiyle|mesela|yani|soyle ki|sey)\b', cevap_kucuk))
         kod_blogu = '```' in cevap
         skor = 0.3
         if ornek_belirtec >= 3: skor += 0.4
         elif ornek_belirtec >= 1: skor += 0.2
         if kod_blogu: skor += 0.3
-        return min(skor, 1.0)
-    
+        return round(min(skor, 1.0), 3)
+
     elif kriter_adi == "guncellik":
-        # 2025/2026 yil referansi var mi?
-        yil_var = bool(re.search(r'202[0-9]', cevap))
-        return 0.8 if yil_var else 0.5
-    
+        # 2025/2026 yil referansi var mi? veya guncel önemli olay
+        yil_var = bool(re.search(r'202[3-9]', cevap))
+        guncel_kavram = bool(re.search(r'\b(guncel|degisen|yeni nesil|son yillarda|populer)\b', cevap_kucuk))
+        return 0.85 if (yil_var or guncel_kavram) else 0.6
+
     elif kriter_adi == "uygulanabilirlik":
-        pratik_belirtec = len(re.findall(r'\b(adim|adimlar|yontem|yolu|yontemi|yapman|edebilir|kullanilabilir|uygula)\b', cevap_kucuk))
-        return min(1.0, 0.4 + pratik_belirtec * 0.15)
-    
+        pratik_belirtec = len(re.findall(r'\b(adim|adimlar|yontem|yolu|yontemi|yapman|edebilir|kullanilabilir|uygula|oner)\b', cevap_kucuk))
+        return round(min(1.0, 0.4 + pratik_belirtec * 0.15), 3)
+
     elif kriter_adi == "yaraticilik":
-        # Ozgun ifade varyasyonu
-        kelimeler = set(cevap.lower().split())
-        cesitlilik = len(kelimeler) / max(len(cevap.split()), 1)
-        return min(1.0, 0.3 + cesitlilik * 0.7)
-    
+        # Ozgun ifade varyasyonu + duz kelime tekrarini cezalandir.
+        kelimeler = cevap_kucuk.split()
+        if not kelimeler:
+            return 0.3
+        cesitlilik = len(set(kelimeler)) / len(kelimeler)
+        # ilk 50 kelime icinde tekrar orani
+        ilk = kelimeler[:50]
+        tekrar = (len(ilk) - len(set(ilk))) / max(len(ilk), 1)
+        return round(max(0.0, min(1.0, 0.3 + cesitlilik * 0.6 - tekrar * 0.3)), 3)
+
     elif kriter_adi == "token_verimliligi":
         kelime = len(cevap.split())
-        if kelime >= 100: return 0.9
-        elif kelime >= 50: return 0.7
-        elif kelime >= 20: return 0.5
+        # Verimlilik: yeterli ancak sismemis. 100-400 arasi ideal, >800 sıskın.
+        if 100 <= kelime <= 400:
+            return 1.0
+        elif kelime >= 400:
+            return max(0.3, 1.0 - (kelime - 400) * 0.0008)
+        elif kelime >= 50:
+            return 0.8
+        elif kelime >= 20:
+            return 0.6
         return 0.3
-    
+
     elif kriter_adi == "guven":
-        guven_belirtec = len(re.findall(r'\b(kesinlikle|emim|kanitim|kesin|net|acik)', cevap_kucuk))
-        suphe_belirtec = len(re.findall(r'\b(belki|muhtemelen|olabilir|emin degilim|bilmiyorum|sanirim)', cevap_kucuk))
-        skor = 0.6 + guven_belirtec * 0.1 - suphe_belirtec * 0.15
-        return max(0, min(1, skor))
-    
+        # Karsi-sebep belirtecleri: "belki" gibi tereddut icerenler puani dusurur,
+        # kanitli ifadeleri dusuk tutar; ama asiri bos "kesinlikle" tuketimi de cezalandir.
+        kesin_belirtec = len(re.findall(r'\b(kesinlikle|kesin|net|acik|kanitlanmis|goruyoruz)\b', cevap_kucuk))
+        suphe_belirtec = len(re.findall(r'\b(belki|muhtemelen|olabilir|emin degilim|bilmiyorum|sanirim|zannediyorum)\b', cevap_kucuk))
+        # Celiski varsa guven dustur
+        celiski = sum(1 for a, b in _CELISKI_CIFTLERI if re.search(a, cevap_kucuk) and re.search(b, cevap_kucuk))
+        skor = 0.6 + min(kesin_belirtec, 3) * 0.08 - suphe_belirtec * 0.15 - celiski * 0.3
+        return round(max(0.0, min(1.0, skor)), 3)
+
     return 0.5
 
+
 # ── Hakem Paneli ─────────────────────────────────────────────
-def hakem_paneli(cevaplar, soru):
+def hakem_paneli(cevaplar: List[Tuple[str, str]], soru: str) -> Dict[str, Any]:
     """Cevaplari 12 kriterden puanla, en iyi hangisi sec, rapor dondur.
     cevaplar: [(model_adi, cevap_metni), ...]
     """
     sonuclar = []
-    
+
     for model_adi, cevap in cevaplar:
-        kriter_skorlari = {}
+        kriter_skorlari: Dict[str, float] = {}
         agirlikli_toplam = 0.0
         for kriter, agirlik, _ in KRITERLER:
             puan = kriter_puanla(kriter, cevap, soru)
@@ -151,16 +200,16 @@ def hakem_paneli(cevaplar, soru):
             "kriter_skorlari": kriter_skorlari,
             "kelime": len(cevap.split()),
         })
-    
+
     # Kiyasla
     sirali = sorted(sonuclar, key=lambda x: -x["genel_skor"])
     kazanan = sirali[0]
-    
+
     return {
         "kazanan": kazanan["model"],
         "kazanan_skor": kazanan["genel_skor"],
         "siralama": [
-            {"sira": i+1, "model": s["model"], "skor": s["genel_skor"],
+            {"sira": i + 1, "model": s["model"], "skor": s["genel_skor"],
              "en_iyi_kriter": max(s["kriter_skorlari"], key=s["kriter_skorlari"].get),
              "en_zayif_kriter": min(s["kriter_skorlari"], key=s["kriter_skorlari"].get)}
             for i, s in enumerate(sirali)
@@ -168,7 +217,7 @@ def hakem_paneli(cevaplar, soru):
         "tum_sonuclar": sonuclar,
     }
 
-def rapor_goster(rapor, soru):
+def rapor_goster(rapor: Dict[str, Any], soru: str) -> List[Dict[str, Any]]:
     """Hakem paneli raporunu goster."""
     print(f"\n{'='*65}")
     print(f"  HAKEM PANELI RAPORU")
@@ -191,7 +240,7 @@ def rapor_goster(rapor, soru):
     return rapor["siralama"]
 
 # ── Ornek meclis uretimi (3 model oylaması) ─────────────────
-def meclis_uret(soru, modeller=None):
+def meclis_uret(soru: str, modeller: Optional[List[Tuple[str, str]]] = None) -> Optional[List[Dict[str, Any]]]:
     """3 farkli modelden cevap uretip hakem paneli ile sec.
     Gercek kullanildiginda LLM cagirisi yapar.
     """

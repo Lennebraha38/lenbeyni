@@ -11,11 +11,24 @@ Ozet akis:
   MODE=birlestir python3 egit_kod.py            # GGUF + (istege bagli HF yukleme)
 """
 import json, os, sys
+from pathlib import Path
+
+# Repo kokunden bagimsiz calisabilmek icin yol sabitleri
+KOK = Path(__file__).resolve().parent.parent
+VERI_TURKCE = KOK / "egitim" / "veri_seti3.json"
+VERI_KOD = KOK / "egitim" / "kod_verisi.json"
 
 MODE = os.environ.get("MODE", "kod")
 TABAN = os.environ.get("TABAN", "Qwen/Qwen2.5-Coder-7B-Instruct")
 MSEK = 4096
 STEPLER = {"turkce": 150, "kod": 320}
+
+def veri_yolu(mode: str) -> Path:
+    """Modele gore veri seti yolunu dondurur (yoksa uyari basar)."""
+    yol = VERI_TURKCE if mode == "turkce" else VERI_KOD
+    if not yol.exists():
+        print("UYARI: %s bulunamadi (%s) - bos veriyle calisilacak." % (yol.name, yol))
+    return yol
 
 def yukle_model():
     from unsloth import FastLanguageModel, is_bfloat16_supported
@@ -33,7 +46,7 @@ def egit(mode):
     from transformers import TrainingArguments, Trainer, logging as hflog
     import torch
     hflog.set_verbosity_info()
-    yol = "veri_seti3.json" if mode == "turkce" else "kod_verisi.json"
+    yol = veri_yolu(mode)
     veri = json.load(open(yol, encoding="utf-8"))
     if not isinstance(veri, list):
         veri = veri.get("ornekler", veri)
@@ -89,7 +102,7 @@ def birlestir():
     import glob, shutil
     print("Taban yukleniyor ...")
     model, tokenizer, _ = yukle_model()
-    cwd = os.getcwd()
+    cwd = KOK
     adapters = ["lora_turkce", "lora_kod"]
     adapters = [a for a in adapters if os.path.isdir(os.path.join(cwd, a))]
     for ad in adapters:

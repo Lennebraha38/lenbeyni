@@ -19,16 +19,16 @@ let tekrarAkis = false;
 
 // ── Konu → Model yönlendirme (agentv2/model_routing.py ile aynı) ──
 const KONU_MODELLERI = {
-  kod:        ["cohere/north-mini-code:free", 32768],
-  matematik:  ["nvidia/nemotron-3-ultra-550b-a55b:free", 65536],
-  mantik:     ["nvidia/nemotron-3-ultra-550b-a55b:free", 65536],
-  bilim:      ["dots-studio/dots-3-note-preview:free", 48000],
-  tarih:      ["dots-studio/dots-3-note-preview:free", 48000],
-  dil:        ["dots-studio/dots-3-note-preview:free", 24000],
-  yaratici:   ["dots-studio/dots-3-note-preview:free", 40000],
-  kultur:     ["dots-studio/dots-3-note-preview:free", 24000],
-  pratik:     ["dots-studio/dots-3-note-preview:free", 16000],
-  teknoloji:  ["dots-studio/dots-3-note-preview:free", 48000],
+  kod:       ["cohere/north-mini-code:free", 65536],
+  matematik: ["nvidia/nemotron-3-ultra-550b-a55b:free", 65536],
+  mantik:    ["nvidia/nemotron-3-ultra-550b-a55b:free", 65536],
+  bilim:     ["dots-studio/dots-3-note-preview:free", 48000],
+  tarih:     ["dots-studio/dots-3-note-preview:free", 48000],
+  dil:       ["dots-studio/dots-3-note-preview:free", 24000],
+  yaratici:  ["dots-studio/dots-3-note-preview:free", 40000],
+  kultur:    ["dots-studio/dots-3-note-preview:free", 24000],
+  pratik:    ["dots-studio/dots-3-note-preview:free", 16000],
+  teknoloji: ["dots-studio/dots-3-note-preview:free", 48000],
 };
 const KONU_YONTEM = {
   matematik: "Problemi parçala, adım adım çöz (adımları yaz). Son adımda sonucu **büyük ve net** yaz.",

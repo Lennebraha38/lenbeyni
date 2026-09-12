@@ -5,13 +5,14 @@
 """
 import base64, os, sys
 
-def gorsel_anla(llm, yol, soru="Bu goruntuyu detayli acikla. Turkce."):
+from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+def gorsel_anla(llm, yol: str, soru: str = "Bu goruntuyu detayli acikla. Turkce.") -> str:
     """Goruntuyu base64'e cevirip vision destekli mega beyne sorar."""
     try:
         with open(yol, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
         import requests
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
+        r = requests.post(os.environ.get("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions"), json={
             "model": "meta-llama/llama-3.2-90b-vision:free",
             "messages": [{"role": "user", "content": "data:image/png;base64," + b64},
                          {"role": "user", "content": soru}],
@@ -23,16 +24,16 @@ def gorsel_anla(llm, yol, soru="Bu goruntuyu detayli acikla. Turkce."):
     except Exception as e:
         return f"[Gorsel anlama hata: {e}]"
 
-def gorsel_yorumla(llm, yol, soru):
+def gorsel_yorumla(llm, yol: str, soru: str) -> str:
     return gorsel_anla(llm, yol, soru)
 
-def analyse_yol(yol, soru):
+def analyse_yol(yol: str, soru: str) -> str:
     return gorsel_anla(_dummy_llm, yol, soru)
 
-def _dummy_llm(mesajlar, **kw):
+def _dummy_llm(mesajlar, **kw: Any) -> str:
     return "[key yok]"
 
-def indir_gorsel(url, yol="gorsel.png"):
+def indir_gorsel(url: str, yol: str = "gorsel.png") -> str:
     try:
         import requests
         r = requests.get(url, timeout=30)

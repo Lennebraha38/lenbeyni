@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """Self-Correction — hatali cevap bulursa duzeltme turu.
 Kod: sandbox'da calistir → hata varsa modele geri besle → duzelt.
 Matematik: beklenen sonuc ile karsilastir → farkli ise duzelttir.
@@ -5,7 +6,7 @@ Genel: cevap cok kisa/eksikse → detay ister.
 """
 import os, re, ast, subprocess, tempfile
 
-def kod_dogrula(kod_metni):
+def kod_dogrula(kod_metni: str) -> Tuple[bool, str]:
     """Kod blogunu cikar, calistir, hata varsa dondur."""
     # Markdown blog temizleme
     blok = re.search(r'```(?:python)?\s*\n(.*?)```', kod_metni, re.DOTALL)
@@ -35,7 +36,7 @@ def kod_dogrula(kod_metni):
     finally:
         os.unlink(yol)
 
-def duzeltme_turu(cevap, konu, hata_bilgisi):
+def duzeltme_turu(cevap: str, konu: str, hata_bilgisi: str) -> str:
     """Kod hatasi icin duzeltme promptu: sadece calisan kod iste."""
     return (
         f"Onceki cevabindaki kod calismadi:\n{hata_bilgisi}\n\n"
@@ -44,7 +45,7 @@ def duzeltme_turu(cevap, konu, hata_bilgisi):
         f"Kodu tek bir ```python ... ``` bloguna koy."
     )
 
-def self_correction(soru, cevap, konu, llm_fonk, max_tur=1):
+def self_correction(soru: str, cevap: str, konu: str, llm_fonk, max_tur: int = 1) -> Tuple[str, int, str]:
     """Cevabi dogrula, gerekirse duzeltme turu calistir.
     llm_fonk: zenai_zeka.llm gibi bir fonksiyon (mesajlar->str)
     max_tur: kac kez duzeltme denensin (varsayilan 1)

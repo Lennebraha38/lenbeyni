@@ -1,3 +1,4 @@
+from typing import Optional, Tuple, List, Dict, Any
 """Model Routing — konuya gore dogru modeli sec + tokeni bol tut.
 Claude "az token + yuksek mantik" yapiyor. Bizim formulumuz:
   yuksek mantik + rakipten cok token = ustun cozum
@@ -5,6 +6,9 @@ Claude "az token + yuksek mantik" yapiyor. Bizim formulumuz:
 Token limitlerini yuksek tut (Claude 128K'dan 2x-4x daha fazla cikti).
 """
 import os
+
+# ── Merkezi API ayarlari ───────────────────────────────────────────────
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Konu bazli model haritasi: (model_id, max_tokens, aciklama)
 # Kod: free-tier anahtarda deepseek 402 (bakiye yok) -> free kod uzmanina geri.
@@ -64,7 +68,7 @@ KONU_MODELLERI = {
 DEFAULT_MODEL = "dots-studio/dots-3-note-preview:free"
 DEFAULT_MAX = 32768
 
-def model_sec(konu):
+def model_sec(konu: str) -> Tuple[str, int]:
     """Konuya gore model ve max_tokens dondur."""
     model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
     return model, maxt
@@ -77,7 +81,7 @@ FALLBACK_ZINCIRI = [
     "meta-llama/llama-3.3-70b-instruct:free",
 ]
 
-def model_fallback(model):
+def model_fallback(model: str) -> List[str]:
     """Verilen modelin ardindan denenebilecek yedek modelleri dondurur.
     (model, maxt) girdisine model adi verilir; kalan linkler paylasilir."""
     sira = []
@@ -86,19 +90,19 @@ def model_fallback(model):
             sira.append(m)
     return sira
 
-def model_sec_hepsi(konu):
+def model_sec_hepsi(konu: str) -> Tuple[List[str], int]:
     """Konu icin (birincil + fallback) model listesi dondurur.
     Tam zirve akisinda 429/402/404 gorurse siralamayi dener."""
     birincil, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
     return [birincil] + [m for m in FALLBACK_ZINCIRI if m != birincil], maxt
 
-def konu_aciklama(konu):
+def konu_aciklama(konu: str) -> str:
     """Konunun neden o modelde secildigini acikla."""
     _, _, aciklama = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan model"))
     return aciklama
 
 # ── Veri odakli routing: her gercek sonucu logla ──
-def routing_logla(konu, soru, model, skor, sure=None, kelime=None):
+def routing_logla(konu: str, soru: str, model: str, skor: float, sure: Optional[float] = None, kelime: Optional[int] = None) -> Dict[str, Any]:
     """Test sonucunu kayide isler; routing kurallari veriyle guncellenebilir."""
     import os, time, json
     dizin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit")
@@ -116,7 +120,7 @@ def routing_logla(konu, soru, model, skor, sure=None, kelime=None):
         pass
     return satir
 
-def routing_rapor():
+def routing_rapor() -> Dict[str, Any]:
     """Loglardan hangi model hangi konuda kazaniyor ozetler."""
     import os, glob, json
     sayilar = {}
@@ -142,7 +146,7 @@ def routing_rapor():
         rapor[konu].sort(key=lambda x: x["ortalama"], reverse=True)
     return rapor
 
-def model_profil(konu):
+def model_profil(konu: str) -> Optional[str]:
     """Loglara gore konu icin en iyi modeli oner (veri varsa)."""
     rapor = routing_rapor().get(konu or "")
     if rapor and rapor[0]["adet"] >= 3:
