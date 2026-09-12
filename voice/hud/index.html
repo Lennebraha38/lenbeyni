@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZENAI // VOICE</title>
+<link rel="stylesheet" href="hud.css" />
+<link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='%2300d4ff' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%2300d4ff'/%3E%3C/svg%3E" />
+</head>
+<body data-durum="bosta">
+  <div class="hud-katman scanlines"></div>
+  <div class="hud-katman vinyet"></div>
+
+  <header class="ust-bar">
+    <div class="logo">ZENAI<span>//VOICE</span></div>
+    <div class="sistem-bilgi">
+      <span id="saat">--:--:--</span>
+      <span id="baglanti" class="durum-nokta">çevrimdışı</span>
+    </div>
+  </header>
+
+  <main class="sahne">
+    <div class="hud-halka halka-dis"></div>
+    <div class="hud-halka halka-orta"></div>
+    <div class="hud-halka halka-ic"></div>
+
+    <canvas id="hud-canvas" width="720" height="560" aria-label="ZenAI ses görselleştiricisi"></canvas>
+
+    <div class="durum-etiket">
+      <span class="durum-dot" id="durum-dot"></span>
+      <span id="durum-metin">BOŞTA</span>
+    </div>
+    <div class="durum-detay" id="durum-detay">hazır</div>
+
+    <div class="faz-seridi" id="faz-seridi"></div>
+  </main>
+
+  <section class="sohbet-panel">
+    <div class="sohbet-kaydi" id="sohbet-kaydi"></div>
+    <form id="sohbet-form" class="sohbet-giris">
+      <input id="sohbet-metin" type="text" autocomplete="off" placeholder="Yaz ya da mikrofonu basılı tut…" />
+      <button id="pta-btn" type="button" class="pta">🗣 KONUŞ</button>
+      <button type="submit" class="gonder">▶</button>
+    </form>
+  </section>
+
+  <footer class="ayar-cubugu">
+    <label>Gateway
+      <input id="cfg-gateway" type="text" value="http://127.0.0.1:8787" />
+    </label>
+    <label>Ses WS (opsiyonel)
+      <input id="cfg-ws" type="text" placeholder="ws://host:port/ses" />
+    </label>
+    <button id="cfg-kaydet" type="button">UYGULA &amp; BAĞLAN</button>
+    <span class="not">0 maliyet · açık kaynak · beyin değişmez</span>
+  </footer>
+
+  <script src="hud.js"></script>
+</body>
+</html>
