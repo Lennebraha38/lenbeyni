@@ -54,6 +54,11 @@ const L = {
     silver_1: "Günlük 500 mesaj", silver_2: "Tüm modeller serbest", silver_3: "Akıl Motoru + 10 skill", silver_4: "Sesli mesaj (5 dk/gün)",
     gold_1: "Sınırsız mesaj", gold_2: "AI Meclisi (4 model)", gold_3: "Sınırsız skill + MCP", gold_4: "Öncelikli hız (2×)",
     platinum_1: "Her şey + erken erişim", platinum_2: "Sınırsız sesli mesaj", platinum_3: "API erişimi (5 anahtar)", platinum_4: "7/24 öncelikli destek",
+    ob_baslik: "ZenAI'ye hoş geldin", ob_basla: "Sormaya başla",
+    ob_1_b: "Sor, olsun.", ob_1: "Ortadaki butona bas, prompt açılır. Gemini/Claude tarzı akış hemen başlar.",
+    ob_2_b: "Ara · Düşün · Kanvas.", ob_2: "Prompt çubuğundaki pill'lerle mod seç: web araştırma, derin düşünme veya kod üretimi.",
+    ob_3_b: "Skills + MCP.", ob_3: "Ayarlar'dan yetenek (skill) ekle, uzak MCP sunucularını bağla — aletler cevaba dahil olur.",
+    ob_4_b: "Ses + model.", ob_4: "Mikrofona bas: tam ekran sesli arama. Model seçici ile otomatik yönlendirme veya sabit model.",
     not_yanilgi: "ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.",
     dosya_ekle: "Dosya ekle", araclar: "Araçlar: web arama + site okuma + Akıl Motoru",
     gonder: "Gönder", sohbeti_temizle: "Sohbeti temizle", kaynak_ac: "Yetenekler ve bağlantılar",
@@ -76,6 +81,13 @@ const L = {
     son_sohbetler: "Son sohbetler",
     sil: "Sil", duzenle: "Yeniden adlandır", disa_aktar: "Dışa aktar",
     kopyala: "Kopyala", yeniden_uret: "↻ Yeniden üret", hata: "Hata", dusunuyor: "düşünüyor…",
+    tekrar_dene: "Tekrar dene", hata_detay: "Teknik detay",
+    paylas: "Paylaş", paylas_kopyalandi: "kopyalandı", paylasilan_yuklendi: "Paylaşılan sohbet yüklendi ✓",
+    hata_genel: "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    hata_auth: "API key geçersiz görünüyor. Ayarlar → Geliştirici bölümünden key'inizi kontrol edin.",
+    hata_limit: "Hız limitine takıldınız (429). Biraz bekleyip tekrar deneyin.",
+    hata_kredi: "Sağlayıcı kredisi bitti (402). OpenRouter hesabınızı kontrol edin.",
+    hata_ag: "Ağ hatası — internet bağlantınızı kontrol edin.",
     meclis_sec: "Meclis için en az 2 model seç.", sec_mesaj: "Mesaj",
     dil_degistir: "Dil değiştir", tema_degistir: "Tema değiştir",
     gizlilik: "Gizlilik", sartlar: "Şartlar", iletisim: "İletişim",
@@ -109,6 +121,11 @@ const L = {
     silver_1: "500 messages per day", silver_2: "All models unlocked", silver_3: "Reasoning Engine + 10 skills", silver_4: "Voice messages (5 min/day)",
     gold_1: "Unlimited messages", gold_2: "AI Council (4 models)", gold_3: "Unlimited skills + MCP", gold_4: "Priority speed (2×)",
     platinum_1: "Everything + early access", platinum_2: "Unlimited voice messages", platinum_3: "API access (5 keys)", platinum_4: "24/7 priority support",
+    ob_baslik: "Welcome to ZenAI", ob_basla: "Start asking",
+    ob_1_b: "Ask away.", ob_1: "Hit the center button to open the prompt. Gemini/Claude-style streaming starts instantly.",
+    ob_2_b: "Search · Think · Canvas.", ob_2: "Pick a mode with the prompt pills: web research, deep thinking or code generation.",
+    ob_3_b: "Skills + MCP.", ob_3: "Add skills in Settings, connect remote MCP servers — tools join your answers.",
+    ob_4_b: "Voice + model.", ob_4: "Tap the mic for full-screen voice search. Use the model picker for auto routing or a fixed model.",
     not_yanilgi: "ZenAI may produce inaccurate information. Verify important details.",
     dosya_ekle: "Attach file", araclar: "Tools: web search + site reading + Reasoning Engine",
     gonder: "Send", sohbeti_temizle: "Clear chat", kaynak_ac: "Skills & connections",
@@ -131,6 +148,13 @@ const L = {
     son_sohbetler: "Recent chats",
     sil: "Delete", duzenle: "Rename", disa_aktar: "Export",
     kopyala: "Copy", yeniden_uret: "↻ Regenerate", hata: "Error", dusunuyor: "thinking…",
+    tekrar_dene: "Try again", hata_detay: "Technical details",
+    paylas: "Share", paylas_kopyalandi: "copied", paylasilan_yuklendi: "Shared chat loaded ✓",
+    hata_genel: "Something went wrong. Please try again.",
+    hata_auth: "Your API key seems invalid. Check it under Settings → Developer.",
+    hata_limit: "Rate limit hit (429). Wait a moment and try again.",
+    hata_kredi: "Provider credit exhausted (402). Check your OpenRouter account.",
+    hata_ag: "Network error — check your internet connection.",
     meclis_sec: "Select at least 2 models for the council.", sec_mesaj: "Message",
     dil_degistir: "Change language", tema_degistir: "Toggle theme",
     gizlilik: "Privacy", sartlar: "Terms", iletisim: "Contact",
@@ -562,6 +586,15 @@ function mesajEkle(role, icerik, meta) {
 function kaçis(metin) {
   return metin.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+// Hafif syntax highlighting — string/yorum/anahtar kelime/sayı renklendirme
+function kodBoya(kod) {
+  const esc = kaçis(kod);
+  return esc
+    .replace(/(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/)/g, '<span class="sy-yorum">$1</span>')
+    .replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;|"[^"\n]*"|'[^'\n]*'|`[^`]*`)/g, '<span class="sy-str">$1</span>')
+    .replace(/\b(const|let|var|function|return|if|else|for|while|class|new|import|from|export|async|await|try|catch|def|print|self|None|True|False|null|undefined|true|false|public|private|void|int|str|list|dict|SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|TABLE)\b/g, '<span class="sy-kw">$1</span>')
+    .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="sy-sayi">$1</span>');
+}
 function mdYazdir(el, md) {
   let html = kaçis(md);
   // kod blokları koru
@@ -591,7 +624,7 @@ function mdYazdir(el, md) {
     if (kodYer) {
       if (listeTipi) { cikti.push("</" + listeTipi + ">"); listeTipi = null; }
       const b = kodBloklari[+kodYer[1]];
-      cikti.push(`<div class="kod-kopten-wrap"><pre><code>${b.kod}</code></pre><button class="kod-kopyala eylem-btn">Kopyala</button></div>`);
+      cikti.push(`<div class="kod-kopten-wrap"><div class="kod-ust"><span class="kod-dil">${kaçis(b.lang || "kod")}</span></div><pre><code>${kodBoya(b.kod)}</code></pre><button class="kod-kopyala eylem-btn">${t("kopyala")}</button></div>`);
       continue;
     }
 
@@ -776,12 +809,14 @@ async function mega(mesajlar, model, key, mt) {
   return (await r.json()).choices[0].message.content;
 }
 
+let akisDenetleyici = null;   // AbortController — üretimi durdurma
 async function megaAkis(mesajlar, model, key, mt, onDelta) {
   const meta = { model, messages: mesajlar, temperature: 0.7, max_tokens: mt || gecerliMaxTok(), stream: true };
   const endpoint = sunucuModu !== false ? window.location.origin + "/api/chat" : OPENROUTER;
   const hdrs = sunucuModu !== false ? { "Content-Type": "application/json" } : { "Content-Type": "application/json", "Authorization": "Bearer " + key };
   if (sunucuModu === false && !key) throw new Error("Sunucu rölesi çalışmıyor ve API key girilmedi.");
-  const r = await fetch(endpoint, { method: "POST", headers: hdrs, body: JSON.stringify(meta) });
+  akisDenetleyici = new AbortController();
+  const r = await fetch(endpoint, { method: "POST", headers: hdrs, body: JSON.stringify(meta), signal: akisDenetleyici.signal });
   if (!r.ok) {
     let msj = "HTTP " + r.status;
     try { msj = (await r.json()).error || msj; } catch (e) { msj = await r.text(); }
@@ -792,22 +827,27 @@ async function megaAkis(mesajlar, model, key, mt, onDelta) {
   const okuyucu = r.body.getReader();
   const decoder = new TextDecoder();
   let buf = "", tam = "";
-  while (true) {
-    const { done, value } = await okuyucu.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    let i;
-    while ((i = buf.indexOf("\n")) >= 0) {
-      const satir = buf.slice(0, i).trim();
-      buf = buf.slice(i + 1);
-      if (!satir.startsWith("data:")) continue;
-      const veri = satir.slice(5).trim();
-      if (veri === "[DONE]") continue;
-      try {
-        const delta = JSON.parse(veri)?.choices?.[0]?.delta?.content || "";
-        if (delta) { tam += delta; if (onDelta) onDelta(delta); }
-      } catch (e) { }
+  try {
+    while (true) {
+      const { done, value } = await okuyucu.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const satir = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!satir.startsWith("data:")) continue;
+        const veri = satir.slice(5).trim();
+        if (veri === "[DONE]") continue;
+        try {
+          const delta = JSON.parse(veri)?.choices?.[0]?.delta?.content || "";
+          if (delta) { tam += delta; if (onDelta) onDelta(delta); }
+        } catch (e) { }
+      }
     }
+  } catch (e) {
+    if (e.name === "AbortError") return tam;   // durduruldu — şimdiye kadarki akışı döndür
+    throw e;
   }
   return tam;
 }
@@ -1016,6 +1056,8 @@ async function gonder() {
       gecmis = gecmis.slice(-30);
       sohbetKaydet();
       sohbetListesiCiz();
+      // token tahmini + maliyet (kabaca 4 karakter = 1 token)
+      tokenSay(soru, cevap, model);
     }
     // kayan imleç: cevabın bittiğini güzelce göster
     const bitisImleci = document.createElement("span");
@@ -1025,11 +1067,33 @@ async function gonder() {
     setTimeout(() => bitisImleci.remove(), 1400);
     govdeEylemleri(aiWrap, govde);
   } catch (e) {
-    const hata = document.createElement("div");
-    hata.className = "msg-icerik";
-    hata.style.color = "#f87171";
-    hata.textContent = "Hata: " + e.message;
-    mesajEkle("ai").querySelector(".msg-icerik").replaceChildren(hata);
+    const aiWrapHata = mesajEkle("ai");
+    const govde = aiWrapHata.querySelector(".msg-icerik");
+    govde.classList.add("hata-kutu");
+    const kod = /HTTP (\d+)/.exec(e.message)?.[1] || "";
+    let aciklama = t("hata_genel");
+    if (kod === "401" || /invalid|auth/i.test(e.message)) aciklama = t("hata_auth");
+    else if (kod === "429" || /rate|limit/i.test(e.message)) aciklama = t("hata_limit");
+    else if (kod === "402" || /credit|quota/i.test(e.message)) aciklama = t("hata_kredi");
+    else if (/network|fetch|failed/i.test(e.message)) aciklama = t("hata_ag");
+    govde.innerHTML = "";
+    const usts = document.createElement("div");
+    usts.className = "hata-baslik";
+    usts.textContent = "⚠ " + t("hata");
+    const msjEl = document.createElement("div");
+    msjEl.className = "hata-metin";
+    msjEl.textContent = aciklama;
+    const detayEl = document.createElement("details");
+    detayEl.className = "hata-detay";
+    detayEl.innerHTML = "<summary>" + t("hata_detay") + "</summary><pre>" + kaçis(e.message) + "</pre>";
+    const tekrarBtn = document.createElement("button");
+    tekrarBtn.className = "eylem-btn hata-tekrar";
+    tekrarBtn.textContent = "↻ " + t("tekrar_dene");
+    tekrarBtn.onclick = () => {
+      $("giris").value = gecmis.filter((m) => m.role === "user").slice(-1)[0]?.content || $("giris").value;
+      gonder();
+    };
+    govde.appendChild(usts); govde.appendChild(msjEl); govde.appendChild(detayEl); govde.appendChild(tekrarBtn);
   } finally {
     document.body.classList.remove("calisiyor");
     loaderKapat();
@@ -1158,15 +1222,72 @@ function otomatikBoyut() {
 girisEl.addEventListener("input", otomatikBoyut);
 
 // ── UI başlatma ───────────────────────────────────────
+let begeniDurum = new Map();   // mesaj index → 1 | -1
 function govdeEylemleri(wrap, govde) {
   const eylem = wrap.querySelector(".msg-eylem");
   const cop = document.createElement("button");
   cop.className = "eylem-btn"; cop.textContent = t("kopyala");
-  cop.onclick = async () => { try { await navigator.clipboard.writeText(govde.textContent.trim()); } catch (e) { } };
+  cop.onclick = async () => { try { await navigator.clipboard.writeText(govde.textContent.trim()); cop.textContent = "✓"; setTimeout(() => (cop.textContent = t("kopyala")), 1200); } catch (e) { } };
   const yenile = document.createElement("button");
   yenile.className = "eylem-btn"; yenile.textContent = t("yeniden_uret");
   yenile.onclick = () => { $("giris").value = gecmis.filter((m) => m.role === "user").slice(-1)[0]?.content || ""; gonder(); };
-  eylem.appendChild(cop); eylem.appendChild(yenile);
+  // paylaş
+  const paylas = document.createElement("button");
+  paylas.className = "eylem-btn";
+  paylas.textContent = t("paylas");
+  paylas.onclick = () => {
+    const sohbet = { uygulama: "ZenAI", mesajlar: gecmis.slice(-16) };
+    const kod = btoa(unescape(encodeURIComponent(JSON.stringify(sohbet)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const url = location.origin + location.pathname + "#s=" + kod;
+    navigator.clipboard.writeText(url).then(() => {
+      paylas.textContent = "✓ " + t("paylas_kopyalandi");
+      setTimeout(() => (paylas.textContent = t("paylas")), 1600);
+    }).catch(() => { location.hash = "s=" + kod; });
+  };
+  // beğen / beğenme
+  const idx = [...document.querySelectorAll(".msg-yuzde.ai")].indexOf(wrap);
+  const bgn = document.createElement("button");
+  bgn.className = "eylem-btn bgn";
+  const guncelleBgn = () => { bgn.textContent = begeniDurum.get(idx) === 1 ? "👍" : "👍🏻"; bgn.classList.toggle("secili", begeniDurum.get(idx) === 1); };
+  guncelleBgn();
+  bgn.onclick = () => { begeniDurum.set(idx, begeniDurum.get(idx) === 1 ? 0 : 1); guncelleBgn(); };
+  const bgnme = document.createElement("button");
+  bgnme.className = "eylem-btn bgn";
+  const guncelleBgnme = () => { bgnme.textContent = begeniDurum.get(idx) === -1 ? "👎" : "👎🏻"; bgnme.classList.toggle("secili", begeniDurum.get(idx) === -1); };
+  guncelleBgnme();
+  bgnme.onclick = () => { begeniDurum.set(idx, begeniDurum.get(idx) === -1 ? 0 : -1); guncelleBgnme(); };
+  eylem.appendChild(cop); eylem.appendChild(yenile); eylem.appendChild(paylas); eylem.appendChild(bgn); eylem.appendChild(bgnme);
+}
+
+// ── Token / maliyet takibi ───────────────────────────
+const MODEL_FIYAT = {   // $ / 1M token (giriş+çıkış ort.) — ücretsiz tier olduğu için 0, referans için piyasa ort.
+  "dots-studio/dots-3-note-preview:free": 0,
+  "nvidia/nemotron-3-ultra-550b-a55b:free": 0,
+  "poolside/laguna-s-2.1:free": 0,
+  "cohere/north-mini-code:free": 0,
+};
+function tokenSay(soru, cevap, model) {
+  const girisTok = Math.ceil((soru.length + (sistemPromptu ? 200 : 0)) / 4);
+  const cikisTok = Math.ceil(cevap.length / 4);
+  const toplam = girisTok + cikisTok;
+  const kayit = depo.get("tokenler", { toplam: 0, istek: 0 });
+  kayit.toplam += toplam;
+  kayit.istek += 1;
+  depo.set("tokenler", kayit);
+  tokenGostergeYaz(toplam, cikisTok);
+}
+function tokenGostergeYaz(eklenen, cikis) {
+  let el = $("tokenGosterge");
+  if (!el) {
+    el = document.createElement("span");
+    el.id = "tokenGosterge";
+    el.className = "token-gosterge";
+    const cips = $("modCips");
+    if (cips) cips.parentElement.appendChild(el); else $("girdi-alt").appendChild(el);
+  }
+  const k = depo.get("tokenler", { toplam: 0, istek: 0 });
+  el.textContent = "⚡ " + k.toplam.toLocaleString() + " tok · " + k.istek + " istek";
+  el.title = "Bu oturumda: +" + (eklenen || 0) + " (çıktı " + (cikis || 0) + ") · toplam " + k.toplam.toLocaleString() + " token";
 }
 
 function panelAcik() { return !$("panelDialog").classList.contains("hidden"); }
@@ -1423,11 +1544,22 @@ function morphAc() {
 function authAc() { const m = $("authModal"); if (m) m.classList.remove("hidden"); }
 function authKapat() { const m = $("authModal"); if (m) m.classList.add("hidden"); }
 
+function obKapat() {
+  const ob = $("onboarding");
+  if (!ob) return;
+  localStorage.setItem("lb_ob_gordu", "1");
+  ob.classList.remove("acik");
+  setTimeout(() => ob.classList.add("hidden"), 300);
+}
+
 // ── Olay bağlama ──────────────────────────────────────
 function bagla() {
   $("btnGonder").addEventListener("click", () => {
     const b = $("btnGonder");
-    if (b.classList.contains("gonderiliyor")) return;      // durdurma akış ileride
+    if (b.classList.contains("gonderiliyor")) {
+      if (akisDenetleyici) akisDenetleyici.abort();   // üretimi durdur
+      return;
+    }
     if (b.classList.contains("dolu")) { gonder(); return; }
     sesOverlayBaslat();                                     // boşken: tam ekran ses
   });
@@ -1603,6 +1735,17 @@ function bagla() {
   if ($("ayakIletisim")) $("ayakIletisim").addEventListener("click", (e) => { e.preventDefault(); bilgiAc("iletisim"); });
   if ($("btnBilgiKapat")) $("btnBilgiKapat").addEventListener("click", () => $("bilgiModal").classList.add("hidden"));
 
+  // Onboarding turu — ilk ziyarette göster
+  if (!localStorage.getItem("lb_ob_gordu")) {
+    const ob = $("onboarding");
+    if (ob) {
+      ob.classList.remove("hidden");
+      requestAnimationFrame(() => ob.classList.add("acik"));
+    }
+  }
+  if ($("btnObBasla")) $("btnObBasla").addEventListener("click", obKapat);
+  if ($("btnObKapat")) $("btnObKapat").addEventListener("click", obKapat);
+
   // API key: kalıcı depolama yok — yalnız bu oturum
   $("apiKey").value = sessionStorage.getItem("lb_key") || "";
   $("apiKey").addEventListener("input", () => sessionStorage.setItem("lb_key", $("apiKey").value.trim()));
@@ -1613,6 +1756,29 @@ function bagla() {
   arkaBaslat();
   temaAt();
   uygulaI18n();
+  // Paylaşılan sohbet linki: #s=<base64> → sohbeti yükle
+  const hash = location.hash.match(/[#&]s=([A-Za-z0-9\-_]+)/);
+  if (hash) {
+    try {
+      const json = decodeURIComponent(escape(atob(hash[1].replace(/-/g, "+").replace(/_/g, "/"))));
+      const veri = JSON.parse(json);
+      if (veri && Array.isArray(veri.mesajlar)) {
+        gecmis = veri.mesajlar;
+        aktifSohbet = "paylasilan-" + Date.now();
+        const chat = $("chat");
+        chat.classList.remove("bos-merkez");
+        karsilamaGizle();
+        gecmis.forEach((m) => {
+          const wrap = mesajEkle(m.role, m.content);
+          if (m.role === "ai" || m.role === "assistant") mdYazdir(wrap.querySelector(".msg-icerik"), m.content);
+          else wrap.querySelector(".msg-icerik").textContent = m.content;
+        });
+        girdiAcikYap();
+        durum(true, t("paylasilan_yuklendi"));
+        setTimeout(() => durum(false), 2400);
+      }
+    } catch (e) { }
+  }
   try {
     if (await sunucuKontrol()) {
       const kutu = $("apiKey");

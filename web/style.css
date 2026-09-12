@@ -1196,6 +1196,77 @@ html[data-tema="aydinlik"] .sdh { border-color: rgba(47,120,220,.3); }
   .so-cekirdek { width: 58px; height: 58px; }
 }
 
+/* ═══ TOKEN GÖSTERGE ═══ */
+.token-gosterge {
+  font-family: var(--font-mono); font-size: 10px; color: var(--zk-3);
+  padding: 3px 9px; border-radius: 7px; background: rgba(255,255,255,.04);
+  border: 1px solid var(--cizgi); letter-spacing: .4px; white-space: nowrap;
+}
+html[data-tema="aydinlik"] .token-gosterge { background: rgba(15,25,50,.04); }
+
+/* ═══ HATA KUTUSU ═══ */
+.msg-icerik.hata-kutu { border-color: rgba(255,110,110,.35); background: linear-gradient(180deg, rgba(255,110,110,.06), transparent), var(--srf); }
+.hata-baslik { color: #ff8585; font-weight: 700; font-size: 14.5px; margin-bottom: 8px; }
+.hata-metin { color: var(--zk-2); font-size: 13.5px; line-height: 1.6; margin-bottom: 10px; }
+.hata-detay { margin-bottom: 12px; }
+.hata-detay summary { cursor: pointer; color: var(--zk-3); font-size: 11.5px; font-family: var(--font-mono); user-select: none; }
+.hata-detay pre {
+  margin-top: 8px; background: #0d1329; border: 1px solid rgba(255,110,110,.2); border-radius: 10px;
+  padding: 12px 14px; font-size: 11.5px; color: #ffb4b4; overflow-x: auto; font-family: var(--font-mono);
+}
+.hata-tekrar { border-color: rgba(255,110,110,.45); color: #ffb4b4; }
+.hata-tekrar:hover { background: rgba(255,110,110,.12); border-color: rgba(255,110,110,.6); color: #fff; }
+
+/* ═══ SYNTAX HIGHLIGHTING ═══ */
+.sy-yorum { color: #7c86a8; font-style: italic; }
+.sy-str { color: #a8e6a3; }
+.sy-kw { color: #7eb4ff; font-weight: 600; }
+.sy-sayi { color: #ffb86c; }
+.kod-ust {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px 0; font-family: var(--font-mono);
+}
+.kod-dil { font-size: 10px; letter-spacing: 1.5px; color: #7c86a8; text-transform: uppercase; }
+
+/* ═══ ONBOARDING ═══ */
+.onboarding {
+  position: fixed; inset: 0; z-index: 210;
+  background: rgba(3,5,10,.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .3s var(--gecis); padding: 20px;
+}
+.onboarding.acik { opacity: 1; }
+.onboarding.hidden { display: none; }
+.ob-kart {
+  width: min(480px, 100%); border-radius: 22px; padding: 26px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--bg-elev);
+  border: 1px solid var(--cizgi-2); box-shadow: 0 40px 120px rgba(0,0,0,.6);
+  transform: scale(.95) translateY(14px); transition: transform .32s var(--gecis);
+}
+.onboarding.acik .ob-kart { transform: none; }
+.ob-ust { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.ob-ust h3 { flex: 1; font-family: var(--font-dsp); font-size: 19px; margin: 0; }
+.ob-orb { width: 34px; height: 34px; border-radius: 12px; background: var(--vmg); box-shadow: 0 0 20px rgba(126,180,255,.4); animation: orbNefes 3.4s ease-in-out infinite; }
+.ob-kapat { width: 32px; height: 32px; }
+.ob-adimlar { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
+.ob-adim { display: flex; gap: 13px; align-items: flex-start; }
+.ob-adim > div { display: flex; flex-direction: column; gap: 2px; }
+.ob-adim strong { font-size: 13.5px; color: var(--zk); }
+.ob-adim span:not(.ob-no) { font-size: 12.5px; color: var(--zk-3); line-height: 1.55; }
+.ob-no {
+  width: 26px; height: 26px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(126,180,255,.22), rgba(183,154,255,.18));
+  color: #a8ccff; font-size: 12px; font-weight: 700; font-family: var(--font-mono);
+}
+.ob-basla {
+  width: 100%; padding: 13px 0; border-radius: 14px; border: none;
+  background: var(--vmg); color: #03120f; font-size: 14.5px; font-weight: 700;
+  cursor: pointer; font-family: var(--font-ui); transition: .18s var(--gecis);
+  box-shadow: 0 6px 24px rgba(126,180,255,.35);
+}
+.ob-basla:hover { transform: translateY(-1px); filter: brightness(1.07); box-shadow: 0 10px 32px rgba(126,180,255,.5); }
+
 /* ═════ AYDINLIK TEMA ═════ */
 html[data-tema="aydinlik"] {
   --bg: #f2f5fb;
@@ -1324,3 +1395,10 @@ html[data-tema="aydinlik"] #sidebar::before {
   opacity: .5;
 }
 html[data-tema="aydinlik"] .sohbet-grup-baslik::after { background: linear-gradient(90deg, rgba(15,25,50,.12), transparent); }
+html[data-tema="aydinlik"] .msg-icerik.hata-kutu { background: linear-gradient(180deg, rgba(255,110,110,.05), transparent), #fff; }
+html[data-tema="aydinlik"] .hata-baslik { color: #c52222; }
+html[data-tema="aydinlik"] .hata-tekrar { color: #c52222; }
+html[data-tema="aydinlik"] .hata-tekrar:hover { color: #fff; }
+html[data-tema="aydinlik"] .hata-detay pre { background: #1d2440; }
+html[data-tema="aydinlik"] .ob-kart { background: #fff; }
+html[data-tema="aydinlik"] .ob-no { background: linear-gradient(135deg, rgba(47,120,220,.14), rgba(120,80,220,.12)); color: #1f5cb8; }

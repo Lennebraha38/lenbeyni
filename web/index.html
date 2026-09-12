@@ -262,6 +262,38 @@
     </div>
   </div>
 
+  <!-- ══ ONBOARDING TURU ══ -->
+  <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true" aria-label="Tanıtım turu">
+    <div class="ob-kart">
+      <div class="ob-ust">
+        <span class="ob-orb" aria-hidden="true"></span>
+        <h3 data-i18n="ob_baslik">ZenAI'ye hoş geldin</h3>
+        <button class="pd-kapat ob-kapat" id="btnObKapat" aria-label="Kapat" data-i18n-ar="kapat">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="ob-adimlar">
+        <div class="ob-adim">
+          <span class="ob-no">1</span>
+          <div><strong data-i18n="ob_1_b">Sor, olsun.</strong><span data-i18n="ob_1">Ortadaki butona bas, prompt açılır. Gemini/Claude tarzı akış hemen başlar.</span></div>
+        </div>
+        <div class="ob-adim">
+          <span class="ob-no">2</span>
+          <div><strong data-i18n="ob_2_b">Ara · Düşün · Kanvas.</strong><span data-i18n="ob_2">Prompt çubuğundaki pill'lerle mod seç: web araştırma, derin düşünme veya kod üretimi.</span></div>
+        </div>
+        <div class="ob-adim">
+          <span class="ob-no">3</span>
+          <div><strong data-i18n="ob_3_b">Skills + MCP.</strong><span data-i18n="ob_3">Ayarlar'dan yetenek (skill) ekle, uzak MCP sunucularını bağla — aletler cevaba dahil olur.</span></div>
+        </div>
+        <div class="ob-adim">
+          <span class="ob-no">4</span>
+          <div><strong data-i18n="ob_4_b">Ses + model.</strong><span data-i18n="ob_4">Mikrofona bas: tam ekran sesli arama. Model seçici ile otomatik yönlendirme veya sabit model.</span></div>
+        </div>
+      </div>
+      <button class="ob-basla" id="btnObBasla" data-i18n="ob_basla">Sormaya başla</button>
+    </div>
+  </div>
+
   <!-- ══ PLANLAR — SATIN ALMA (pricing) ══ -->
   <div id="planlarModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="planlarBaslik">
     <div class="modal-kutu planlar-kutu">
