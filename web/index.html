@@ -106,25 +106,15 @@
     </header>
 
     <!-- Sohbet alanı -->
-    <div id="chat" class="bos-merkez" aria-live="polite">
-      <div class="karsilama" id="karsilama">
-        <div class="karsilama-halka" aria-hidden="true">
-          <div class="karsilama-logo">Z</div>
-        </div>
-        <h2 data-i18n="karsilama_h2">Bugün ne yapalım?</h2>
-        <p class="karsilama-alt" data-i18n="karsilama_alt">ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.</p>
-        <div class="telemetri" aria-hidden="true">
-          <span class="tl-dot"></span><span class="tl-yazi" data-i18n="tl_konu">KONU YÖNLENDİRME</span>
-          <span class="tl-dot violet"></span><span class="tl-yazi" data-i18n="tl_coklu">ÇOKLU MODEL</span>
-          <span class="tl-dot yesil"></span><span class="tl-yazi" data-i18n="tl_skill">SKILLS + MCP</span>
-        </div>
-        <!-- MorphPanel: küçük tetikleyici → tıklayınca prompt kutusu içten dışa açılır -->
-        <button class="morph-tetik" id="morphTetik" aria-label="Sormaya başla">
-          <span class="morph-orb" aria-hidden="true"></span>
-          <span class="morph-yazi" data-i18n="morph_tetik">Ne sormak istersin?</span>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-      </div>
+    <div id="chat" class="bos-merkez" aria-live="polite"></div>
+
+    <!-- Karşılama: morph tetikleyici (chat dışında — silinmez) -->
+    <div class="karsilama" id="karsilama" hidden>
+      <button class="morph-tetik" id="morphTetik" aria-label="Sormaya başla">
+        <span class="morph-orb" aria-hidden="true"></span>
+        <span class="morph-yazi" data-i18n="morph_tetik">Ne sormak istersin?</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
 
     <!-- Girdi alanı — PromptInputBox tarzı (ilk açılışta kapalı, morph ile açılır) -->

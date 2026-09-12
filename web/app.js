@@ -34,9 +34,6 @@ const L = {
   tr: {
     yenikonus: "Yeni sohbet", gecmisi_gizle: "Geçmişi gizle", ayarlar: "Ayarlar ve Yetenekler", bu_cihazda: "Bu cihazda",
     model_secin: "Model seçin", model_secimi: "Model seçimi",
-    karsilama_h2: "Bugün ne yapalım?",
-    karsilama_alt: "ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.",
-    tl_konu: "KONU YÖNLENDİRME", tl_coklu: "ÇOKLU MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "ZenAI'ye bir şey sor…",
     gir_ph_ara: "Web'de araştır…", gir_ph_dusun: "Derin düşün…", gir_ph_kanvas: "Kanvas'ta oluştur…",
     gorsel_ekle: "Görsel ekle", gorsel_buyuk: "Görsel çok büyük (en fazla 10MB).",
@@ -81,9 +78,6 @@ const L = {
   en: {
     yenikonus: "New chat", gecmisi_gizle: "Hide history", ayarlar: "Settings & Skills", bu_cihazda: "On this device",
     model_secin: "Select model", model_secimi: "Model selection",
-    karsilama_h2: "What shall we do today?",
-    karsilama_alt: "ZenAI — an interactive intelligence assistant with topic routing, Reasoning Engine, Skills and MCP connections.",
-    tl_konu: "TOPIC ROUTING", tl_coklu: "MULTI-MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "Ask ZenAI anything…",
     gir_ph_ara: "Search the web…", gir_ph_dusun: "Think deeply…", gir_ph_kanvas: "Create on canvas…",
     gorsel_ekle: "Attach image", gorsel_buyuk: "Image too large (max 10MB).",
@@ -507,7 +501,11 @@ function mesajEkle(role, icerik, meta) {
   const chat = $("chat");
   chat.classList.remove("bos-merkez");
   const karsilama = $("karsilama");
-  if (karsilama) karsilama.style.display = "none";
+  if (karsilama && !karsilama.hidden) {
+    karsilama.hidden = true;
+    const tetik = $("morphTetik");
+    if (tetik) { tetik.hidden = false; tetik.classList.remove("kapan"); }
+  }
   const wrap = document.createElement("div");
   wrap.className = "msg-yuzde " + role;
   const ikon = role === "user" ? "S" : (meta && meta.meclis ? "M" : "Z");
@@ -688,12 +686,13 @@ function sohbetAc(id) {
   const chat = $("chat");
   chat.innerHTML = "";
   chat.classList.remove("bos-merkez");
-  $("karsilama").style.display = "none";
+  karsilamaGizle();
   gecmis.forEach((m) => {
     const wrap = mesajEkle(m.role, m.content);
     if (m.role === "ai") mdYazdir(wrap.querySelector(".msg-icerik"), m.content);
     else wrap.querySelector(".msg-icerik").textContent = m.content;
   });
+  girdiAcikYap();
   sohbetListesiCiz();
 }
 function yeniSohbet() {
@@ -705,13 +704,34 @@ function yeniSohbet() {
   depo.set("sohbetler", list.slice(0, 30));
   $("chat").innerHTML = "";
   $("chat").classList.add("bos-merkez");
-  $("karsilama").style.display = "";
+  karsilamaGoster();
   sohbetListesiCiz();
 }
+function karsilamaGizle() {
+  const k = $("karsilama");
+  if (k) k.hidden = true;
+}
 function karsilamaGoster() {
+  const k = $("karsilama");
+  if (!k) return;
   $("chat").innerHTML = "";
   $("chat").classList.add("bos-merkez");
-  $("karsilama").style.display = "";
+  const tetik = $("morphTetik");
+  if (tetik) { tetik.hidden = false; tetik.classList.remove("kapan"); }
+  k.hidden = false;
+  // girdi kutusunu kapat, morph tekrar tetiklenebilsin
+  const wrap = $("girdiKutuWrap");
+  if (wrap) { wrap.classList.remove("acik"); wrap.hidden = true; }
+}
+// Girdi kutusunu morph animasyonuyla aç (sohbet açıldığında sessiz versiyon)
+function girdiAcikYap() {
+  const wrap = $("girdiKutuWrap");
+  if (!wrap || !wrap.hidden) return;
+  const tetik = $("morphTetik");
+  if (tetik) tetik.hidden = true;
+  wrap.hidden = false;
+  requestAnimationFrame(() => wrap.classList.add("acik"));
+  gonderBtnGuncelle();
 }
 
 // ── API ───────────────────────────────────────────────
@@ -897,14 +917,8 @@ async function gonder() {
   otomatikBoyut();
   gorselTemizle();
   gonderBtnGuncelle();
-  // Karşılama ekranındaysa morph'u aç (girdi kutusu gelsin)
-  if (!gecmis.length && $("girdiKutuWrap") && $("girdiKutuWrap").hidden) {
-    const tetik = $("morphTetik");
-    if (tetik && !tetik.hidden) { tetik.hidden = true; }
-    const wrap = $("girdiKutuWrap");
-    wrap.hidden = false;
-    requestAnimationFrame(() => wrap.classList.add("acik"));
-  }
+  // Karşılama ekranındaysa girdi kutusunu aç
+  girdiAcikYap();
   $("btnGonder").disabled = true;
   tekrarAkis = true;
 
@@ -1328,7 +1342,6 @@ function morphAc() {
   requestAnimationFrame(() => wrap.classList.add("acik"));
   setTimeout(() => { $("giris").focus(); gonderBtnGuncelle(); }, 340);
 }
-
 // ── Auth modal ───────────────────────────────────────
 function authAc() { const m = $("authModal"); if (m) m.classList.remove("hidden"); }
 function authKapat() { const m = $("authModal"); if (m) m.classList.add("hidden"); }
@@ -1497,6 +1510,9 @@ function bagla() {
   mcpListesiCiz();
   bagla();
   sohbetListesiCiz();
+  // İlk açılış: karsilama (morph tetikleyici) görünür, girdi kutusu kapalı
+  const kars = $("karsilama");
+  if (kars) kars.hidden = false;
   promptPillGuncelle();
   gonderBtnGuncelle();
   $("giris").focus();
