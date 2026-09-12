@@ -38,6 +38,9 @@ const L = {
     karsilama_alt: "ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.",
     tl_konu: "KONU YÖNLENDİRME", tl_coklu: "ÇOKLU MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "ZenAI'ye bir şey sor…",
+    gir_ph_ara: "Web'de araştır…", gir_ph_dusun: "Derin düşün…", gir_ph_kanvas: "Kanvas'ta oluştur…",
+    gorsel_ekle: "Görsel ekle", gorsel_buyuk: "Görsel çok büyük (en fazla 10MB).",
+    ara: "Ara", dusun: "Düşün", kanvas: "Kanvas",
     not_yanilgi: "ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.",
     dosya_ekle: "Dosya ekle", araclar: "Araçlar: web arama + site okuma + Akıl Motoru",
     gonder: "Gönder", sohbeti_temizle: "Sohbeti temizle", kaynak_ac: "Yetenekler ve bağlantılar",
@@ -76,6 +79,9 @@ const L = {
     karsilama_alt: "ZenAI — an interactive intelligence assistant with topic routing, Reasoning Engine, Skills and MCP connections.",
     tl_konu: "TOPIC ROUTING", tl_coklu: "MULTI-MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "Ask ZenAI anything…",
+    gir_ph_ara: "Search the web…", gir_ph_dusun: "Think deeply…", gir_ph_kanvas: "Create on canvas…",
+    gorsel_ekle: "Attach image", gorsel_buyuk: "Image too large (max 10MB).",
+    ara: "Search", dusun: "Think", kanvas: "Canvas",
     not_yanilgi: "ZenAI may produce inaccurate information. Verify important details.",
     dosya_ekle: "Attach file", araclar: "Tools: web search + site reading + Reasoning Engine",
     gonder: "Send", sohbeti_temizle: "Clear chat", kaynak_ac: "Skills & connections",
@@ -399,6 +405,73 @@ function arkaBaslat() {
   ciz();
 }
 
+// ── Düşünme orbu (thinking-orbs port) ────────────────
+// Küçük canvas animasyonu: "composing" durumu — dönen, nabız atan yumuşak küre.
+// reduced-motion tercihinde statik gradyan.show.
+const ORB_DURUM = {
+  working:   { ciz: 7, boy: 0.30, hiz: 0.9,  renk: [[96,165,250],[129,140,248]] },
+  searching: { ciz: 6, boy: 0.34, hiz: 1.25, renk: [[56,189,248],[34,211,238]] },
+  solving:  { ciz: 8, boy: 0.26, hiz: 1.0,  renk: [[167,139,250],[217,70,239]] },
+  composing:{ ciz: 6, boy: 0.32, hiz: 0.75, renk: [[126,180,255],[183,154,255]] },
+  listening:{ ciz: 5, boy: 0.38, hiz: 0.6,  renk: [[52,211,153],[45,212,191]] },
+  shaping:   { ciz: 7, boy: 0.28, hiz: 1.1,  renk: [[251,146,60],[244,114,182]] },
+};
+function dusunmeOrb(el, durumAd, boyut = 44) {
+  if (!el) return null;
+  const d = ORB_DURUM[durumAd] || ORB_DURUM.composing;
+  const azHareket = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.createElement("canvas");
+  cv.width = boyut * (window.devicePixelRatio > 1 ? 2 : 1);
+  cv.height = cv.width;
+  cv.style.width = boyut + "px";
+  cv.style.height = boyut + "px";
+  el.replaceChildren(cv);
+  const ctx = cv.getContext("2d");
+  const W = cv.width, R = W / 2;
+  const rnd = () => Math.random() * Math.PI * 2;
+  const noktalar = Array.from({ length: d.ciz }, () => ({ a: rnd(), r: 0, f: 0.6 + Math.random() * 0.8, faz: rnd() }));
+  let durdur = false, t0 = performance.now();
+
+  if (azHareket) {
+    // statik kare: yumuşak gradyan küre
+    const g = ctx.createRadialGradient(R, R, 0, R, R, R);
+    g.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.85)");
+    g.addColorStop(1, "rgba(" + d.renk[1].join(",") + ",.25)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(R, R, R * .82, 0, 6.29); ctx.fill();
+    return () => {};
+  }
+
+  function kare(now) {
+    if (durdur) return;
+    const t = (now - t0) / 1000 * d.hiz;
+    ctx.clearRect(0, 0, W, W);
+    // çekirdek: yumuşak nabız
+    const cek = 0.55 + 0.1 * Math.sin(t * 2.2);
+    const g = ctx.createRadialGradient(R, R, 0, R, R, R * cek);
+    g.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.55)");
+    g.addColorStop(0.7, "rgba(" + d.renk[1].join(",") + ",.28)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(R, R, R * cek, 0, 6.29); ctx.fill();
+    // yörünge noktaları
+    noktalar.forEach((n, i) => {
+      const aci = n.a + t * 1.4 * n.f;
+      const yaricap = R * (0.55 + 0.3 * Math.sin(t * 1.7 + n.faz)) * (0.7 + 0.3 * n.f);
+      const x = R + Math.cos(aci) * yaricap, y = R + Math.sin(aci * 0.9 + n.faz) * yaricap * 0.85;
+      const rc = R * d.boy * (0.5 + 0.5 * Math.abs(Math.sin(t * 2 + i)));
+      const gg = ctx.createRadialGradient(x, y, 0, x, y, rc * 3);
+      gg.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.75)");
+      gg.addColorStop(1, "rgba(" + d.renk[1].join(",") + ",0)");
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(x, y, rc * 3, 0, 6.29); ctx.fill();
+    });
+    requestAnimationFrame(kare);
+  }
+  requestAnimationFrame(kare);
+  return () => { durdur = true; };
+}
+
 // ── Üst düzey yardımcılar ─────────────────────────────
 function durum(goster, metin) {
   const el = $("durum");
@@ -715,6 +788,14 @@ async function sistemPromptu(konu, soyut) {
     "Sen ZenAI'sin — Türkçe bir asistan. Doğrudan, net ve özlü cevap ver.",
     "KALİTE + UZUNLUK KURALI: Önce tek cümlelik doğrudan cevap. Sonra gerekirse 3-5 kısa madde veya kısa adım akışı. Cevabın uzunluğunu sorunun kapsamına göre ayarla — kullanıcı detay istedadı özet ver, irade yoksa net ve bitmiş ver. Bol tekrar, giriş/bitiş süsü, gereksiz başlık yığını yapma. Çoğu soru 100-250 kelimeyle biter; 400 kelimeyi aşma.",
   ];
+  const pill = promptPillAktif();
+  if (pill === "ara") {
+    parcalar.push("ARAMA MODU: Güncel web verisiyle cevap ver; kaynak linklerini sona kısaca ekle.");
+  } else if (pill === "kanvas") {
+    parcalar.push("KANVAS MODU: Tam, çalıştırılabilir bir çözüm üret — kod bloklarını ``` ile işaretle, kısa açıklamalarla ver.");
+  } else if (pill === "dusun") {
+    parcalar.push("DÜŞÜNME MODU: Problemi parçalara ayır, her adımı kısa gerekçele, sonucu net kapat.");
+  }
   if (soyut) {
     const y = KONU_YONTEM[konu] || KONU_YONTEM.pratik;
     parcalar.push("YÖNTEM: " + y);
@@ -788,33 +869,45 @@ async function mcpIsle(soru, cevap, mesajlar, model) {
 async function gonder() {
   const soru = $("giris").value.trim();
   const key = gecerliKey();
-  if (!soru || tekrarAkis) return;
+  if ((!soru && !gorselDosya) || tekrarAkis) return;
   if (!key) {
     if (sunucuModu === null) await sunucuKontrol();
     if (sunucuModu === false) { alert("Sunucu rölesi yok ve API key girilmedi."); return; }
   }
+  // Görsel ekliyse metne işaretle (multi-model görsel desteği ileride; şimdilik not olarak)
+  const gorselNot = gorselDosya ? "\n[Görsel eklendi: " + gorselDosya.name + "]" : "";
+  const tamSoru = soru + gorselNot;
   $("giris").value = "";
   otomatikBoyut();
+  gorselTemizle();
+  gonderBtnGuncelle();
   $("btnGonder").disabled = true;
   tekrarAkis = true;
 
-  const konu = konuBul(soru);
+  const konu = konuBul(tamSoru);
   if ($("swRoute") && $("swRoute").checked) modelPiliCiz(konu);
 
+  // Pill modları: ara → web aramayı zorla; dusun → Akıl Motoru; kanvas → kod üretim modu
+  const girdiPill = promptPillAktif();
+  if (girdiPill === "ara") {
+    $("toolArama").checked = true;
+    $("toolSite").checked = true;
+  }
+  const soyut = mod === "akil" || girdiPill === "dusun" || girdiPill === "kanvas";
+
   try {
-    if (mod === "meclis") return await meclisTuru(soru, key), (tekrarAkis = false, $("btnGonder").disabled = false);
+    if (mod === "meclis") return await meclisTuru(tamSoru, key), (tekrarAkis = false, $("btnGonder").disabled = false);
     // Tek / Akıl Motoru
-    const soyut = mod === "akil";
     const aktifSkillerBu = aktifSkilller.map((i) => skills[i]).filter(Boolean);
-    const wrap = mesajEkle("user", soru);
+    const wrap = mesajEkle("user", tamSoru);
     const [model, mt] = konuModel(modelSecili(), konu);
     const sistemi = await sistemPromptu(konu, soyut);
     const mesajlar = [
       { role: "system", content: sistemi },
       ...gecmis.slice(-14),
-      { role: "user", content: soru },
+      { role: "user", content: tamSoru },
     ];
-    await ajanBaglam(soru, mesajlar, konu);
+    await ajanBaglam(tamSoru, mesajlar, konu);
 
     durum(true, (soyut ? t("akil_motoru") : "ZenAI") + " — " + konu + " → " + modelAdi(model) + " " + t("dusunuyor"));
     const sinyalKonu = konu + " → " + modelAdi(model);
@@ -822,11 +915,12 @@ async function gonder() {
     const govde = aiWrap.querySelector(".msg-icerik");
     document.body.classList.add("calisiyor");
 
-    // Akış: dikey kaydırma okuyuşunu durdurmadan, imleci takip ederek akıllı render.
-    const yaziyor = document.createElement("div");
-    yaziyor.className = "yaziyor";
-    yaziyor.innerHTML = "<i></i><i></i><i></i>";
-    govde.appendChild(yaziyor);
+    // Düşünme göstergesi: canlı orb + rozet (ilk token gelene dek).
+    const dusunme = document.createElement("div");
+    dusunme.className = "dusunme-rozet";
+    dusunme.innerHTML = '<span class="dusunme-orb" aria-hidden="true"></span><span class="dusunme-yazi">' + kaçis(t("dusunyor")) + "</span>";
+    govde.appendChild(dusunme);
+    dusunmeOrb(dusunme.querySelector(".dusunme-orb"), "composing");
 
     let tam = "", renderT = null;
     const tazeCiz = () => {
@@ -836,7 +930,7 @@ async function gonder() {
       const imlec = document.createElement("span");
       imlec.className = "imlec";
       g.appendChild(imlec);
-      govde.querySelectorAll(".yaziyor").forEach((e) => e.remove());
+      govde.querySelectorAll(".yaziyor, .dusunme-rozet").forEach((e) => e.remove());
       govde.replaceChildren(g);
       // markdown sonrası tekrar hizalı kalsın
       const c = $("chat");
@@ -848,7 +942,6 @@ async function gonder() {
     };
     const update = (p) => {
       tam += p;
-      yaziyor.remove();
       clearTimeout(renderT); renderT = null;
       tazeCiz();
     };
@@ -857,9 +950,9 @@ async function gonder() {
     if (!cevap) { govde.textContent = "(boş cevap)"; }
     else {
       const once = cevap;
-      cevap = await mcpIsle(soru, cevap, mesajlar, model);
+      cevap = await mcpIsle(tamSoru, cevap, mesajlar, model);
       if (cevap !== once) { govde.replaceChildren(); mdYazdir(govde, cevap); }
-      gecmis.push({ role: "user", content: soru });
+      gecmis.push({ role: "user", content: tamSoru });
       gecmis.push({ role: "assistant", content: cevap });
       gecmis = gecmis.slice(-30);
       sohbetKaydet();
@@ -883,6 +976,7 @@ async function gonder() {
     durum(false);
     tekrarAkis = false;
     $("btnGonder").disabled = false;
+    gonderBtnGuncelle();
     $("giris").focus();
   }
 }
@@ -1017,13 +1111,165 @@ $("modelPili").onclick = () => {
   modelSec.onblur = () => { modelPiliCiz(); };
 };
 
+// ── Prompt kutusu: pill modları, görsel, ses ──────────
+let promptMod = null;          // null | "ara" | "dusun" | "kanvas"
+let gorselDosya = null;        // seçilen görsel File
+let gorselOniz = null;         // dataURL önizleme
+let sesKayitAktif = false;
+let sesZamanlayici = null;
+let sesSaniye = 0;
+
+function promptPillAktif() { return promptMod; }
+
+function promptPillGuncelle() {
+  ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
+    const b = $(id);
+    if (!b) return;
+    b.classList.toggle("aktif", b.dataset.mod === promptMod);
+  });
+  const g = $("giris");
+  if (!g) return;
+  g.placeholder = promptMod === "ara" ? t("gir_ph_ara")
+    : promptMod === "dusun" ? t("gir_ph_dusun")
+    : promptMod === "kanvas" ? t("gir_ph_kanvas")
+    : t("gir_ph");
+  otomatikBoyut();
+}
+
+function gorselGoster() {
+  const kutu = $("gorselOnizleme");
+  if (!kutu) return;
+  if (!gorselOniz) { kutu.hidden = true; kutu.replaceChildren(); return; }
+  kutu.hidden = false;
+  kutu.innerHTML = "";
+  const k = document.createElement("div");
+  k.className = "gorsel-kart";
+  const img = document.createElement("img");
+  img.src = gorselOniz;
+  img.alt = gorselDosya ? gorselDosya.name : "görsel";
+  img.addEventListener("click", () => window.open(gorselOniz, "_blank"));
+  const sil = document.createElement("button");
+  sil.className = "gorsel-sil";
+  sil.setAttribute("aria-label", t("sil"));
+  sil.textContent = "✕";
+  sil.addEventListener("click", (e) => { e.stopPropagation(); gorselTemizle(); });
+  k.appendChild(img); k.appendChild(sil);
+  kutu.appendChild(k);
+}
+function gorselTemizle() {
+  gorselDosya = null; gorselOniz = null;
+  const gi = $("gorselGirdi");
+  if (gi) gi.value = "";
+  gorselGoster();
+}
+function gorselIsle(dosya) {
+  if (!dosya) return;
+  if (!dosya.type.startsWith("image/")) return;
+  if (dosya.size > 10 * 1024 * 1024) { alert(t("gorsel_buyuk")); return; }
+  gorselDosya = dosya;
+  const fr = new FileReader();
+  fr.onload = (e) => { gorselOniz = e.target.result; gorselGoster(); };
+  fr.readAsDataURL(dosya);
+}
+
+function sesSureYaz() {
+  const el = $("sesSure");
+  if (el) el.textContent = String(Math.floor(sesSaniye / 60)).padStart(2, "0") + ":" + String(sesSaniye % 60).padStart(2, "0");
+}
+function sesBarlariCiz() {
+  const kutu = $("sesBarlar");
+  if (!kutu) return;
+  kutu.innerHTML = "";
+  for (let i = 0; i < 32; i++) {
+    const b = document.createElement("i");
+    b.style.animationDelay = (i * 0.05) + "s";
+    b.style.animationDuration = (0.5 + Math.random() * 0.5) + "s";
+    b.style.height = (15 + Math.random() * 85) + "%";
+    kutu.appendChild(b);
+  }
+}
+function sesBaslat() {
+  sesKayitAktif = true; sesSaniye = 0;
+  const kutu = $("sesKayit");
+  if (kutu) kutu.hidden = false;
+  sesSureYaz(); sesBarlariCiz();
+  sesZamanlayici = setInterval(() => { sesSaniye++; sesSureYaz(); }, 1000);
+  document.body.classList.add("kayit");
+}
+function sesBitir(gonder) {
+  if (!sesKayitAktif) return;
+  sesKayitAktif = false;
+  if (sesZamanlayici) { clearInterval(sesZamanlayici); sesZamanlayici = null; }
+  const kutu = $("sesKayit");
+  if (kutu) kutu.hidden = true;
+  document.body.classList.remove("kayit");
+  if (gonder && sesSaniye > 0) {
+    $("giris").value = "[Sesli mesaj — " + sesSaniye + " sn]";
+    gonder();
+  }
+}
+
+function gonderBtnGuncelle() {
+  const b = $("btnGonder");
+  if (!b) return;
+  const icerikVar = ($("giris").value.trim() !== "") || !!gorselDosya;
+  b.classList.toggle("dolu", icerikVar && !tekrarAkis);
+  b.classList.toggle("gonderiliyor", tekrarAkis);
+}
+
 // ── Olay bağlama ──────────────────────────────────────
 function bagla() {
-  $("btnGonder").addEventListener("click", gonder);
+  $("btnGonder").addEventListener("click", () => {
+    if (sesKayitAktif) sesBitir(true);
+    else gonder();
+  });
   $("giris").addEventListener("keydown", (e) => {
     const ctrlGerek = $("swKisaYol") && $("swKisaYol").checked;
     if (e.key === "Enter" && (ctrlGerek ? e.ctrlKey && !e.shiftKey : !e.shiftKey)) { e.preventDefault(); gonder(); }
   });
+  $("giris").addEventListener("input", gonderBtnGuncelle);
+
+  // Prompt kutusu: pill modları
+  ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
+    const b = $(id);
+    if (!b) return;
+    b.addEventListener("click", () => {
+      promptMod = promptMod === b.dataset.mod ? null : b.dataset.mod;
+      promptPillGuncelle();
+    });
+  });
+
+  // Görsel ekleme
+  if ($("btnDosya")) $("btnDosya").addEventListener("click", () => $("gorselGirdi").click());
+  if ($("gorselGirdi")) $("gorselGirdi").addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) gorselIsle(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  // Sürükle-bırak görsel
+  const kutu = $("girdiCubuk");
+  if (kutu) {
+    kutu.addEventListener("dragover", (e) => { e.preventDefault(); kutu.classList.add("surukle"); });
+    kutu.addEventListener("dragleave", () => kutu.classList.remove("surukle"));
+    kutu.addEventListener("drop", (e) => {
+      e.preventDefault(); kutu.classList.remove("surukle");
+      const f = [...(e.dataTransfer.files || [])].find((x) => x.type.startsWith("image/"));
+      if (f) gorselIsle(f);
+    });
+  }
+
+  // Yapıştırma ile görsel
+  document.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const f = items[i].getAsFile();
+        if (f) { e.preventDefault(); gorselIsle(f); break; }
+      }
+    }
+  });
+
   $("btnTemizle").addEventListener("click", () => { karsilamaGoster(); gecmis = []; sohbetKaydet(); sohbetListesiCiz(); });
   $("btnYeniSohbet").addEventListener("click", yeniSohbet);
   $("btnPanel").addEventListener("click", panelToggle);
@@ -1119,6 +1365,8 @@ function bagla() {
   mcpListesiCiz();
   bagla();
   sohbetListesiCiz();
+  promptPillGuncelle();
+  gonderBtnGuncelle();
   $("giris").focus();
 })();
 

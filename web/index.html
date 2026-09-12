@@ -117,20 +117,51 @@
       </div>
     </div>
 
-    <!-- Girdi alanı -->
+    <!-- Girdi alanı — PromptInputBox tarzı -->
     <div class="girdi-kutu-wrap">
-      <div class="girdi-cubuk" id="girdiCubuk">
-        <button class="ek-btn" id="btnDosya" title="Dosya ekle" data-i18n-ar="dosya_ekle" aria-label="Dosya ekle">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </button>
+      <div class="prompt-kutu" id="girdiCubuk">
+        <div class="gorsel-onizleme" id="gorselOnizleme" hidden></div>
         <label class="sr-only" for="giris" data-i18n="sec_mesaj">Mesaj</label>
         <textarea id="giris" rows="1" placeholder="ZenAI'ye bir şey sor…" data-i18n-ph="gir_ph"></textarea>
-        <button class="ek-btn" id="btnMod" title="Araçlar: web arama + site okuma + Akıl Motoru" data-i18n-ar="araclar" aria-label="Araçlar: web arama + site okuma + Akıl Motoru">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="4"/><line x1="11" y1="5" x2="11" y2="3"/><line x1="11" y1="19" x2="11" y2="21"/><line x1="5" y1="11" x2="3" y2="11"/><line x1="19" y1="11" x2="21" y2="11"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
-        </button>
-        <button class="gonder-btn" id="btnGonder" data-i18n-ar="gonder" aria-label="Gönder">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
+
+        <div class="ses-kayit" id="sesKayit" hidden>
+          <div class="ses-ust"><span class="ses-nokta"></span><span class="ses-sure" id="sesSure">00:00</span></div>
+          <div class="ses-barlar" id="sesBarlar"></div>
+        </div>
+
+        <div class="prompt-alt">
+          <div class="prompt-sol">
+            <button class="kutu-btn" id="btnDosya" title="Görsel ekle" data-i18n-ar="gorsel_ekle" aria-label="Görsel ekle">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="gorselGirdi" class="hidden" accept="image/*" aria-hidden="true" tabindex="-1" />
+
+            <div class="mod-pill-grup">
+              <button type="button" class="mod-pill" id="pillAra" data-mod="ara">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                <span class="mod-pill-yazi" data-i18n="ara">Ara</span>
+              </button>
+              <span class="mod-ayirici" aria-hidden="true"></span>
+              <button type="button" class="mod-pill" id="pillDusun" data-mod="dusun">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a2 2 0 0 0 0 4h.5"/></svg>
+                <span class="mod-pill-yazi" data-i18n="dusun">Düşün</span>
+              </button>
+              <span class="mod-ayirici" aria-hidden="true"></span>
+              <button type="button" class="mod-pill" id="pillKanvas" data-mod="kanvas">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 4v3"/><rect width="16" height="12" x="4" y="7" rx="1"/><path d="m9 16 2-3 2 3 3-4 2 4"/></svg>
+                <span class="mod-pill-yazi" data-i18n="kanvas">Kanvas</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="prompt-sag">
+            <button class="gonder-btn" id="btnGonder" data-i18n-ar="gonder" aria-label="Gönder">
+              <svg class="ikon-mikrofon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              <svg class="ikon-yukari" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+              <svg class="ikon-stop" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><rect x="8" y="8" width="8" height="8" rx="1.5" fill="#1F2023"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="girdi-alt">
         <span data-i18n="not_yanilgi">ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.</span>
