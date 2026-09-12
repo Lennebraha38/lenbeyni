@@ -34,6 +34,8 @@ const L = {
   tr: {
     yenikonus: "Yeni sohbet", gecmisi_gizle: "Geçmişi gizle", ayarlar: "Ayarlar ve Yetenekler", bu_cihazda: "Bu cihazda",
     model_secin: "Model seçin", model_secimi: "Model seçimi",
+    model_otomatik: "Otomatik", model_otomatik_aciklama: "Konuya göre akıllı yönlendirme",
+    model_manual_aciklama: "Bu modeli her cevapta kullan",
     gir_ph: "ZenAI'ye bir şey sor…",
     gir_ph_ara: "Web'de araştır…", gir_ph_dusun: "Derin düşün…", gir_ph_kanvas: "Kanvas'ta oluştur…",
     gorsel_ekle: "Görsel ekle", gorsel_buyuk: "Görsel çok büyük (en fazla 10MB).",
@@ -43,6 +45,15 @@ const L = {
     auth_google: "Google ile devam et", auth_misafir: "Misafir olarak devam",
     auth_not: "Giriş yapmadan da kullanabilirsin — sohbetler yalnız bu cihazda saklanır.",
     giris_yap: "Giriş yap", gorsel_uretiliyor: "Görsel oluşturuluyor…",
+    ses_dinle: "Konuşabilirsin…",
+    planlar_btn: "Planlar ve fiyatlar", plan_yeni: "YENİ",
+    planlar_baslik: "Planını seç", planlar_alt: "Dilediğin an yükselt veya düşür. İptal her zaman ücretsiz.",
+    plan_populer: "POPÜLER", plan_mevvcut: "Mevcut planın",
+    plan_sec_sablon: "{plan} seç",
+    free_1: "Günlük 50 mesaj", free_2: "Otomatik model yönlendirme", free_3: "Web araması + site okuma", free_4: "3 skill",
+    silver_1: "Günlük 500 mesaj", silver_2: "Tüm modeller serbest", silver_3: "Akıl Motoru + 10 skill", silver_4: "Sesli mesaj (5 dk/gün)",
+    gold_1: "Sınırsız mesaj", gold_2: "AI Meclisi (4 model)", gold_3: "Sınırsız skill + MCP", gold_4: "Öncelikli hız (2×)",
+    platinum_1: "Her şey + erken erişim", platinum_2: "Sınırsız sesli mesaj", platinum_3: "API erişimi (5 anahtar)", platinum_4: "7/24 öncelikli destek",
     not_yanilgi: "ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.",
     dosya_ekle: "Dosya ekle", araclar: "Araçlar: web arama + site okuma + Akıl Motoru",
     gonder: "Gönder", sohbeti_temizle: "Sohbeti temizle", kaynak_ac: "Yetenekler ve bağlantılar",
@@ -78,6 +89,8 @@ const L = {
   en: {
     yenikonus: "New chat", gecmisi_gizle: "Hide history", ayarlar: "Settings & Skills", bu_cihazda: "On this device",
     model_secin: "Select model", model_secimi: "Model selection",
+    model_otomatik: "Auto", model_otomatik_aciklama: "Smart routing by topic",
+    model_manual_aciklama: "Use this model for every answer",
     gir_ph: "Ask ZenAI anything…",
     gir_ph_ara: "Search the web…", gir_ph_dusun: "Think deeply…", gir_ph_kanvas: "Create on canvas…",
     gorsel_ekle: "Attach image", gorsel_buyuk: "Image too large (max 10MB).",
@@ -87,6 +100,15 @@ const L = {
     auth_google: "Continue with Google", auth_misafir: "Continue as guest",
     auth_not: "You can use ZenAI without signing in — chats are stored only on this device.",
     giris_yap: "Sign in", gorsel_uretiliyor: "Generating image…",
+    ses_dinle: "You can speak now…",
+    planlar_btn: "Plans & pricing", plan_yeni: "NEW",
+    planlar_baslik: "Choose your plan", planlar_alt: "Upgrade or downgrade anytime. Canceling is always free.",
+    plan_populer: "POPULAR", plan_mevvcut: "Your current plan",
+    plan_sec_sablon: "Choose {plan}",
+    free_1: "50 messages per day", free_2: "Automatic model routing", free_3: "Web search + site reading", free_4: "3 skills",
+    silver_1: "500 messages per day", silver_2: "All models unlocked", silver_3: "Reasoning Engine + 10 skills", silver_4: "Voice messages (5 min/day)",
+    gold_1: "Unlimited messages", gold_2: "AI Council (4 models)", gold_3: "Unlimited skills + MCP", gold_4: "Priority speed (2×)",
+    platinum_1: "Everything + early access", platinum_2: "Unlimited voice messages", platinum_3: "API access (5 keys)", platinum_4: "24/7 priority support",
     not_yanilgi: "ZenAI may produce inaccurate information. Verify important details.",
     dosya_ekle: "Attach file", araclar: "Tools: web search + site reading + Reasoning Engine",
     gonder: "Send", sohbeti_temizle: "Clear chat", kaynak_ac: "Skills & connections",
@@ -129,7 +151,6 @@ function uygulaI18n() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
   document.querySelectorAll("[data-i18n-ar]").forEach((el) => (el.setAttribute("aria-label", t(el.dataset.i18nAr))));
   document.querySelectorAll("[data-i18n-tit]").forEach((el) => (el.title = t(el.dataset.i18nTit)));
-  if ($("btnDil")) $("btnDil").textContent = dil === "tr" ? "EN" : "TR";
   const meta = $("metaTema");
   if (meta) meta.setAttribute("content", tema === "aydinlik" ? "#f4f6fb" : "#04060c");
 }
@@ -137,7 +158,8 @@ function temaAt(yeni) {
   tema = yeni || tema;
   localStorage.setItem("lb_tema", tema);
   document.documentElement.dataset.tema = tema;
-  if ($("btnTema")) $("btnTema").textContent = tema === "aydinlik" ? "🌙" : "☀";
+  const tg = $("btnTema");
+  if (tg) tg.setAttribute("aria-checked", tema === "aydinlik" ? "true" : "false");
   uygulaI18n();
 }
 function dilAt(yeni) {
@@ -1068,7 +1090,11 @@ async function meclisTuru(soru, key) {
 // ── Model seçimi ──────────────────────────────────────
 function konuModel(secili, konu) {
   const sinir = (m) => [m[0], Math.min(m[1], 16384)];
-  if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return sinir(KONU_MODELLERI[konu]);
+  // Otomatik: konu yönlendirme aktifse konuya göre, değilse varsayılan model.
+  if (secili === "auto") {
+    if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return sinir(KONU_MODELLERI[konu]);
+    return sinir(["dots-studio/dots-3-note-preview:free", 48000]);
+  }
   const sabit = {
     "dots-studio/dots-3-note-preview:free": sinir(["dots-studio/dots-3-note-preview:free", 48000]),
     "nvidia/nemotron-3-ultra-550b-a55b:free": sinir(["nvidia/nemotron-3-ultra-550b-a55b:free", 65536]),
@@ -1077,16 +1103,50 @@ function konuModel(secili, konu) {
   return sabit[secili] || sinir(["dots-studio/dots-3-note-preview:free", 48000]);
 }
 function modelSecili() {
-  return localStorage.getItem("lb_model") || "dots-studio/dots-3-note-preview:free";
+  return localStorage.getItem("lb_model") || "auto";
 }
 function modelPiliCiz(konu) {
-  const [m] = konuModel(modelSecili(), konu || konuBul($("giris").value || ""));
-  const ad = modelAdi(m);
-  const k = konu || konuBul($("giris").value || "");
-  $("modelAdi").textContent = ad;
-  $("routingKonu").textContent = k;
-  $("routingModel").textContent = ad;
-  $("routingRoz").classList.add("acik");
+  // Artık model seçimi prompt çubuğunda; sadece seçili adı güncelle.
+  const secim = modelSecili();
+  const adEl = $("modelSecAd");
+  if (!adEl) return;
+  if (secim === "auto") {
+    adEl.textContent = t("model_otomatik");
+  } else {
+    adEl.textContent = modelAdi(secim);
+  }
+  modelMenuIsaretle(secim);
+}
+function modelMenuIsaretle(secim) {
+  document.querySelectorAll(".model-menu-oge").forEach((o) => {
+    const deger = o.dataset.model || "auto";
+    o.setAttribute("aria-selected", deger === secim ? "true" : "false");
+  });
+}
+function modelMenuDoldur() {
+  const menu = $("modelMenu");
+  if (!menu) return;
+  // mevcut modelleri (Otomatik hariç) menuye ekle
+  Object.keys(MODEL_AD).forEach((kod) => {
+    const o = document.createElement("button");
+    o.type = "button";
+    o.className = "model-menu-oge";
+    o.dataset.model = kod;
+    o.setAttribute("role", "option");
+    o.innerHTML = `<span class="mm-ikon">◆</span><span class="mm-govde"><strong>${kaçis(modelAdi(kod))}</strong><small>${t("model_manual_aciklama")}</small></span><span class="mm-check" aria-hidden="true">✓</span>`;
+    o.addEventListener("click", () => {
+      localStorage.setItem("lb_model", kod);
+      modelPiliCiz();
+      modelMenuKapat();
+    });
+    menu.appendChild(o);
+  });
+  modelMenuIsaretle(modelSecili());
+}
+function modelMenuKapat() {
+  const menu = $("modelMenu"), btn = $("modelSecBtn");
+  if (menu) menu.classList.add("hidden");
+  if (btn) btn.setAttribute("aria-expanded", "false");
 }
 
 // ── Girdi boyutlandırma ───────────────────────────────
@@ -1109,11 +1169,28 @@ function govdeEylemleri(wrap, govde) {
   eylem.appendChild(cop); eylem.appendChild(yenile);
 }
 
-function panelAcik() { return !$("panel").classList.contains("hidden"); }
+function panelAcik() { return !$("panelDialog").classList.contains("hidden"); }
 function panelToggle() {
-  const p = $("panel");
-  p.classList.toggle("hidden");
-  if (!p.classList.contains("hidden")) { skillListesiCiz(); mcpListesiCiz(); }
+  const p = $("panelDialog");
+  if (!p) return;
+  const acik = p.classList.contains("hidden");
+  p.classList.toggle("hidden", !acik);
+  if (acik) { skillListesiCiz(); mcpListesiCiz(); }
+}
+function planlariIsaretle() {
+  const plan = localStorage.getItem("lb_plan") || "free";
+  document.querySelectorAll(".plan-kart").forEach((k) => {
+    const b = k.querySelector(".pk-btn");
+    if (!b) return;
+    const ad = k.dataset.plan;
+    if (ad === plan) {
+      b.classList.add("mevcut"); b.disabled = true;
+      b.textContent = t("plan_mevvcut");
+    } else {
+      b.classList.remove("mevcut"); b.disabled = false;
+      b.textContent = t("plan_sec_sablon").replace("{plan}", ad[0].toUpperCase() + ad.slice(1));
+    }
+  });
 }
 
 function modCipsCiz() {
@@ -1133,22 +1210,20 @@ function modCipsCiz() {
   kutu.innerHTML = parcalar.join(" ");
 }
 
-// Model seçim pili
-$("modelPili").onclick = () => {
-  const modelSec = document.createElement("select");
-  modelSec.className = "select-tarz";
-  modelSec.setAttribute("aria-label", t("model_secimi"));
-  ["dots-studio/dots-3-note-preview:free", "cohere/north-mini-code:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "poolside/laguna-s-2.1:free"].forEach((m) => {
-    const o = document.createElement("option");
-    o.value = m; o.textContent = modelAdi(m);
-    modelSec.appendChild(o);
-  });
-  modelSec.value = modelSecili();
-  $("modelPili").replaceChildren(modelSec);
-  modelSec.focus();
-  modelSec.onchange = () => { localStorage.setItem("lb_model", modelSec.value); $("modelPili").innerHTML = '<span id="modelAdi">' + modelAdi(modelSec.value) + "</span>"; };
-  modelSec.onblur = () => { modelPiliCiz(); };
+// Model seçici (prompt çubuğu içi, input-bar estetiği)
+$("modelSecBtn").onclick = (e) => {
+  e.stopPropagation();
+  const menu = $("modelMenu"), btn = $("modelSecBtn");
+  const acik = !menu.classList.contains("hidden");
+  if (acik) { modelMenuKapat(); return; }
+  menu.classList.remove("hidden");
+  btn.setAttribute("aria-expanded", "true");
 };
+document.addEventListener("click", (e) => {
+  const wrap = $("modelSeciciWrap");
+  if (wrap && !wrap.contains(e.target)) modelMenuKapat();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") modelMenuKapat(); });
 
 // ── Prompt kutusu: pill modları, görsel, ses ──────────
 let promptMod = null;          // null | "ara" | "dusun" | "kanvas"
@@ -1234,15 +1309,17 @@ function sesOverlayAc() {
   if (!ov) return;
   sesOvSaniye = 0;
   $("sesTimer").textContent = "00:00";
+  const m = $("sesMetin");
+  if (m) m.textContent = t("ses_dinle");
   sesOvBarlariCiz();
   ov.classList.remove("hidden");
-  requestAnimationFrame(() => ov.classList.add("acik"));
+  requestAnimationFrame(() => ov.classList.add("acik", "kayitta"));
 }
 function sesOverlayKapat(gonder) {
   const ov = $("sesOverlay");
   if (!ov || ov.classList.contains("hidden")) return;
   if (sesOvTimer) { clearInterval(sesOvTimer); sesOvTimer = null; }
-  ov.classList.remove("acik");
+  ov.classList.remove("acik", "kayitta");
   setTimeout(() => ov.classList.add("hidden"), 260);
   if (gonder && sesOvSaniye > 0) {
     $("giris").value = "[Sesli mesaj — " + sesOvSaniye + " sn]";
@@ -1360,9 +1437,35 @@ function bagla() {
   });
   $("giris").addEventListener("input", gonderBtnGuncelle);
 
-  // Tam ekran ses overlay
-  if ($("sesMikroBtn")) $("sesMikroBtn").addEventListener("click", (e) => { e.stopPropagation(); sesOverlayKapat(true); });
-  if ($("sesOverlay")) $("sesOverlay").addEventListener("click", (e) => { if (e.target === $("sesOverlay")) sesOverlayKapat(false); });
+  // Gemini tarzı sesli arama: orb'a bas → gönder; kırmızı buton → iptal
+  if ($("sesOrbBtn")) $("sesOrbBtn").addEventListener("click", (e) => { e.stopPropagation(); sesOverlayKapat(true); });
+  if ($("telefonKapat")) $("telefonKapat").addEventListener("click", (e) => { e.stopPropagation(); sesOverlayKapat(false); });
+
+  // Tam sayfa ayarlar dialog
+  if ($("pdOrtu")) $("pdOrtu").addEventListener("click", () => panelToggle());
+
+  // Planlar
+  if ($("btnPlanlar")) $("btnPlanlar").addEventListener("click", () => $("planlarModal").classList.remove("hidden"));
+  if ($("btnPlanlarKapat")) $("btnPlanlarKapat").addEventListener("click", () => $("planlarModal").classList.add("hidden"));
+  document.querySelectorAll(".pk-btn[data-plan]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const plan = b.dataset.plan;
+      localStorage.setItem("lb_plan", plan);
+      planlariIsaretle();
+      durum(true, plan.toUpperCase() + " planı seçildi — demo modunda ✓");
+      setTimeout(() => durum(false), 2200);
+    });
+  });
+
+  // Sidebar daralt
+  if ($("btnSidebarDaralt")) $("btnSidebarDaralt").addEventListener("click", () => {
+    const sb = $("sidebar");
+    const daralmis = !sb.classList.contains("daralmis");
+    sb.classList.toggle("daralmis", daralmis);
+    $("btnSidebarDaralt").setAttribute("aria-expanded", daralmis ? "false" : "true");
+    localStorage.setItem("lb_sidebar_daral", daralmis ? "1" : "");
+    if (!daralmis && $("swSidebar")) $("swSidebar").checked = true;
+  });
 
   // Morph panel
   if ($("morphTetik")) $("morphTetik").addEventListener("click", morphAc);
@@ -1373,6 +1476,13 @@ function bagla() {
   if ($("girisMisafir")) $("girisMisafir").addEventListener("click", authKapat);
   document.querySelectorAll("#authModal .modal-kutu").forEach((k) => k.addEventListener("click", (e) => e.stopPropagation()));
   if ($("authModal")) $("authModal").addEventListener("click", (e) => { if (e.target === $("authModal")) authKapat(); });
+
+  // Model seçici: "Otomatik" seçeneği
+  if ($("modelOtomatik")) $("modelOtomatik").addEventListener("click", () => {
+    localStorage.setItem("lb_model", "auto");
+    modelPiliCiz();
+    modelMenuKapat();
+  });
 
   // Prompt kutusu: pill modları
   ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
@@ -1463,7 +1573,11 @@ function bagla() {
 
   // side-bar geçmiş
   if ($("swGecmis")) $("swGecmis").addEventListener("change", (e) => { $("sohbetListesi").style.display = e.target.checked ? "" : "none"; });
-  if ($("swSidebar")) $("swSidebar").addEventListener("change", (e) => { $("sidebar").style.display = e.target.checked ? "" : "none"; });
+  if ($("swSidebar")) $("swSidebar").addEventListener("change", (e) => {
+    const sb = $("sidebar");
+    if (e.target.checked) { sb.classList.remove("daralmis"); $("btnSidebarDaralt").setAttribute("aria-expanded", "true"); localStorage.removeItem("lb_sidebar_daral"); }
+    else { sb.style.display = "none"; }
+  });
   if ($("swRoute")) $("swRoute").addEventListener("change", () => { modelPiliCiz(); });
   if ($("swKisaYol")) $("swKisaYol").addEventListener("change", () => { });
 
@@ -1506,10 +1620,18 @@ function bagla() {
     }
   } catch (e) { }
   modelPiliCiz();
+  modelMenuDoldur();
   skillListesiCiz();
   mcpListesiCiz();
   bagla();
   sohbetListesiCiz();
+  planlariIsaretle();
+  // sidebar daralmışsa koru
+  if (localStorage.getItem("lb_sidebar_daral")) {
+    $("sidebar").classList.add("daralmis");
+    const d = $("btnSidebarDaralt");
+    if (d) d.setAttribute("aria-expanded", "false");
+  }
   // İlk açılış: karsilama (morph tetikleyici) görünür, girdi kutusu kapalı
   const kars = $("karsilama");
   if (kars) kars.hidden = false;

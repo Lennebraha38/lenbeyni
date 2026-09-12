@@ -32,6 +32,9 @@
 <div id="app">
   <!-- ══ SOL PANEL ══ -->
   <aside id="sidebar" aria-label="Kenar çubuğu">
+    <button class="sidebar-daralt" id="btnSidebarDaralt" aria-label="Kenar çubuğunu daralt" aria-expanded="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 3v18"/></svg>
+    </button>
     <div class="side-top">
       <button id="btnYeniSohbet" class="yeni-konus" data-i18n="yenikonus">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
@@ -57,13 +60,28 @@
         <span data-i18n="ayarlar">Ayarlar ve Yetenekler</span>
       </div>
       <div class="side-item" id="btnProfil" title="Bu cihazda">👤 <span data-i18n="bu_cihazda">Bu cihazda</span></div>
+      <button class="planlar-btn" id="btnPlanlar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg>
+        <span data-i18n="planlar_btn">Planlar ve fiyatlar</span>
+        <span class="planlar-ros" data-i18n="plan_yeni">YENİ</span>
+      </button>
       <button class="auth-modal-btn" id="btnAuth">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         <span data-i18n="giris_yap">Giriş yap</span>
       </button>
       <div class="side-ayar-satir">
-        <button class="side-mini" id="btnDil" title="Dil değiştir" data-i18n-tit="dil_degistir">EN</button>
-        <button class="side-mini" id="btnTema" title="Tema değiştir" data-i18n-tit="tema_degistir">☀</button>
+        <button class="tema-toggle" id="btnTema" role="switch" aria-checked="false" title="Tema değiştir" data-i18n-tit="tema_degistir">
+          <span class="tt-ikonlar" aria-hidden="true">
+            <svg class="tt-gunes" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg class="tt-ay" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </span>
+          <span class="tt-toprak" aria-hidden="true"></span>
+        </button>
+        <button class="dil-toggle" id="btnDil" title="Dil değiştir" data-i18n-tit="dil_degistir">
+          <span class="dt-yazi tr">TR</span>
+          <span class="dt-toprak" aria-hidden="true"></span>
+          <span class="dt-yazi en">EN</span>
+        </button>
       </div>
       <nav class="ayak-linkler" aria-label="Yasal linkler">
         <a href="#" id="ayakGizlilik" data-i18n="gizlilik">Gizlilik</a>
@@ -80,21 +98,9 @@
     <!-- Üst bar -->
     <header id="ustBar">
       <div class="logo-mini">
-        <span class="logo-dot">Z</span>
         <span class="logo-yazi">ZenAI</span>
-        <span class="motor-etiketi">ENGINE v2</span>
       </div>
-      <div class="ust-orta">
-        <button class="model-pili" id="modelPili" title="Model seçimi" data-i18n-tit="model_secimi">
-          <span id="modelAdi" data-i18n="model_secin">Model seçin</span>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="routing-roz" id="routingRoz" title="Konu tespiti ve yönlendirme (Akıl Motoru)">
-          <span id="routingKonu">—</span>
-          <span class="routing-ok">›</span>
-          <span id="routingModel">otomatik</span>
-        </div>
-      </div>
+      <div class="ust-orta"></div>
       <div class="ust-sag">
         <button class="temiz-btn" id="btnTemizle" title="Sohbeti temizle" data-i18n-ar="sohbeti_temizle" aria-label="Sohbeti temizle">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
@@ -126,6 +132,21 @@
 
         <div class="prompt-alt">
           <div class="prompt-sol">
+            <div class="model-secici-wrap" id="modelSeciciWrap">
+              <button type="button" class="model-sec-btn" id="modelSecBtn" title="Model seçimi" data-i18n-tit="model_secimi" aria-haspopup="listbox" aria-expanded="false">
+                <span class="model-sec-orb" aria-hidden="true"></span>
+                <span class="model-sec-ad" id="modelSecAd">Otomatik</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="model-menu hidden" id="modelMenu" role="listbox" aria-label="Model seçimi">
+                <button type="button" class="model-menu-oge otomatik-sec" id="modelOtomatik" role="option" aria-selected="true">
+                  <span class="mm-ikon">✦</span>
+                  <span class="mm-govde"><strong>Otomatik</strong><small data-i18n="model_otomatik_aciklama">Konuya göre akıllı yönlendirme</small></span>
+                  <span class="mm-check" aria-hidden="true">✓</span>
+                </button>
+                <div class="mm-ayirici" role="separator"></div>
+              </div>
+            </div>
             <button class="kutu-btn" id="btnDosya" title="Görsel ekle" data-i18n-ar="gorsel_ekle" aria-label="Görsel ekle">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </button>
@@ -167,19 +188,25 @@
     <div id="durum" class="hidden" aria-live="polite"></div>
   </main>
 
-  <!-- ══ Sağ Panel: Skills + MCP ══ -->
-  <aside id="panel" class="hidden" aria-label="Ayarlar ve yetenekler">
-    <div class="panel-baslik">
-      <span data-i18n="panel_baslik">Yetenekler ve Bağlantılar</span>
-      <button id="btnPanelKapat" aria-label="Kapat" data-i18n-ar="kapat">✕</button>
-    </div>
-    <div class="panel-icerik">
-      <div class="panel-bolum">
-        <div class="panel-bolum-baslik" data-i18n="kenar_cubuk">Kenar çubuğu</div>
-        <label class="chk-row"><input type="checkbox" id="swSidebar" checked /> <span data-i18n="kenar_goster">Kenar çubuğu göster</span></label>
-        <label class="chk-row"><input type="checkbox" id="swRoute" checked /> <span data-i18n="akil_route">Akıl yönlendirme (konu→model)</span></label>
-        <label class="chk-row"><input type="checkbox" id="swKisaYol"> <span data-i18n="kisa_yol">Kısayol: Enter yerine Ctrl+Enter</span></label>
+  <!-- ══ AYARLAR — TAM SAYFA DIALOG (efferd/dialog) ══ -->
+  <div id="panelDialog" class="panel-dialog hidden" role="dialog" aria-modal="true" aria-label="Ayarlar ve yetenekler">
+    <div class="pd-ortu" id="pdOrtu" aria-hidden="true"></div>
+    <div class="pd-kutu">
+      <div class="pd-ust">
+        <h3 data-i18n="panel_baslik">Yetenekler ve Bağlantılar</h3>
+        <button class="pd-kapat" id="btnPanelKapat" aria-label="Kapat" data-i18n-ar="kapat">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
+      <div class="pd-govde">
+        <aside id="panel" aria-label="Ayarlar içeriği">
+          <div class="panel-icerik">
+            <div class="panel-bolum">
+              <div class="panel-bolum-baslik" data-i18n="kenar_cubuk">Kenar çubuğu</div>
+              <label class="chk-row"><input type="checkbox" id="swSidebar" checked /> <span data-i18n="kenar_goster">Kenar çubuğu göster</span></label>
+              <label class="chk-row"><input type="checkbox" id="swRoute" checked /> <span data-i18n="akil_route">Akıl yönlendirme (konu→model)</span></label>
+              <label class="chk-row"><input type="checkbox" id="swKisaYol"> <span data-i18n="kisa_yol">Kısayol: Enter yerine Ctrl+Enter</span></label>
+            </div>
 
       <div class="panel-bolum">
         <div class="panel-bolum-baslik" data-i18n="mod">Mod</div>
@@ -229,9 +256,77 @@
         </div>
         <p class="panel-aciklama" data-i18n="apikey_ac">Key yalnız bu tarayıcı oturumunda tutulur, disk'e yazılmaz; cevaplar doğrudan sağlayıcıya gönderilir. Sunucu rölesi aktifse key gerekmez.</p>
       </div>
+          </div>
+        </aside>
+      </div>
     </div>
-  </aside>
-</div>
+  </div>
+
+  <!-- ══ PLANLAR — SATIN ALMA (pricing) ══ -->
+  <div id="planlarModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="planlarBaslik">
+    <div class="modal-kutu planlar-kutu">
+      <div class="bilgi-ust">
+        <h3 id="planlarBaslik" data-i18n="planlar_baslik">Planını seç</h3>
+        <button class="ek-btn" id="btnPlanlarKapat" aria-label="Kapat" data-i18n-ar="kapat">✕</button>
+      </div>
+      <p class="planlar-alt" data-i18n="planlar_alt">Dilediğin an yükselt veya düşür. İptal her zaman ücretsiz.</p>
+      <div class="plan-grid" id="planGrid">
+        <div class="plan-kart" data-plan="free">
+          <div class="pk-ust">
+            <span class="pk-ad">Free</span>
+            <span class="pk-fiyat">₺0<small>/ay</small></span>
+          </div>
+          <ul class="pk-liste">
+            <li data-i18n="free_1">Günlük 50 mesaj</li>
+            <li data-i18n="free_2">Otomatik model yönlendirme</li>
+            <li data-i18n="free_3">Web araması + site okuma</li>
+            <li data-i18n="free_4">3 skill</li>
+          </ul>
+          <button class="pk-btn mevcut" data-i18n="plan_mevvcut" disabled>Mevcut planın</button>
+        </div>
+        <div class="plan-kart onerilen" data-plan="silver">
+          <span class="pk-ros" data-i18n="plan_populer">POPÜLER</span>
+          <div class="pk-ust">
+            <span class="pk-ad">Silver</span>
+            <span class="pk-fiyat">₺49<small>/ay</small></span>
+          </div>
+          <ul class="pk-liste">
+            <li data-i18n="silver_1">Günlük 500 mesaj</li>
+            <li data-i18n="silver_2">Tüm modeller serbest</li>
+            <li data-i18n="silver_3">Akıl Motoru + 10 skill</li>
+            <li data-i18n="silver_4">Sesli mesaj (5 dk/gün)</li>
+          </ul>
+          <button class="pk-btn" data-plan="silver" data-i18n="plan_sec">Silver seç</button>
+        </div>
+        <div class="plan-kart" data-plan="gold">
+          <div class="pk-ust">
+            <span class="pk-ad">Gold</span>
+            <span class="pk-fiyat">₺149<small>/ay</small></span>
+          </div>
+          <ul class="pk-liste">
+            <li data-i18n="gold_1">Sınırsız mesaj</li>
+            <li data-i18n="gold_2">AI Meclisi (4 model)</li>
+            <li data-i18n="gold_3">Sınırsız skill + MCP</li>
+            <li data-i18n="gold_4">Öncelikli hız (2×)</li>
+          </ul>
+          <button class="pk-btn" data-plan="gold" data-i18n="plan_sec">Gold seç</button>
+        </div>
+        <div class="plan-kart" data-plan="platinum">
+          <div class="pk-ust">
+            <span class="pk-ad">Platinum</span>
+            <span class="pk-fiyat">₺399<small>/ay</small></span>
+          </div>
+          <ul class="pk-liste">
+            <li data-i18n="platinum_1">Her şey + erken erişim</li>
+            <li data-i18n="platinum_2">Sınırsız sesli mesaj</li>
+            <li data-i18n="platinum_3">API erişimi (5 anahtar)</li>
+            <li data-i18n="platinum_4">7/24 öncelikli destek</li>
+          </ul>
+          <button class="pk-btn" data-plan="platinum" data-i18n="plan_sec">Platinum seç</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <div id="skillModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="skillModalBaslik">
   <div class="modal-kutu">
@@ -271,18 +366,26 @@
   </div>
 </div>
 
-<!-- ══ TAM EKRAN SES KAYIT (ai-voice-input) ══ -->
-<div id="sesOverlay" class="ses-overlay hidden" role="dialog" aria-modal="true" aria-label="Ses kaydı">
+<!-- ══ TAM EKRAN SESLİ ARAMA (Gemini tarzı + voice-powered-orb) ══ -->
+<div id="sesOverlay" class="ses-overlay hidden" role="dialog" aria-modal="true" aria-label="Sesli arama">
+  <div class="ses-dalga-halkalar" aria-hidden="true">
+    <span class="sdh sdh-1"></span>
+    <span class="sdh sdh-2"></span>
+    <span class="sdh sdh-3"></span>
+  </div>
   <div class="ses-merkez">
-    <button class="ses-mikro-btn" id="sesMikroBtn" aria-label="Kaydı durdur ve gönder">
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-      <span class="ses-spin-kare" aria-hidden="true"></span>
+    <button class="ses-orb-btn" id="sesOrbBtn" aria-label="Kaydı gönder">
+      <span class="so-cekirdek" aria-hidden="true"></span>
+      <span class="so-nabiz" aria-hidden="true"></span>
     </button>
+    <p class="ses-metin" id="sesMetin">Konuşabilirsin…</p>
     <span class="ses-timer" id="sesTimer">00:00</span>
     <div class="ses-barlar-buyuk" id="sesBarlarBuyuk" aria-hidden="true"></div>
-    <p class="ses-durum" id="sesDurum">Dinleniyor…</p>
-    <p class="ses-ipucu">Konuşmayı bitirince butona bas — kayıt gönderilir</p>
+    <p class="ses-ipucu">Ortaya bas: gönder · Kırmızı buton: iptal</p>
   </div>
+  <button class="telefon-kapat" id="telefonKapat" aria-label="Sesli aramayı kapat">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="22" y1="2" x2="2" y2="22"/></svg>
+  </button>
 </div>
 
 <!-- ══ TAM EKRAN AI LOADER (ai-loader) ══ -->
