@@ -8,6 +8,138 @@ const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 const CORS_YON = "https://api.allorigins.win/raw?url=";
 const $ = (id) => document.getElementById(id);
 
+// ── Model görünen adları ─────────────────────────────
+// Kullanıcıya ham sağlayıcı model kodları değil, marka adları gösterilir.
+// Dahilde (istek/aktarım) gerçek model kodu korunur.
+const MODEL_AD = {
+  "dots-studio/dots-3-note-preview:free": "Dots-3",
+  "nvidia/nemotron-3-ultra-550b-a55b:free": "Nemotron 3",
+  "poolside/laguna-s-2.1:free": "Poolside Laguna",
+  "cohere/north-mini-code:free": "Cohere North Code",
+};
+function modelAdi(model) {
+  return MODEL_AD[model] || String(model).split("/").pop().split(":")[0];
+}
+// Marka rozetinden gerçek model koduna dönüş (meclis seçimi vb.)
+const ADAN_MODEL = {};
+for (const [kod, ad] of Object.entries(MODEL_AD)) ADAN_MODEL[ad.toLowerCase().replace(/\s+/g, "-")] = kod;
+function modelKod(marka) {
+  if (String(marka).includes("/")) return marka;
+  const anahtar = String(marka).toLowerCase().replace(/\s+/g, "-");
+  return ADAN_MODEL[anahtar] || marka;
+}
+
+// ── Dil / tema / i18n ────────────────────────────────
+const L = {
+  tr: {
+    yenikonus: "Yeni sohbet", gecmisi_gizle: "Geçmişi gizle", ayarlar: "Ayarlar ve Yetenekler", bu_cihazda: "Bu cihazda",
+    model_secin: "Model seçin", model_secimi: "Model seçimi",
+    karsilama_h2: "Bugün ne yapalım?",
+    karsilama_alt: "ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.",
+    tl_konu: "KONU YÖNLENDİRME", tl_coklu: "ÇOKLU MODEL", tl_skill: "SKILLS + MCP",
+    gir_ph: "ZenAI'ye bir şey sor…",
+    not_yanilgi: "ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.",
+    dosya_ekle: "Dosya ekle", araclar: "Araçlar: web arama + site okuma + Akıl Motoru",
+    gonder: "Gönder", sohbeti_temizle: "Sohbeti temizle", kaynak_ac: "Yetenekler ve bağlantılar",
+    panel_baslik: "Yetenekler ve Bağlantılar", kenar_cubuk: "Kenar çubuğu", kenar_goster: "Kenar çubuğu göster",
+    akil_route: "Akıl yönlendirme (konu→model)", kisa_yol: "Kısayol: Enter yerine Ctrl+Enter",
+    mod: "Mod", sobhet_modu: "Sohbet", akil_motoru: "Akıl Motoru", meclis_modu: "AI Meclisi", meclis_modelleri: "Meclis modelleri",
+    araclar_baslik: "Araçlar", web_aramasi: "Web araması", site_okuma: "Site okuma",
+    skills_baslik: "Skills (Yetenekler)", skill_ekle: "＋ Ekle",
+    skill_ac: "Seçili skill, cevap üretirken sistem talimatınıza eklenir.",
+    mcp_baslik: "MCP Bağlantıları", mcp_bagla: "＋ Bağla",
+    mcp_ac: "Uzak MCP sunucularını JSON-RPC over HTTP ile bağlayın. Bağlı aletler sohbetinize eklenir.",
+    gelistirici: "Geliştirici", apikey_ph: "Sağlayıcı API key (gerekirse)",
+    apikey_ac: "Key yalnız bu tarayıcı oturumunda tutulur, disk'e yazılmaz; cevaplar doğrudan sağlayıcıya gönderilir. Sunucu rölesi aktifse key gerekmez.",
+    yeni_skill: "Yeni Skill", skill_ad_ph: "Skill adı (örn: Web Uzmanı)",
+    skill_icerik_ph: "Sistem talimatı… Örn: 'Sen tecrübeli bir web geliştiricisisin. HTML, CSS, JS önerileri ver.'",
+    kaydet: "Kaydet", mcp_sunucu: "MCP Sunucusu Bağla", mcp_ad_ph: "Sunucu adı (örn: Veritabanı)",
+    mcp_uc_ph: "Uç noktası (örn: https://sunucu.com/mcp)", mcp_ac2: "Bağlandığında sunucudan alet (tool) listesi çekilir ve sohbete eklenir.",
+    bagla_ve_listele: "Bağla ve aletleri listele", kapat: "Kapat",
+    arama_ph: "Sohbetlerde ara…", sohbet_yok: "Henüz sohbet yok.", no_bulgu: "Eşleşen sohbet yok.",
+    sil: "Sil", duzenle: "Yeniden adlandır", disa_aktar: "Dışa aktar",
+    kopyala: "Kopyala", yeniden_uret: "↻ Yeniden üret", hata: "Hata", dusunuyor: "düşünüyor…",
+    meclis_sec: "Meclis için en az 2 model seç.", sec_mesaj: "Mesaj",
+    dil_degistir: "Dil değiştir", tema_degistir: "Tema değiştir",
+    gizlilik: "Gizlilik", sartlar: "Şartlar", iletisim: "İletişim",
+    gizlilik_baslik: "Gizlilik Politikası",
+    gizlilik_icerik: "<p>ZenAI kendi sunucusunda sohbet içeriği veya girdinizi saklamaz. Girdiler, cevap üretimi için sağlayıcıya iletilir.</p><p>Sohbetleriniz yalnız bu cihazda (tarayıcı yerel deposunda) tutulur; tarayıcı verilerini temizlediğinizde silinir.</p><p>API key'iniz sunucumuza gönderilmez, yalnız içinde bulunduğunuz oturumda doğrudan sağlayıcıya iletilir.</p>",
+    sartlar_baslik: "Kullanım Şartları",
+    sartlar_icerik: "<p>ZenAI bir yapay zekâ asistanıdır; ürettiği bilgiler hatalı veya güncel olmayabilir. Önemli kararlarınızda doğrulama yapın.</p><p>Yasadışı içerik üretimi, telifli materyalin izinsiz kullanımı ve kötüye kullanım yasaktır.</p><p>Hizmet, veri'de aksama durumunda kesintisizlik garantisi vermez.</p>",
+    iletisim_baslik: "İletişim",
+    iletisim_icerik: "<p>Geri bildirim, hata bildirimi veya işbirliği için bize ulaşabilirsiniz.</p><p><strong>GitHub:</strong> github.com/Lennebraha38/ZENAI</p><p><strong>Domain:</strong> zenai-two.vercel.app</p>",
+  },
+  en: {
+    yenikonus: "New chat", gecmisi_gizle: "Hide history", ayarlar: "Settings & Skills", bu_cihazda: "On this device",
+    model_secin: "Select model", model_secimi: "Model selection",
+    karsilama_h2: "What shall we do today?",
+    karsilama_alt: "ZenAI — an interactive intelligence assistant with topic routing, Reasoning Engine, Skills and MCP connections.",
+    tl_konu: "TOPIC ROUTING", tl_coklu: "MULTI-MODEL", tl_skill: "SKILLS + MCP",
+    gir_ph: "Ask ZenAI anything…",
+    not_yanilgi: "ZenAI may produce inaccurate information. Verify important details.",
+    dosya_ekle: "Attach file", araclar: "Tools: web search + site reading + Reasoning Engine",
+    gonder: "Send", sohbeti_temizle: "Clear chat", kaynak_ac: "Skills & connections",
+    panel_baslik: "Skills & Connections", kenar_cubuk: "Sidebar", kenar_goster: "Show sidebar",
+    akil_route: "Reasoning routing (topic→model)", kisa_yol: "Shortcut: use Ctrl+Enter instead of Enter",
+    mod: "Mode", sobhet_modu: "Chat", akil_motoru: "Reasoning Engine", meclis_modu: "AI Council", meclis_modelleri: "Council models",
+    araclar_baslik: "Tools", web_aramasi: "Web search", site_okuma: "Site reading",
+    skills_baslik: "Skills", skill_ekle: "＋ Add",
+    skill_ac: "The selected skill is added to the system instructions while generating.",
+    mcp_baslik: "MCP Connections", mcp_bagla: "＋ Connect",
+    mcp_ac: "Connect remote MCP servers over JSON-RPC over HTTP. Connected tools join your chat.",
+    gelistirici: "Developer", apikey_ph: "Provider API key (if needed)",
+    apikey_ac: "The key is held only for this browser session (never written to disk) and is sent straight to the provider. Not needed when the server relay is active.",
+    yeni_skill: "New Skill", skill_ad_ph: "Skill name (e.g. Web Expert)",
+    skill_icerik_ph: "System instruction… E.g. 'You are an experienced web developer. Give HTML, CSS, JS advice.'",
+    kaydet: "Save", mcp_sunucu: "Connect MCP Server", mcp_ad_ph: "Server name (e.g. Database)",
+    mcp_uc_ph: "Endpoint (e.g. https://server.com/mcp)", mcp_ac2: "On connect, the tool list is fetched from the server and added to the chat.",
+    bagla_ve_listele: "Connect & list tools", kapat: "Close",
+    arama_ph: "Search chats…", sohbet_yok: "No chats yet.", no_bulgu: "No matching chats.",
+    sil: "Delete", duzenle: "Rename", disa_aktar: "Export",
+    kopyala: "Copy", yeniden_uret: "↻ Regenerate", hata: "Error", dusunuyor: "thinking…",
+    meclis_sec: "Select at least 2 models for the council.", sec_mesaj: "Message",
+    dil_degistir: "Change language", tema_degistir: "Toggle theme",
+    gizlilik: "Privacy", sartlar: "Terms", iletisim: "Contact",
+    gizlilik_baslik: "Privacy Policy",
+    gizlilik_icerik: "<p>ZenAI does not store your chat content or input on its own server. Inputs are forwarded to the provider to generate answers.</p><p>Your chats are kept only on this device (browser local storage); they are erased when you clear browser data.</p><p>Your API key is never sent to our server; during the session it is sent directly to the provider.</p>",
+    sartlar_baslik: "Terms of Use",
+    sartlar_icerik: "<p>ZenAI is an AI assistant; information it produces may be inaccurate or stale. Verify before making important decisions.</p><p>Generating illegal content, unauthorized use of copyrighted material and abuse are prohibited.</p><p>The service does not guarantee uninterrupted availability.</p>",
+    iletisim_baslik: "Contact",
+    iletisim_icerik: "<p>Reach out for feedback, bug reports or collaboration.</p><p><strong>GitHub:</strong> github.com/Lennebraha38/ZENAI</p><p><strong>Site:</strong> zenai-two.vercel.app</p>",
+  },
+};
+let dil = localStorage.getItem("lb_dil") || "tr";
+let tema = localStorage.getItem("lb_tema") || "koyu";
+function t(k) { return (L[dil] && L[dil][k] !== undefined) ? L[dil][k] : (L.tr[k] !== undefined ? L.tr[k] : k); }
+function uygulaI18n() {
+  document.documentElement.lang = dil === "en" ? "en" : "tr";
+  document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
+  document.querySelectorAll("[data-i18n-ar]").forEach((el) => (el.setAttribute("aria-label", t(el.dataset.i18nAr))));
+  document.querySelectorAll("[data-i18n-tit]").forEach((el) => (el.title = t(el.dataset.i18nTit)));
+  if ($("btnDil")) $("btnDil").textContent = dil === "tr" ? "EN" : "TR";
+  const meta = $("metaTema");
+  if (meta) meta.setAttribute("content", tema === "aydinlik" ? "#f4f6fb" : "#04060c");
+}
+function temaAt(yeni) {
+  tema = yeni || tema;
+  localStorage.setItem("lb_tema", tema);
+  document.documentElement.dataset.tema = tema;
+  if ($("btnTema")) $("btnTema").textContent = tema === "aydinlik" ? "🌙" : "☀";
+  uygulaI18n();
+}
+function dilAt(yeni) {
+  dil = yeni || (dil === "tr" ? "en" : "tr");
+  localStorage.setItem("lb_dil", dil);
+  uygulaI18n();
+  if ($("oneriGrid")) onerilerCiz();
+  modelPiliCiz();
+  skillListesiCiz();
+  mcpListesiCiz();
+  sohbetListesiCiz();
+  modCipsCiz();
+}
+
 // ── Durum ─────────────────────────────────────────────
 let mod = "tek";
 let gecmis = [];
@@ -84,7 +216,7 @@ function skillListesiCiz() {
   const kutu = $("skillListesi");
   if (!kutu) return;
   kutu.innerHTML = skills.length === 0
-    ? '<p class="panel-aciklama">Henüz skill yok. "＋ Ekle" ile ilkini oluşturun.</p>'
+    ? '<p class="panel-aciklama">' + t("skills_baslik") + ' — "＋ Ekle"' + "</p>"
     : "";
   skills.forEach((s, i) => {
     const open = aktifSkilller.includes(i);
@@ -92,7 +224,7 @@ function skillListesiCiz() {
     div.className = "skill-kayit" + (open ? " open" : "");
     div.innerHTML = `<span class="skill-ikon">${s.ikon}</span><span class="skill-ad">${s.ad}</span>
       <span class="mcp-durum ${open ? "bagli" : "kapali"}" style="border:none;padding:0">${open ? "on" : "off"}</span>
-      <button class="skill-kaldir" title="Kaldır">✕</button>`;
+      <button class="skill-kaldir" title="${t("sil")}" aria-label="${t("sil")}">✕</button>`;
     div.querySelector(".skill-ad").onclick = () => {
       if (aktifSkilller.includes(i)) aktifSkilller = aktifSkilller.filter((x) => x !== i);
       else aktifSkilller.push(i);
@@ -173,7 +305,7 @@ function mcpListesiCiz() {
         <div style="font-size:11px;color:var(--yazi-3)">${m.uc || ""}</div>
       </span>
       <span class="mcp-durum ${durumBelirteci}" id="mcpDurum_${m.uid}">${durumBelirteci === "bagli" ? "● bağlı" : durumBelirteci === "hata" ? "! hata" : "○ kapalı"}</span>
-      <button class="mcp-kaldir" title="Kaldır">✕</button>`;
+      <button class="mcp-kaldir" title="${t("sil")}" aria-label="${t("sil")}">✕</button>`;
     div.querySelector(".mcp-kaldir").onclick = () => {
       mcpListesi = mcpListesi.filter((x) => x.uid !== m.uid);
       mcpKaydet();
@@ -404,19 +536,51 @@ function sohbetKaydet() {
   const list = depo.get("sohbetler", []);
   if (!aktifSohbet) return;
   const kayit = list.find((x) => x.id === aktifSohbet);
-  if (kayit) kayit.mesajlar = gecmis;
+  if (!kayit) return;
+  kayit.mesajlar = gecmis;
+  const ilk = gecmis.find((m) => m.role === "user");
+  if (ilk) kayit.baslik = ilk.content.slice(0, 40);
 }
 function sohbetListesiCiz() {
   const kutu = $("sohbetListesi");
   if (!kutu) return;
-  const list = depo.get("sohbetler", []);
+  const term = (($("sohbetAra") && $("sohbetAra").value) || "").trim().toLowerCase();
+  const list = depo.get("sohbetler", []).filter((s) => !term || (s.baslik || "").toLowerCase().includes(term));
   kutu.innerHTML = "";
+  if (list.length === 0) {
+    kutu.innerHTML = `<p class="panel-aciklama" style="text-align:center;padding:22px 6px">${t(term ? "no_bulgu" : "sohbet_yok")}</p>`;
+    return;
+  }
   list.forEach((s) => {
     const div = document.createElement("div");
     div.className = "sohbet-kayit" + (s.id === aktifSohbet ? " aktif" : "");
-    const ilk = s.mesajlar.find((m) => m.role === "user");
-    div.innerHTML = `<span class="baslik">${ilk ? ilk.content.slice(0, 40) : "Boş sohbet"}</span><span class="sil">✕</span>`;
+    div.innerHTML = `<span class="baslik" title="${t("duzenle")}">${kaçis(s.baslik || "")}</span>
+      <span class="islemler">
+        <button class="iy" aria-label="${t("duzenle")}" title="${t("duzenle")}">✎</button>
+        <button class="ds" aria-label="${t("disa_aktar")}" title="${t("disa_aktar")}">⇩</button>
+        <button class="sil" aria-label="${t("sil")}" title="${t("sil")}">✕</button>
+      </span>`;
     div.querySelector(".baslik").addEventListener("click", () => sohbetAc(s.id));
+    div.querySelector(".iy").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const yeni = prompt(t("duzenle"), s.baslik || "");
+      if (yeni && yeni.trim()) {
+        const liste = depo.get("sohbetler", []);
+        const kayit = liste.find((x) => x.id === s.id);
+        if (kayit) { kayit.baslik = yeni.trim().slice(0, 60); depo.set("sohbetler", liste); }
+        sohbetListesiCiz();
+      }
+    });
+    div.querySelector(".ds").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const disa = { uygulama: "ZenAI", disaktarma: new Date().toISOString(), sohbet: s };
+      const blob = new Blob([JSON.stringify(disa, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "zenai-" + String(s.baslik || "sohbet").slice(0, 32).replace(/[^a-z0-9çğıöşüÇĞİÖŞÜ]+/gi, "_") + ".json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    });
     div.querySelector(".sil").addEventListener("click", (e) => {
       e.stopPropagation();
       const n = depo.get("sohbetler", []).filter((x) => x.id !== s.id);
@@ -653,8 +817,8 @@ async function gonder() {
     ];
     await ajanBaglam(soru, mesajlar, konu);
 
-    durum(true, (soyut ? "Akıl Motoru" : "ZenAI") + " — " + konu + " → " + model.split("/").pop().split(":")[0] + " düşünüyor…");
-    const sinyalKonu = konu + " → " + model.split("/").pop().split(":")[0];
+    durum(true, (soyut ? t("akil_motoru") : "ZenAI") + " — " + konu + " → " + modelAdi(model) + " " + t("dusunuyor"));
+    const sinyalKonu = konu + " → " + modelAdi(model);
     const aiWrap = mesajEkle("ai", "", { skilller: aktifSkillerBu.map((s) => s.ikon + " " + s.ad), sinyal: sinyalKonu });
     const govde = aiWrap.querySelector(".msg-icerik");
     document.body.classList.add("calisiyor");
@@ -725,8 +889,8 @@ async function gonder() {
 }
 
 async function meclisTuru(soru, key) {
-  const secilen = [...document.querySelectorAll('#meclisModelSec input:checked')].map((i) => i.value);
-  if (secilen.length < 2) { alert("Meclis için en az 2 model seç."); return; }
+  const secilen = [...document.querySelectorAll('#meclisModelSec input:checked')].map((i) => modelKod(i.value));
+  if (secilen.length < 2) { alert(t("meclis_sec")); return; }
   mesajEkle("user", soru);
   const wrap = document.createElement("div");
   wrap.className = "meclis-wrap";
@@ -736,7 +900,7 @@ async function meclisTuru(soru, key) {
   const sozler = await Promise.all(secilen.map(async (model) => {
     const kart = document.createElement("div");
     kart.className = "meclis-card";
-    kart.innerHTML = `<h4>⚛ ${model.split("/").pop().split(":")[0]}</h4><div class="content">…</div>`;
+    kart.innerHTML = `<h4>⚛ ${modelAdi(model)}</h4><div class="content">…</div>`;
     grid.appendChild(kart);
     const icerik = kart.querySelector(".content");
     try {
@@ -748,7 +912,7 @@ async function meclisTuru(soru, key) {
   const gecerliler = sozler.filter((s) => s.yanit);
   if (gecerliler.length >= 2) {
     durum(true, "Meclis en iyi cevabı seçiyor…");
-    const liste = sozler.map((s, i) => `--- ÜYE${i + 1} (${s.model}) ---\n${s.yanit}`).join("\n\n");
+    const liste = sozler.map((s, i) => `--- ÜYE${i + 1} (${modelAdi(s.model)}) ---\n${s.yanit}`).join("\n\n");
     try {
       const gerekce = await mega([
         { role: "system", content: "Sen AI meclisinin hakimisin. Cevapları oku, en iyisini seç, 1-2 cümle gerekçe ver. Format: 'ÜYE3 kazandı: <gerekçe>'" },
@@ -785,7 +949,7 @@ function modelSecili() {
 }
 function modelPiliCiz(konu) {
   const [m] = konuModel(modelSecili(), konu || konuBul($("giris").value || ""));
-  const ad = m.split("/").pop().split(":")[0];
+  const ad = modelAdi(m);
   const k = konu || konuBul($("giris").value || "");
   $("modelAdi").textContent = ad;
   $("routingKonu").textContent = k;
@@ -826,10 +990,10 @@ girisEl.addEventListener("input", otomatikBoyut);
 function govdeEylemleri(wrap, govde) {
   const eylem = wrap.querySelector(".msg-eylem");
   const cop = document.createElement("button");
-  cop.className = "eylem-btn"; cop.textContent = "Kopyala";
+  cop.className = "eylem-btn"; cop.textContent = t("kopyala");
   cop.onclick = async () => { try { await navigator.clipboard.writeText(govde.textContent.trim()); } catch (e) { } };
   const yenile = document.createElement("button");
-  yenile.className = "eylem-btn"; yenile.textContent = "↻ Yeniden üret";
+  yenile.className = "eylem-btn"; yenile.textContent = t("yeniden_uret");
   yenile.onclick = () => { $("giris").value = gecmis.filter((m) => m.role === "user").slice(-1)[0]?.content || ""; gonder(); };
   eylem.appendChild(cop); eylem.appendChild(yenile);
 }
@@ -862,15 +1026,16 @@ function modCipsCiz() {
 $("modelPili").onclick = () => {
   const modelSec = document.createElement("select");
   modelSec.className = "select-tarz";
-  ["dots-studio/dots-3-note-preview:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "poolside/laguna-s-2.1:free", "cohere/north-mini-code:free"].forEach((m) => {
+  modelSec.setAttribute("aria-label", t("model_secimi"));
+  ["dots-studio/dots-3-note-preview:free", "cohere/north-mini-code:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "poolside/laguna-s-2.1:free"].forEach((m) => {
     const o = document.createElement("option");
-    o.value = m; o.textContent = m.split("/").pop().split(":")[0] + " — " + m;
+    o.value = m; o.textContent = modelAdi(m);
     modelSec.appendChild(o);
   });
   modelSec.value = modelSecili();
   $("modelPili").replaceChildren(modelSec);
   modelSec.focus();
-  modelSec.onchange = () => { localStorage.setItem("lb_model", modelSec.value); $("modelPili").innerHTML = '<span id="modelAdi">' + modelSec.value.split("/").pop().split(":")[0] + "</span>"; };
+  modelSec.onchange = () => { localStorage.setItem("lb_model", modelSec.value); $("modelPili").innerHTML = '<span id="modelAdi">' + modelAdi(modelSec.value) + "</span>"; };
   modelSec.onblur = () => { modelPiliCiz(); };
 };
 
@@ -928,27 +1093,47 @@ function bagla() {
   document.querySelectorAll(".modal").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.classList.add("hidden"); }));
 
   // side-bar geçmiş
-  $("swGecmis").addEventListener("change", (e) => { $("sohbetListesi").style.display = e.target.checked ? "" : "none"; });
-  $("swSidebar").addEventListener("change", (e) => { $("sidebar").style.display = e.target.checked ? "" : "none"; });
-  $("swRoute").addEventListener("change", () => { modelPiliCiz(); });
-  $("swKisaYol").addEventListener("change", () => { });
+  if ($("swGecmis")) $("swGecmis").addEventListener("change", (e) => { $("sohbetListesi").style.display = e.target.checked ? "" : "none"; });
+  if ($("swSidebar")) $("swSidebar").addEventListener("change", (e) => { $("sidebar").style.display = e.target.checked ? "" : "none"; });
+  if ($("swRoute")) $("swRoute").addEventListener("change", () => { modelPiliCiz(); });
+  if ($("swKisaYol")) $("swKisaYol").addEventListener("change", () => { });
+
+  // sohbet arama
+  if ($("sohbetAra")) $("sohbetAra").addEventListener("input", sohbetListesiCiz);
 
   // araç değişimi cips
-  $("toolArama").addEventListener("change", modCipsCiz);
-  $("toolSite").addEventListener("change", modCipsCiz);
+  if ($("toolArama")) $("toolArama").addEventListener("change", modCipsCiz);
+  if ($("toolSite")) $("toolSite").addEventListener("change", modCipsCiz);
 
-  // API key kaydet
-  $("apiKey").value = localStorage.getItem("lb_key") || "";
-  $("apiKey").addEventListener("input", () => localStorage.setItem("lb_key", $("apiKey").value));
+  // dil ve tema
+  if ($("btnDil")) $("btnDil").addEventListener("click", () => dilAt());
+  if ($("btnTema")) $("btnTema").addEventListener("click", () => temaAt(tema === "aydinlik" ? "koyu" : "aydinlik"));
+
+  // yasal / güven sayfaları
+  const bilgiAc = (tur) => {
+    $("#bilgiBaslik").textContent = t(tur + "_baslik");
+    $("#bilgiIcerik").innerHTML = t(tur + "_icerik");
+    $("#bilgiModal").classList.remove("hidden");
+  };
+  if ($("ayakGizlilik")) $("ayakGizlilik").addEventListener("click", (e) => { e.preventDefault(); bilgiAc("gizlilik"); });
+  if ($("ayakSartlar")) $("ayakSartlar").addEventListener("click", (e) => { e.preventDefault(); bilgiAc("sartlar"); });
+  if ($("ayakIletisim")) $("ayakIletisim").addEventListener("click", (e) => { e.preventDefault(); bilgiAc("iletisim"); });
+  if ($("btnBilgiKapat")) $("btnBilgiKapat").addEventListener("click", () => $("bilgiModal").classList.add("hidden"));
+
+  // API key: kalıcı depolama yok — yalnız bu oturum
+  $("apiKey").value = sessionStorage.getItem("lb_key") || "";
+  $("apiKey").addEventListener("input", () => sessionStorage.setItem("lb_key", $("apiKey").value.trim()));
 }
 
 // ── Başlangıç ─────────────────────────────────────────
 (async function baslangic() {
   arkaBaslat();
+  temaAt();
+  uygulaI18n();
   try {
     if (await sunucuKontrol()) {
       const kutu = $("apiKey");
-      kutu.placeholder = "Key gerekmez (sunucu rölesi aktif)";
+      kutu.placeholder = t("apikey_ph") + " ✓";
     }
   } catch (e) { }
   modelPiliCiz();

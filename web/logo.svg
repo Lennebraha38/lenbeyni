@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#0a0a14"/>
+      <stop offset="1" stop-color="#0f1224"/>
+    </linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#bcabff"/>
+      <stop offset=".55" stop-color="#7f8bff"/>
+      <stop offset="1" stop-color="#4fd1c5"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="26" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity=".35">
+    <circle cx="1010" cy="90" r="180" fill="#3e86ff"/>
+    <circle cx="140" cy="560" r="200" fill="#3ee8d6"/>
+  </g>
+  <rect x="470" y="195" width="260" height="260" rx="64" fill="url(#g)" filter="url(#glow)"/>
+  <text x="600" y="385" font-family="Georgia, 'Times New Roman', serif" font-size="180" font-weight="800" text-anchor="middle" fill="#06110f">Z</text>
+  <text x="600" y="520" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" text-anchor="middle" fill="#eef3ff" letter-spacing="8">ZenAI</text>
+  <text x="600" y="568" font-family="Arial, Helvetica, sans-serif" font-size="24" text-anchor="middle" fill="#8b96c4" letter-spacing="4">ÜRETKEN ZEKÂ</text>
+</svg>
