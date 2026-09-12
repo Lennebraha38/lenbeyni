@@ -1,0 +1,4 @@
+# ZenAI Voice — gateway (0 maliyet, açık kaynak)
+fastapi>=0.110
+uvicorn>=0.29
+requests>=2.28

@@ -17,6 +17,8 @@ dongu_test_sonuc*.json
 zirve_sonuc*.json
 node_modules/
 .pytest_cache/
+.venv/
+voice/.venv/
 veritabani.db
 example.db
 ornek.db

@@ -24,3 +24,18 @@ jobs:
         continue-on-error: true
         working-directory: web
         run: npm ci --ignore-scripts --no-audit --no-fund && npm audit --audit-level=high
+
+  voice-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Voice bagimliliklari (gateway + pipecat cekirdegi)
+        run: pip install -r voice/requirements.txt "pipecat-ai>=1.10" pytest pytest-asyncio
+      - name: Voice gateway + bot testleri
+        run: python -m pytest voice/tests/test_streamer.py voice/tests/test_gateway.py voice/tests/test_bot.py -q
+      - name: HUD durum makinesi testi (node)
+        run: node voice/tests/test_hud.js
