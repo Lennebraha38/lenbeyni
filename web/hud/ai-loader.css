@@ -1,0 +1,117 @@
+/* AI Loader — dinleme animasyonu (21st.dev ai-loader estetiği, sıfır bağımlılık)
+ * body[data-durum="dinliyor"] altında görünür; orb etrafında dönen degrade
+ * koni + nabız halkaları + yörünge noktaları.
+ */
+.ai-loader {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  pointer-events: none;
+  z-index: 0;
+}
+body[data-durum="dinliyor"] .ai-loader { display: grid; }
+
+.ai-loader .merkez {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: grid;
+  place-items: center;
+}
+
+/* dönen degrade koni (loader "sweep" efekti) */
+.ai-loader .koni {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    rgba(0, 212, 255, 0.05) 320deg,
+    rgba(0, 212, 255, 0.55) 355deg,
+    transparent 360deg
+  );
+  animation: ai-loader-don 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  filter: blur(1px);
+}
+.ai-loader .koni.ters {
+  inset: -70px;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    transparent 310deg,
+    rgba(34, 224, 180, 0.05) 330deg,
+    rgba(34, 224, 180, 0.35) 350deg,
+    transparent 360deg
+  );
+  animation-duration: 2.4s;
+  animation-direction: reverse;
+}
+
+/* nabız halkaları */
+.ai-loader .nabiz {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 212, 255, 0.55);
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.35), inset 0 0 24px rgba(0, 212, 255, 0.15);
+  animation: ai-loader-nabiz 1.6s ease-out infinite;
+}
+.ai-loader .nabiz.g2 { animation-delay: 0.55s; }
+.ai-loader .nabiz.g3 { animation-delay: 1.1s; }
+
+/* yörünge noktaları */
+.ai-loader .yorunge {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  animation: ai-loader-don 3.2s linear infinite;
+}
+.ai-loader .yorunge i {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 50%;
+  background: var(--turkuaz, #00d4ff);
+  box-shadow: 0 0 12px var(--turkuaz, #00d4ff);
+}
+.ai-loader .yorunge.ikinci {
+  width: 265px;
+  height: 265px;
+  animation-duration: 4.8s;
+  animation-direction: reverse;
+}
+.ai-loader .yorunge.ikinci i {
+  top: auto;
+  bottom: -4px;
+  background: var(--teal, #22e0b4);
+  box-shadow: 0 0 12px var(--teal, #22e0b4);
+}
+
+/* merkez etiket */
+.ai-loader .etiket {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  letter-spacing: 6px;
+  color: rgba(207, 233, 255, 0.9);
+  text-shadow: 0 0 14px rgba(0, 212, 255, 0.8);
+  animation: ai-loader-nefes 1.6s ease-in-out infinite;
+}
+
+@keyframes ai-loader-don { to { transform: rotate(360deg); } }
+@keyframes ai-loader-nabiz {
+  0%   { transform: scale(0.62); opacity: 0.95; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes ai-loader-nefes {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
