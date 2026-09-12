@@ -480,7 +480,7 @@ function sorudakiUrl(s) {
 async function sistemPromptu(konu, soyut) {
   const parcalar = [
     "Sen ZenAI'sin — Türkçe bir asistan. Doğrudan, net ve özlü cevap ver.",
-    "UZUNLUK KURALI: Önce tek cümlelik doğrudan cevap. Sonra gerekirse 3-5 kısa madde veya kısa adım adım akış (konu uzunsa). Bol tekrar, lüzumsuz giriş/bitiş cümlesi, gereksiz başlık yığını yapma. Çoğu soru 100-250 kelimeyle biter; 400 kelimeyi aşma.",
+    "KALİTE + UZUNLUK KURALI: Önce tek cümlelik doğrudan cevap. Sonra gerekirse 3-5 kısa madde veya kısa adım akışı. Cevabın uzunluğunu sorunun kapsamına göre ayarla — kullanıcı detay istedadı özet ver, irade yoksa net ve bitmiş ver. Bol tekrar, giriş/bitiş süsü, gereksiz başlık yığını yapma. Çoğu soru 100-250 kelimeyle biter; 400 kelimeyi aşma.",
   ];
   if (soyut) {
     const y = KONU_YONTEM[konu] || KONU_YONTEM.pratik;
@@ -499,13 +499,13 @@ async function sistemPromptu(konu, soyut) {
   return parcalar.join("\n\n");
 }
 
-async function ajanBaglam(soru, mesajlar) {
+async function ajanBaglam(soru, mesajlar, konu) {
   let baglam = "";
   const url = sorudakiUrl(soru);
   if (url && $("toolSite").checked) {
     durum(true, "Site okunuyor: " + url + "…");
     baglam += "\nSİTE: " + await siteCek(url.startsWith("http") ? url : "https://" + url);
-  } else if ($("toolArama").checked) {
+  } else if ($("toolArama").checked && aramaGerekliMi(soru, konu)) {
     const q = soru.replace(/\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,6})+(?:\/[^\s]*)?/g, "").trim();
     if (q && q.split(" ").length >= 3) {
       durum(true, "Web aranıyor: " + q.slice(0, 60) + "…");
@@ -513,6 +513,21 @@ async function ajanBaglam(soru, mesajlar) {
     }
   }
   if (baglam) mesajlar.push({ role: "system", content: "Gerçek web verisi (doğrulanmış):" + baglam });
+}
+
+// Sisteme neyi arayıp neyi aramayacağını söyle — web'i körü körüne kullanma.
+const ARAMA_TETIK = /(20\d\d|bu\s*yıl|bu\s*ay|geçen\s*hafta|az\s*önce|bugün|dün|yarın|son\s*haber|haberleri|güncel|en\s*son|en\s*yeni|yeni\s*sürüm|son\s*sürüm|sürüm\s*notl|versiyon|çıkış\s*tarihi|çıktı\s*mı|fiyat|fiyatları|ne\s*kadar|kaç\s*para|indirim|kampanya|seçim|maç|skor|galibiyet|hava\s*durumu|açılış\s*saati|kapanış|reçete|yönetmelik|politika|dolar|euro|bitcoin|kaç\s*oldu|en\s*çok\s*(?:satılan|kullanılan|izlenen|okunan)|sıralaması|raporu)\b/i;
+const ARAMA_ENGEL = /\b(hikaye|masal|şiir|roman|mektup|şarkı|slogan|senaryo|yaz\b|yazmamı|yazmak|tasarla|tasarlamak|hayal\s*et|öner\b|önerir|önerisi|tavsiye\b|fikir|fikrini|sence|senin\s*görüşün|bence|gibi\s*hissed|hissettir|yorumla?|tarif\s*ver|plan\s*hazırla|ne\s*yarap|\bisten\b)\b/i;
+const ARAMA_KONU_ENGEL = { kod: 1, matematik: 1, mantik: 1, yaratici: 1 };
+
+function aramaGerekliMi(soru, konu) {
+  const s = soru.toLowerCase();
+  if (!s || s.trim().split(/\s+/).length < 3) return false;   // kısa mesele mastır: arama yok
+  if (ARAMA_ENGEL.test(s)) return false;                       // üretim/kişisel istek: arama yok
+  if (ARAMA_TETIK.test(s)) return true;                        // güncel/haber/fiyat: ara
+  if (ARAMA_KONU_ENGEL[konu]) return false;                    // kod/matematik/mantık/yaratıcı: ara
+  if (/(nedir|ne\s*demek|kimdir|ne\s*işe\s*yarar|nasıl\s*çalışır|nasıl\s*yapılır|nasıl\s*(?:ölçerim|açarım|kurarım|düzeltebilirim|alabilirim|yazarım)|açıkla|açıklaması|kısaca|neresi)\s*[.?!]?\s*$/i.test(s)) return false;
+  return true;
 }
 
 // MCP alet çağrısı — model `TOOL_CALL:` satırı çıkarırsa çalıştır, sonucu geri besle.
@@ -566,7 +581,7 @@ async function gonder() {
       ...gecmis.slice(-14),
       { role: "user", content: soru },
     ];
-    await ajanBaglam(soru, mesajlar);
+    await ajanBaglam(soru, mesajlar, konu);
 
     durum(true, (soyut ? "Akıl Motoru" : "ZenAI") + " — " + konu + " → " + model.split("/").pop().split(":")[0] + " düşünüyor…");
     const aiWrap = mesajEkle("ai", "", { skilller: aktifSkillerBu.map((s) => s.ikon + " " + s.ad) });
@@ -836,4 +851,4 @@ function bagla() {
 })();
 
 // test ortamı için dışa aktarımlar
-window.LB = { gonder, mdYazdir, konuBul, skills: () => skills, mcpListesi: () => mcpListesi };
+window.LB = { gonder, mdYazdir, konuBul, aramaGerekliMi, skills: () => skills, mcpListesi: () => mcpListesi };

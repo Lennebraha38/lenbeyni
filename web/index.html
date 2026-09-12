@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<div class="kum-grid" aria-hidden="true"></div>
+<div class="vinyet" aria-hidden="true"></div>
 <div id="app">
   <!-- ══ SOL PANEL ══ -->
   <aside id="sidebar">
@@ -46,6 +48,7 @@
       <div class="logo-mini">
         <span class="logo-dot">Z</span>
         <span class="logo-yazi">ZenAI</span>
+        <span class="motor-etiketi">ENGINE v2</span>
       </div>
       <div class="ust-orta">
         <div class="model-pili" id="modelPili" title="Model seçimi">
@@ -71,9 +74,16 @@
     <!-- Sohbet alanı -->
     <div id="chat" class="bos-merkez">
       <div class="karsilama" id="karsilama">
-        <div class="karsilama-logo">Z</div>
+        <div class="karsilama-halka">
+          <div class="karsilama-logo">Z</div>
+        </div>
         <h2>Bugün ne yapalım?</h2>
         <p class="karsilama-alt">ZenAI — konuya göre model yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla. Gemini/Claude seviyesinde bir zeka.</p>
+        <div class="telemetri">
+          <span class="tl-dot"></span><span class="tl-yazi">KONU YÖNLENDİRME</span>
+          <span class="tl-dot violet"></span><span class="tl-yazi">ÇOKLU MODEL</span>
+          <span class="tl-dot yesil"></span><span class="tl-yazi">SKILLS + MCP</span>
+        </div>
         <div class="oneri-grid" id="oneriGrid"></div>
       </div>
     </div>
