@@ -204,6 +204,70 @@ async function mcpAletCagir(m, aletAdi, argumanlar) {
   return yapili || "Alet boş döndü";
 }
 
+// ── Canlı enerji arka planı (canvas) ────────────────────
+function arkaBaslat() {
+  const cv = $("arka-canvas");
+  if (!cv) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const ctx = cv.getContext("2d");
+  let genis = 0, yuksek = 0;
+  const noktalar = Array.from({ length: 54 }, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - 0.5) * 0.00032, vy: (Math.random() - 0.5) * 0.00032,
+    r: 0.6 + Math.random() * 1.5,
+    t: Math.random() * 6.28,
+  }));
+  let fare = { x: 0.5, y: 0.5 };
+  window.addEventListener("pointermove", (e) => {
+    fare.x = e.clientX / Math.max(1, window.innerWidth);
+    fare.y = e.clientY / Math.max(1, window.innerHeight);
+  }, { passive: true });
+
+  const boyutla = () => {
+    genis = cv.width = window.innerWidth;
+    yuksek = cv.height = window.innerHeight;
+  };
+  boyutla();
+  window.addEventListener("resize", boyutla);
+
+  function ciz() {
+    ctx.clearRect(0, 0, genis, yuksek);
+    const px = (fare.x - 0.5) * 26, py = (fare.y - 0.5) * 18;
+    const ceyrekX = (x) => (x * genis + px + genis) % genis;
+    for (const n of noktalar) {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > 1) n.vx *= -1;
+      if (n.y < 0 || n.y > 1) n.vy *= -1;
+      const kx = ceyrekX(n.x), ky = n.y * yuksek + py;
+      const gibi = 0.35 + 0.65 * Math.abs(Math.sin(n.t += 0.008));
+      const g = ctx.createRadialGradient(kx, ky, 0, kx, ky, n.r * 7);
+      g.addColorStop(0, `rgba(62,230,216,${0.45 * gibi})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(kx, ky, n.r * 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(214,240,255,${0.32 * gibi})`;
+      ctx.beginPath(); ctx.arc(kx, ky, n.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.lineWidth = 0.6;
+    for (let i = 0; i < noktalar.length; i++) {
+      for (let j = i + 1; j < noktalar.length; j++) {
+        const a = noktalar[i], b = noktalar[j];
+        const dx = (a.x - b.x) * genis, dy = (a.y - b.y) * yuksek;
+        const d = Math.hypot(dx, dy);
+        if (d < 120) {
+          ctx.strokeStyle = `rgba(126,144,255,${0.20 * (1 - d / 120)})`;
+          ctx.beginPath();
+          ctx.moveTo(ceyrekX(a.x), a.y * yuksek + py);
+          ctx.lineTo(ceyrekX(b.x), b.y * yuksek + py);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(ciz);
+  }
+  ciz();
+}
+
 // ── Üst düzey yardımcılar ─────────────────────────────
 function durum(goster, metin) {
   const el = $("durum");
@@ -240,6 +304,12 @@ function mesajEkle(role, icerik, meta) {
   chat.appendChild(wrap);
   const govde = wrap.querySelector(".msg-icerik");
   if (role === "user") govde.textContent = icerik;
+  if (meta && meta.sinyal) {
+    const s = document.createElement("span");
+    s.className = "msg-sinyal";
+    s.innerHTML = "<i></i> route " + kaçis(meta.sinyal);
+    wrap.querySelector(".msg-govde").insertBefore(s, wrap.querySelector(".msg-kim").nextSibling);
+  }
   if (meta && meta.skilller) {
     meta.skilller.forEach((s) => {
       const tag = document.createElement("span");
@@ -584,22 +654,60 @@ async function gonder() {
     await ajanBaglam(soru, mesajlar, konu);
 
     durum(true, (soyut ? "Akıl Motoru" : "ZenAI") + " — " + konu + " → " + model.split("/").pop().split(":")[0] + " düşünüyor…");
-    const aiWrap = mesajEkle("ai", "", { skilller: aktifSkillerBu.map((s) => s.ikon + " " + s.ad) });
+    const sinyalKonu = konu + " → " + model.split("/").pop().split(":")[0];
+    const aiWrap = mesajEkle("ai", "", { skilller: aktifSkillerBu.map((s) => s.ikon + " " + s.ad), sinyal: sinyalKonu });
     const govde = aiWrap.querySelector(".msg-icerik");
-    let tam = "";
-    const update = (p) => { tam += p; govde.innerHTML = ""; govde.textContent = ""; mdYazdir(govde, tam); $("chat").scrollTop = $("chat").scrollHeight; };
+    document.body.classList.add("calisiyor");
+
+    // Akış: dikey kaydırma okuyuşunu durdurmadan, imleci takip ederek akıllı render.
+    const yaziyor = document.createElement("div");
+    yaziyor.className = "yaziyor";
+    yaziyor.innerHTML = "<i></i><i></i><i></i>";
+    govde.appendChild(yaziyor);
+
+    let tam = "", renderT = null;
+    const tazeCiz = () => {
+      if (!tam) return;
+      const g = document.createElement("div");
+      mdYazdir(g, tam);
+      const imlec = document.createElement("span");
+      imlec.className = "imlec";
+      g.appendChild(imlec);
+      govde.querySelectorAll(".yaziyor").forEach((e) => e.remove());
+      govde.replaceChildren(g);
+      // markdown sonrası tekrar hizalı kalsın
+      const c = $("chat");
+      if (c.scrollHeight - c.scrollTop - c.clientHeight < 240) c.scrollTop = c.scrollHeight;
+    };
+    const kuyruk = () => {
+      if (renderT) return;
+      renderT = setTimeout(() => { renderT = null; tazeCiz(); }, 110);
+    };
+    const update = (p) => {
+      tam += p;
+      yaziyor.remove();
+      clearTimeout(renderT); renderT = null;
+      tazeCiz();
+    };
+
     let cevap = await megaAkis(mesajlar, model, key, mt, update);
     if (!cevap) { govde.textContent = "(boş cevap)"; }
     else {
       const once = cevap;
       cevap = await mcpIsle(soru, cevap, mesajlar, model);
-      if (cevap !== once) { govde.innerHTML = ""; mdYazdir(govde, cevap); }
+      if (cevap !== once) { govde.replaceChildren(); mdYazdir(govde, cevap); }
       gecmis.push({ role: "user", content: soru });
       gecmis.push({ role: "assistant", content: cevap });
       gecmis = gecmis.slice(-30);
       sohbetKaydet();
       sohbetListesiCiz();
     }
+    // kayan imleç: cevabın bittiğini güzelce göster
+    const bitisImleci = document.createElement("span");
+    bitisImleci.className = "imlec-bitirdi";
+    bitisImleci.textContent = "▍";
+    govde.appendChild(bitisImleci);
+    setTimeout(() => bitisImleci.remove(), 1400);
     govdeEylemleri(aiWrap, govde);
   } catch (e) {
     const hata = document.createElement("div");
@@ -608,6 +716,7 @@ async function gonder() {
     hata.textContent = "Hata: " + e.message;
     mesajEkle("ai").querySelector(".msg-icerik").replaceChildren(hata);
   } finally {
+    document.body.classList.remove("calisiyor");
     durum(false);
     tekrarAkis = false;
     $("btnGonder").disabled = false;
@@ -835,6 +944,7 @@ function bagla() {
 
 // ── Başlangıç ─────────────────────────────────────────
 (async function baslangic() {
+  arkaBaslat();
   try {
     if (await sunucuKontrol()) {
       const kutu = $("apiKey");
