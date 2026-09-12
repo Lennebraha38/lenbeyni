@@ -18,7 +18,7 @@ def test_akil_motoru_sistem_promptu():
     s = sistem_promptu("matematik", "uzun")
     assert "5000" in s  # kapsam hedefi
     assert "ADIM ADIM" in s  # CoT talimati
-    assert "Turkce" in s
+    assert ("Turkce" in s) or ("Türkçe" in s) or ("TÜRKÇE" in s)
     s_kisa = sistem_promptu(None, "normal")
     assert "2500" in s_kisa
 
