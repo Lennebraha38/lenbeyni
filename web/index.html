@@ -57,6 +57,10 @@
         <span data-i18n="ayarlar">Ayarlar ve Yetenekler</span>
       </div>
       <div class="side-item" id="btnProfil" title="Bu cihazda">👤 <span data-i18n="bu_cihazda">Bu cihazda</span></div>
+      <button class="auth-modal-btn" id="btnAuth">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        <span data-i18n="giris_yap">Giriş yap</span>
+      </button>
       <div class="side-ayar-satir">
         <button class="side-mini" id="btnDil" title="Dil değiştir" data-i18n-tit="dil_degistir">EN</button>
         <button class="side-mini" id="btnTema" title="Tema değiştir" data-i18n-tit="tema_degistir">☀</button>
@@ -102,35 +106,57 @@
     </header>
 
     <!-- Sohbet alanı -->
-    <div id="chat" class="bos-merkez" aria-live="polite">
-      <div class="karsilama" id="karsilama">
-        <div class="karsilama-halka" aria-hidden="true">
-          <div class="karsilama-logo">Z</div>
-        </div>
-        <h2 data-i18n="karsilama_h2">Bugün ne yapalım?</h2>
-        <p class="karsilama-alt" data-i18n="karsilama_alt">ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.</p>
-        <div class="telemetri" aria-hidden="true">
-          <span class="tl-dot"></span><span class="tl-yazi" data-i18n="tl_konu">KONU YÖNLENDİRME</span>
-          <span class="tl-dot violet"></span><span class="tl-yazi" data-i18n="tl_coklu">ÇOKLU MODEL</span>
-          <span class="tl-dot yesil"></span><span class="tl-yazi" data-i18n="tl_skill">SKILLS + MCP</span>
-        </div>
-      </div>
+    <div id="chat" class="bos-merkez" aria-live="polite"></div>
+
+    <!-- Karşılama: morph tetikleyici (chat dışında — silinmez) -->
+    <div class="karsilama" id="karsilama" hidden>
+      <button class="morph-tetik" id="morphTetik" aria-label="Sormaya başla">
+        <span class="morph-orb" aria-hidden="true"></span>
+        <span class="morph-yazi" data-i18n="morph_tetik">Ne sormak istersin?</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
 
-    <!-- Girdi alanı -->
-    <div class="girdi-kutu-wrap">
-      <div class="girdi-cubuk" id="girdiCubuk">
-        <button class="ek-btn" id="btnDosya" title="Dosya ekle" data-i18n-ar="dosya_ekle" aria-label="Dosya ekle">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </button>
+    <!-- Girdi alanı — PromptInputBox tarzı (ilk açılışta kapalı, morph ile açılır) -->
+    <div class="girdi-kutu-wrap" id="girdiKutuWrap" hidden>
+      <div class="prompt-kutu" id="girdiCubuk">
+        <div class="gorsel-onizleme" id="gorselOnizleme" hidden></div>
         <label class="sr-only" for="giris" data-i18n="sec_mesaj">Mesaj</label>
         <textarea id="giris" rows="1" placeholder="ZenAI'ye bir şey sor…" data-i18n-ph="gir_ph"></textarea>
-        <button class="ek-btn" id="btnMod" title="Araçlar: web arama + site okuma + Akıl Motoru" data-i18n-ar="araclar" aria-label="Araçlar: web arama + site okuma + Akıl Motoru">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="4"/><line x1="11" y1="5" x2="11" y2="3"/><line x1="11" y1="19" x2="11" y2="21"/><line x1="5" y1="11" x2="3" y2="11"/><line x1="19" y1="11" x2="21" y2="11"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
-        </button>
-        <button class="gonder-btn" id="btnGonder" data-i18n-ar="gonder" aria-label="Gönder">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
+
+        <div class="prompt-alt">
+          <div class="prompt-sol">
+            <button class="kutu-btn" id="btnDosya" title="Görsel ekle" data-i18n-ar="gorsel_ekle" aria-label="Görsel ekle">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="gorselGirdi" class="hidden" accept="image/*" aria-hidden="true" tabindex="-1" />
+
+            <div class="mod-pill-grup">
+              <button type="button" class="mod-pill" id="pillAra" data-mod="ara">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                <span class="mod-pill-yazi" data-i18n="ara">Ara</span>
+              </button>
+              <span class="mod-ayirici" aria-hidden="true"></span>
+              <button type="button" class="mod-pill" id="pillDusun" data-mod="dusun">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a2 2 0 0 0 0 4h.5"/></svg>
+                <span class="mod-pill-yazi" data-i18n="dusun">Düşün</span>
+              </button>
+              <span class="mod-ayirici" aria-hidden="true"></span>
+              <button type="button" class="mod-pill" id="pillKanvas" data-mod="kanvas">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 4v3"/><rect width="16" height="12" x="4" y="7" rx="1"/><path d="m9 16 2-3 2 3 3-4 2 4"/></svg>
+                <span class="mod-pill-yazi" data-i18n="kanvas">Kanvas</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="prompt-sag">
+            <button class="gonder-btn" id="btnGonder" data-i18n-ar="gonder" aria-label="Gönder">
+              <svg class="ikon-mikrofon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              <svg class="ikon-yukari" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+              <svg class="ikon-stop" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><rect x="8" y="8" width="8" height="8" rx="1.5" fill="#1F2023"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="girdi-alt">
         <span data-i18n="not_yanilgi">ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.</span>
@@ -242,6 +268,77 @@
       <button class="ek-btn" id="btnBilgiKapat" aria-label="Kapat" data-i18n-ar="kapat">✕</button>
     </div>
     <div id="bilgiIcerik" class="bilgi-icerik"></div>
+  </div>
+</div>
+
+<!-- ══ TAM EKRAN SES KAYIT (ai-voice-input) ══ -->
+<div id="sesOverlay" class="ses-overlay hidden" role="dialog" aria-modal="true" aria-label="Ses kaydı">
+  <div class="ses-merkez">
+    <button class="ses-mikro-btn" id="sesMikroBtn" aria-label="Kaydı durdur ve gönder">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      <span class="ses-spin-kare" aria-hidden="true"></span>
+    </button>
+    <span class="ses-timer" id="sesTimer">00:00</span>
+    <div class="ses-barlar-buyuk" id="sesBarlarBuyuk" aria-hidden="true"></div>
+    <p class="ses-durum" id="sesDurum">Dinleniyor…</p>
+    <p class="ses-ipucu">Konuşmayı bitirince butona bas — kayıt gönderilir</p>
+  </div>
+</div>
+
+<!-- ══ TAM EKRAN AI LOADER (ai-loader) ══ -->
+<div id="loaderOverlay" class="loader-overlay hidden" role="dialog" aria-modal="true" aria-label="AI çalışıyor">
+  <div class="loader-merkez">
+    <div class="loader-ust">
+      <div class="loader-halkalar" aria-hidden="true">
+        <svg viewBox="0 0 240 240" fill="none">
+          <defs>
+            <mask id="loader-mask">
+              <rect fill="black" height="240" width="240"/>
+              <circle id="loader-mask-circle" cx="120" cy="120" fill="white" r="120" strokeDasharray="0, 754" transform="rotate(-90 120 120)"/>
+            </mask>
+          </defs>
+          <g class="loader-don" mask="url(#loader-mask)" strokeDasharray="18% 40%" strokeWidth="16">
+            <circle cx="120" cy="120" opacity="0.95" r="150" stroke="#FF2E7E"/>
+            <circle cx="120" cy="120" opacity="0.95" r="130" stroke="#00E5FF"/>
+            <circle cx="120" cy="120" opacity="0.95" r="110" stroke="#4ADE80"/>
+            <circle cx="120" cy="120" opacity="0.95" r="90" stroke="#FFA726"/>
+            <circle cx="120" cy="120" opacity="0.95" r="70" stroke="#FFEB3B"/>
+            <circle cx="120" cy="120" opacity="0.95" r="50" stroke="#FF4081"/>
+          </g>
+        </svg>
+      </div>
+      <span class="loader-status" id="loaderStatus">Cevap hazırlanıyor…</span>
+    </div>
+    <div class="loader-satirlar" id="loaderSatirlar" aria-hidden="true"></div>
+    <div class="loader-gradyan" aria-hidden="true"></div>
+  </div>
+</div>
+
+<!-- ══ GÖRSEL ÜRETİM KARTI (image-generation) ══ -->
+<div id="gorselUretimKarti" class="gorsel-uretim hidden" role="status" aria-label="Görsel oluşturuluyor">
+  <div class="gu-kart">
+    <div class="gu-shimmer" aria-hidden="true"></div>
+    <div class="gu-icerik">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M12 3a3 3 0 0 0-3 3v1.5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="21"/></svg>
+      <span data-i18n="gorsel_uretiliyor">Görsel oluşturuluyor…</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GOOGLE AUTH EKRANI ══ -->
+<div id="authModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="authBaslik">
+  <div class="modal-kutu auth-kutu">
+    <h3 id="authBaslik" data-i18n="auth_baslik">ZenAI'ye giriş yap</h3>
+    <p class="auth-alt" data-i18n="auth_alt">Sohbetlerini kaydet, senkronize et ve tüm cihazlarında kullan.</p>
+    <button class="giris-btn" id="girisGoogle">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span data-i18n="auth_google">Google ile devam et</span>
+    </button>
+    <button class="giris-btn misafir" id="girisMisafir">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span data-i18n="auth_misafir">Misafir olarak devam</span>
+    </button>
+    <p class="auth-not" data-i18n="auth_not">Giriş yapmadan da kullanabilirsin — sohbetler yalnız bu cihazda saklanır.</p>
   </div>
 </div>
 

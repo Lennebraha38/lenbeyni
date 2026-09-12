@@ -34,10 +34,15 @@ const L = {
   tr: {
     yenikonus: "Yeni sohbet", gecmisi_gizle: "Geçmişi gizle", ayarlar: "Ayarlar ve Yetenekler", bu_cihazda: "Bu cihazda",
     model_secin: "Model seçin", model_secimi: "Model seçimi",
-    karsilama_h2: "Bugün ne yapalım?",
-    karsilama_alt: "ZenAI — konuya göre akıllı yönlendirme, Akıl Motoru, Skills ve MCP bağlantılarıyla etkileşimli bir zekâ asistanı.",
-    tl_konu: "KONU YÖNLENDİRME", tl_coklu: "ÇOKLU MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "ZenAI'ye bir şey sor…",
+    gir_ph_ara: "Web'de araştır…", gir_ph_dusun: "Derin düşün…", gir_ph_kanvas: "Kanvas'ta oluştur…",
+    gorsel_ekle: "Görsel ekle", gorsel_buyuk: "Görsel çok büyük (en fazla 10MB).",
+    ara: "Ara", dusun: "Düşün", kanvas: "Kanvas",
+    morph_tetik: "Ne sormak istersin?",
+    auth_baslik: "ZenAI'ye giriş yap", auth_alt: "Sohbetlerini kaydet, senkronize et ve tüm cihazlarında kullan.",
+    auth_google: "Google ile devam et", auth_misafir: "Misafir olarak devam",
+    auth_not: "Giriş yapmadan da kullanabilirsin — sohbetler yalnız bu cihazda saklanır.",
+    giris_yap: "Giriş yap", gorsel_uretiliyor: "Görsel oluşturuluyor…",
     not_yanilgi: "ZenAI hatalı bilgi verebilir. Önemli bilgileri doğrulayın.",
     dosya_ekle: "Dosya ekle", araclar: "Araçlar: web arama + site okuma + Akıl Motoru",
     gonder: "Gönder", sohbeti_temizle: "Sohbeti temizle", kaynak_ac: "Yetenekler ve bağlantılar",
@@ -57,6 +62,7 @@ const L = {
     mcp_uc_ph: "Uç noktası (örn: https://sunucu.com/mcp)", mcp_ac2: "Bağlandığında sunucudan alet (tool) listesi çekilir ve sohbete eklenir.",
     bagla_ve_listele: "Bağla ve aletleri listele", kapat: "Kapat",
     arama_ph: "Sohbetlerde ara…", sohbet_yok: "Henüz sohbet yok.", no_bulgu: "Eşleşen sohbet yok.",
+    son_sohbetler: "Son sohbetler",
     sil: "Sil", duzenle: "Yeniden adlandır", disa_aktar: "Dışa aktar",
     kopyala: "Kopyala", yeniden_uret: "↻ Yeniden üret", hata: "Hata", dusunuyor: "düşünüyor…",
     meclis_sec: "Meclis için en az 2 model seç.", sec_mesaj: "Mesaj",
@@ -72,10 +78,15 @@ const L = {
   en: {
     yenikonus: "New chat", gecmisi_gizle: "Hide history", ayarlar: "Settings & Skills", bu_cihazda: "On this device",
     model_secin: "Select model", model_secimi: "Model selection",
-    karsilama_h2: "What shall we do today?",
-    karsilama_alt: "ZenAI — an interactive intelligence assistant with topic routing, Reasoning Engine, Skills and MCP connections.",
-    tl_konu: "TOPIC ROUTING", tl_coklu: "MULTI-MODEL", tl_skill: "SKILLS + MCP",
     gir_ph: "Ask ZenAI anything…",
+    gir_ph_ara: "Search the web…", gir_ph_dusun: "Think deeply…", gir_ph_kanvas: "Create on canvas…",
+    gorsel_ekle: "Attach image", gorsel_buyuk: "Image too large (max 10MB).",
+    ara: "Search", dusun: "Think", kanvas: "Canvas",
+    morph_tetik: "What would you like to ask?",
+    auth_baslik: "Sign in to ZenAI", auth_alt: "Save your chats, sync them and use ZenAI on all your devices.",
+    auth_google: "Continue with Google", auth_misafir: "Continue as guest",
+    auth_not: "You can use ZenAI without signing in — chats are stored only on this device.",
+    giris_yap: "Sign in", gorsel_uretiliyor: "Generating image…",
     not_yanilgi: "ZenAI may produce inaccurate information. Verify important details.",
     dosya_ekle: "Attach file", araclar: "Tools: web search + site reading + Reasoning Engine",
     gonder: "Send", sohbeti_temizle: "Clear chat", kaynak_ac: "Skills & connections",
@@ -95,6 +106,7 @@ const L = {
     mcp_uc_ph: "Endpoint (e.g. https://server.com/mcp)", mcp_ac2: "On connect, the tool list is fetched from the server and added to the chat.",
     bagla_ve_listele: "Connect & list tools", kapat: "Close",
     arama_ph: "Search chats…", sohbet_yok: "No chats yet.", no_bulgu: "No matching chats.",
+    son_sohbetler: "Recent chats",
     sil: "Delete", duzenle: "Rename", disa_aktar: "Export",
     kopyala: "Copy", yeniden_uret: "↻ Regenerate", hata: "Error", dusunuyor: "thinking…",
     meclis_sec: "Select at least 2 models for the council.", sec_mesaj: "Message",
@@ -399,6 +411,73 @@ function arkaBaslat() {
   ciz();
 }
 
+// ── Düşünme orbu (thinking-orbs port) ────────────────
+// Küçük canvas animasyonu: "composing" durumu — dönen, nabız atan yumuşak küre.
+// reduced-motion tercihinde statik gradyan.show.
+const ORB_DURUM = {
+  working:   { ciz: 7, boy: 0.30, hiz: 0.9,  renk: [[96,165,250],[129,140,248]] },
+  searching: { ciz: 6, boy: 0.34, hiz: 1.25, renk: [[56,189,248],[34,211,238]] },
+  solving:  { ciz: 8, boy: 0.26, hiz: 1.0,  renk: [[167,139,250],[217,70,239]] },
+  composing:{ ciz: 6, boy: 0.32, hiz: 0.75, renk: [[126,180,255],[183,154,255]] },
+  listening:{ ciz: 5, boy: 0.38, hiz: 0.6,  renk: [[52,211,153],[45,212,191]] },
+  shaping:   { ciz: 7, boy: 0.28, hiz: 1.1,  renk: [[251,146,60],[244,114,182]] },
+};
+function dusunmeOrb(el, durumAd, boyut = 44) {
+  if (!el) return null;
+  const d = ORB_DURUM[durumAd] || ORB_DURUM.composing;
+  const azHareket = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.createElement("canvas");
+  cv.width = boyut * (window.devicePixelRatio > 1 ? 2 : 1);
+  cv.height = cv.width;
+  cv.style.width = boyut + "px";
+  cv.style.height = boyut + "px";
+  el.replaceChildren(cv);
+  const ctx = cv.getContext("2d");
+  const W = cv.width, R = W / 2;
+  const rnd = () => Math.random() * Math.PI * 2;
+  const noktalar = Array.from({ length: d.ciz }, () => ({ a: rnd(), r: 0, f: 0.6 + Math.random() * 0.8, faz: rnd() }));
+  let durdur = false, t0 = performance.now();
+
+  if (azHareket) {
+    // statik kare: yumuşak gradyan küre
+    const g = ctx.createRadialGradient(R, R, 0, R, R, R);
+    g.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.85)");
+    g.addColorStop(1, "rgba(" + d.renk[1].join(",") + ",.25)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(R, R, R * .82, 0, 6.29); ctx.fill();
+    return () => {};
+  }
+
+  function kare(now) {
+    if (durdur) return;
+    const t = (now - t0) / 1000 * d.hiz;
+    ctx.clearRect(0, 0, W, W);
+    // çekirdek: yumuşak nabız
+    const cek = 0.55 + 0.1 * Math.sin(t * 2.2);
+    const g = ctx.createRadialGradient(R, R, 0, R, R, R * cek);
+    g.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.55)");
+    g.addColorStop(0.7, "rgba(" + d.renk[1].join(",") + ",.28)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(R, R, R * cek, 0, 6.29); ctx.fill();
+    // yörünge noktaları
+    noktalar.forEach((n, i) => {
+      const aci = n.a + t * 1.4 * n.f;
+      const yaricap = R * (0.55 + 0.3 * Math.sin(t * 1.7 + n.faz)) * (0.7 + 0.3 * n.f);
+      const x = R + Math.cos(aci) * yaricap, y = R + Math.sin(aci * 0.9 + n.faz) * yaricap * 0.85;
+      const rc = R * d.boy * (0.5 + 0.5 * Math.abs(Math.sin(t * 2 + i)));
+      const gg = ctx.createRadialGradient(x, y, 0, x, y, rc * 3);
+      gg.addColorStop(0, "rgba(" + d.renk[0].join(",") + ",.75)");
+      gg.addColorStop(1, "rgba(" + d.renk[1].join(",") + ",0)");
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(x, y, rc * 3, 0, 6.29); ctx.fill();
+    });
+    requestAnimationFrame(kare);
+  }
+  requestAnimationFrame(kare);
+  return () => { durdur = true; };
+}
+
 // ── Üst düzey yardımcılar ─────────────────────────────
 function durum(goster, metin) {
   const el = $("durum");
@@ -422,7 +501,11 @@ function mesajEkle(role, icerik, meta) {
   const chat = $("chat");
   chat.classList.remove("bos-merkez");
   const karsilama = $("karsilama");
-  if (karsilama) karsilama.style.display = "none";
+  if (karsilama && !karsilama.hidden) {
+    karsilama.hidden = true;
+    const tetik = $("morphTetik");
+    if (tetik) { tetik.hidden = false; tetik.classList.remove("kapan"); }
+  }
   const wrap = document.createElement("div");
   wrap.className = "msg-yuzde " + role;
   const ikon = role === "user" ? "S" : (meta && meta.meclis ? "M" : "Z");
@@ -550,6 +633,10 @@ function sohbetListesiCiz() {
     kutu.innerHTML = `<p class="panel-aciklama" style="text-align:center;padding:22px 6px">${t(term ? "no_bulgu" : "sohbet_yok")}</p>`;
     return;
   }
+  const grup = document.createElement("div");
+  grup.className = "sohbet-grup-baslik";
+  grup.textContent = t("son_sohbetler");
+  kutu.appendChild(grup);
   list.forEach((s) => {
     const div = document.createElement("div");
     div.className = "sohbet-kayit" + (s.id === aktifSohbet ? " aktif" : "");
@@ -599,12 +686,13 @@ function sohbetAc(id) {
   const chat = $("chat");
   chat.innerHTML = "";
   chat.classList.remove("bos-merkez");
-  $("karsilama").style.display = "none";
+  karsilamaGizle();
   gecmis.forEach((m) => {
     const wrap = mesajEkle(m.role, m.content);
     if (m.role === "ai") mdYazdir(wrap.querySelector(".msg-icerik"), m.content);
     else wrap.querySelector(".msg-icerik").textContent = m.content;
   });
+  girdiAcikYap();
   sohbetListesiCiz();
 }
 function yeniSohbet() {
@@ -616,13 +704,34 @@ function yeniSohbet() {
   depo.set("sohbetler", list.slice(0, 30));
   $("chat").innerHTML = "";
   $("chat").classList.add("bos-merkez");
-  $("karsilama").style.display = "";
+  karsilamaGoster();
   sohbetListesiCiz();
 }
+function karsilamaGizle() {
+  const k = $("karsilama");
+  if (k) k.hidden = true;
+}
 function karsilamaGoster() {
+  const k = $("karsilama");
+  if (!k) return;
   $("chat").innerHTML = "";
   $("chat").classList.add("bos-merkez");
-  $("karsilama").style.display = "";
+  const tetik = $("morphTetik");
+  if (tetik) { tetik.hidden = false; tetik.classList.remove("kapan"); }
+  k.hidden = false;
+  // girdi kutusunu kapat, morph tekrar tetiklenebilsin
+  const wrap = $("girdiKutuWrap");
+  if (wrap) { wrap.classList.remove("acik"); wrap.hidden = true; }
+}
+// Girdi kutusunu morph animasyonuyla aç (sohbet açıldığında sessiz versiyon)
+function girdiAcikYap() {
+  const wrap = $("girdiKutuWrap");
+  if (!wrap || !wrap.hidden) return;
+  const tetik = $("morphTetik");
+  if (tetik) tetik.hidden = true;
+  wrap.hidden = false;
+  requestAnimationFrame(() => wrap.classList.add("acik"));
+  gonderBtnGuncelle();
 }
 
 // ── API ───────────────────────────────────────────────
@@ -715,6 +824,14 @@ async function sistemPromptu(konu, soyut) {
     "Sen ZenAI'sin — Türkçe bir asistan. Doğrudan, net ve özlü cevap ver.",
     "KALİTE + UZUNLUK KURALI: Önce tek cümlelik doğrudan cevap. Sonra gerekirse 3-5 kısa madde veya kısa adım akışı. Cevabın uzunluğunu sorunun kapsamına göre ayarla — kullanıcı detay istedadı özet ver, irade yoksa net ve bitmiş ver. Bol tekrar, giriş/bitiş süsü, gereksiz başlık yığını yapma. Çoğu soru 100-250 kelimeyle biter; 400 kelimeyi aşma.",
   ];
+  const pill = promptPillAktif();
+  if (pill === "ara") {
+    parcalar.push("ARAMA MODU: Güncel web verisiyle cevap ver; kaynak linklerini sona kısaca ekle.");
+  } else if (pill === "kanvas") {
+    parcalar.push("KANVAS MODU: Tam, çalıştırılabilir bir çözüm üret — kod bloklarını ``` ile işaretle, kısa açıklamalarla ver.");
+  } else if (pill === "dusun") {
+    parcalar.push("DÜŞÜNME MODU: Problemi parçalara ayır, her adımı kısa gerekçele, sonucu net kapat.");
+  }
   if (soyut) {
     const y = KONU_YONTEM[konu] || KONU_YONTEM.pratik;
     parcalar.push("YÖNTEM: " + y);
@@ -788,33 +905,47 @@ async function mcpIsle(soru, cevap, mesajlar, model) {
 async function gonder() {
   const soru = $("giris").value.trim();
   const key = gecerliKey();
-  if (!soru || tekrarAkis) return;
+  if ((!soru && !gorselDosya) || tekrarAkis) return;
   if (!key) {
     if (sunucuModu === null) await sunucuKontrol();
     if (sunucuModu === false) { alert("Sunucu rölesi yok ve API key girilmedi."); return; }
   }
+  // Görsel ekliyse metne işaretle (multi-model görsel desteği ileride; şimdilik not olarak)
+  const gorselNot = gorselDosya ? "\n[Görsel eklendi: " + gorselDosya.name + "]" : "";
+  const tamSoru = soru + gorselNot;
   $("giris").value = "";
   otomatikBoyut();
+  gorselTemizle();
+  gonderBtnGuncelle();
+  // Karşılama ekranındaysa girdi kutusunu aç
+  girdiAcikYap();
   $("btnGonder").disabled = true;
   tekrarAkis = true;
 
-  const konu = konuBul(soru);
+  const konu = konuBul(tamSoru);
   if ($("swRoute") && $("swRoute").checked) modelPiliCiz(konu);
 
+  // Pill modları: ara → web aramayı zorla; dusun → Akıl Motoru; kanvas → kod üretim modu
+  const girdiPill = promptPillAktif();
+  if (girdiPill === "ara") {
+    $("toolArama").checked = true;
+    $("toolSite").checked = true;
+  }
+  const soyut = mod === "akil" || girdiPill === "dusun" || girdiPill === "kanvas";
+
   try {
-    if (mod === "meclis") return await meclisTuru(soru, key), (tekrarAkis = false, $("btnGonder").disabled = false);
+    if (mod === "meclis") return await meclisTuru(tamSoru, key), (tekrarAkis = false, $("btnGonder").disabled = false);
     // Tek / Akıl Motoru
-    const soyut = mod === "akil";
     const aktifSkillerBu = aktifSkilller.map((i) => skills[i]).filter(Boolean);
-    const wrap = mesajEkle("user", soru);
+    const wrap = mesajEkle("user", tamSoru);
     const [model, mt] = konuModel(modelSecili(), konu);
     const sistemi = await sistemPromptu(konu, soyut);
     const mesajlar = [
       { role: "system", content: sistemi },
       ...gecmis.slice(-14),
-      { role: "user", content: soru },
+      { role: "user", content: tamSoru },
     ];
-    await ajanBaglam(soru, mesajlar, konu);
+    await ajanBaglam(tamSoru, mesajlar, konu);
 
     durum(true, (soyut ? t("akil_motoru") : "ZenAI") + " — " + konu + " → " + modelAdi(model) + " " + t("dusunuyor"));
     const sinyalKonu = konu + " → " + modelAdi(model);
@@ -822,12 +953,11 @@ async function gonder() {
     const govde = aiWrap.querySelector(".msg-icerik");
     document.body.classList.add("calisiyor");
 
-    // Akış: dikey kaydırma okuyuşunu durdurmadan, imleci takip ederek akıllı render.
-    const yaziyor = document.createElement("div");
-    yaziyor.className = "yaziyor";
-    yaziyor.innerHTML = "<i></i><i></i><i></i>";
-    govde.appendChild(yaziyor);
-
+    // Tam ekran loader: AI cevabı sindirirken göster, ilk token gelince kapan.
+    loaderAc();
+    // Görsel üretimi istendiyse shimmer kartı da göster
+    if (/görsel|resim|image|illustration|çiz(im)?|logo\s+(tasarla|yap|üret)/i.test(tamSoru)) gorselUretimGoster(true);
+    const loaderKapatFn = () => { loaderKapat(); };
     let tam = "", renderT = null;
     const tazeCiz = () => {
       if (!tam) return;
@@ -836,7 +966,7 @@ async function gonder() {
       const imlec = document.createElement("span");
       imlec.className = "imlec";
       g.appendChild(imlec);
-      govde.querySelectorAll(".yaziyor").forEach((e) => e.remove());
+      govde.querySelectorAll(".yaziyor, .dusunme-rozet").forEach((e) => e.remove());
       govde.replaceChildren(g);
       // markdown sonrası tekrar hizalı kalsın
       const c = $("chat");
@@ -848,7 +978,7 @@ async function gonder() {
     };
     const update = (p) => {
       tam += p;
-      yaziyor.remove();
+      loaderKapatFn();
       clearTimeout(renderT); renderT = null;
       tazeCiz();
     };
@@ -857,9 +987,9 @@ async function gonder() {
     if (!cevap) { govde.textContent = "(boş cevap)"; }
     else {
       const once = cevap;
-      cevap = await mcpIsle(soru, cevap, mesajlar, model);
+      cevap = await mcpIsle(tamSoru, cevap, mesajlar, model);
       if (cevap !== once) { govde.replaceChildren(); mdYazdir(govde, cevap); }
-      gecmis.push({ role: "user", content: soru });
+      gecmis.push({ role: "user", content: tamSoru });
       gecmis.push({ role: "assistant", content: cevap });
       gecmis = gecmis.slice(-30);
       sohbetKaydet();
@@ -880,9 +1010,12 @@ async function gonder() {
     mesajEkle("ai").querySelector(".msg-icerik").replaceChildren(hata);
   } finally {
     document.body.classList.remove("calisiyor");
+    loaderKapat();
+    gorselUretimGoster(false);
     durum(false);
     tekrarAkis = false;
     $("btnGonder").disabled = false;
+    gonderBtnGuncelle();
     $("giris").focus();
   }
 }
@@ -1017,13 +1150,271 @@ $("modelPili").onclick = () => {
   modelSec.onblur = () => { modelPiliCiz(); };
 };
 
+// ── Prompt kutusu: pill modları, görsel, ses ──────────
+let promptMod = null;          // null | "ara" | "dusun" | "kanvas"
+let gorselDosya = null;        // seçilen görsel File
+let gorselOniz = null;         // dataURL önizleme
+
+function promptPillAktif() { return promptMod; }
+
+function promptPillGuncelle() {
+  ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
+    const b = $(id);
+    if (!b) return;
+    b.classList.toggle("aktif", b.dataset.mod === promptMod);
+  });
+  const g = $("giris");
+  if (!g) return;
+  g.placeholder = promptMod === "ara" ? t("gir_ph_ara")
+    : promptMod === "dusun" ? t("gir_ph_dusun")
+    : promptMod === "kanvas" ? t("gir_ph_kanvas")
+    : t("gir_ph");
+  otomatikBoyut();
+}
+
+function gorselGoster() {
+  const kutu = $("gorselOnizleme");
+  if (!kutu) return;
+  if (!gorselOniz) { kutu.hidden = true; kutu.replaceChildren(); return; }
+  kutu.hidden = false;
+  kutu.innerHTML = "";
+  const k = document.createElement("div");
+  k.className = "gorsel-kart";
+  const img = document.createElement("img");
+  img.src = gorselOniz;
+  img.alt = gorselDosya ? gorselDosya.name : "görsel";
+  img.addEventListener("click", () => window.open(gorselOniz, "_blank"));
+  const sil = document.createElement("button");
+  sil.className = "gorsel-sil";
+  sil.setAttribute("aria-label", t("sil"));
+  sil.textContent = "✕";
+  sil.addEventListener("click", (e) => { e.stopPropagation(); gorselTemizle(); });
+  k.appendChild(img); k.appendChild(sil);
+  kutu.appendChild(k);
+}
+function gorselTemizle() {
+  gorselDosya = null; gorselOniz = null;
+  const gi = $("gorselGirdi");
+  if (gi) gi.value = "";
+  gorselGoster();
+}
+function gorselIsle(dosya) {
+  if (!dosya) return;
+  if (!dosya.type.startsWith("image/")) return;
+  if (dosya.size > 10 * 1024 * 1024) { alert(t("gorsel_buyuk")); return; }
+  gorselDosya = dosya;
+  const fr = new FileReader();
+  fr.onload = (e) => { gorselOniz = e.target.result; gorselGoster(); };
+  fr.readAsDataURL(dosya);
+}
+
+function gonderBtnGuncelle() {
+  const b = $("btnGonder");
+  if (!b) return;
+  const icerikVar = ($("giris").value.trim() !== "") || !!gorselDosya;
+  b.classList.toggle("dolu", icerikVar && !tekrarAkis);
+  b.classList.toggle("gonderiliyor", tekrarAkis);
+}
+
+// ── Tam ekran ses kayıt (ai-voice-input) ─────────────
+let sesOvSaniye = 0, sesOvTimer = null;
+function sesOvBarlariCiz() {
+  const kutu = $("sesBarlarBuyuk");
+  if (!kutu) return;
+  kutu.innerHTML = "";
+  for (let i = 0; i < 48; i++) {
+    const b = document.createElement("i");
+    b.style.height = (20 + Math.random() * 80) + "%";
+    b.style.animationDelay = (i * 0.05) + "s";
+    kutu.appendChild(b);
+  }
+}
+function sesOverlayAc() {
+  const ov = $("sesOverlay");
+  if (!ov) return;
+  sesOvSaniye = 0;
+  $("sesTimer").textContent = "00:00";
+  sesOvBarlariCiz();
+  ov.classList.remove("hidden");
+  requestAnimationFrame(() => ov.classList.add("acik"));
+}
+function sesOverlayKapat(gonder) {
+  const ov = $("sesOverlay");
+  if (!ov || ov.classList.contains("hidden")) return;
+  if (sesOvTimer) { clearInterval(sesOvTimer); sesOvTimer = null; }
+  ov.classList.remove("acik");
+  setTimeout(() => ov.classList.add("hidden"), 260);
+  if (gonder && sesOvSaniye > 0) {
+    $("giris").value = "[Sesli mesaj — " + sesOvSaniye + " sn]";
+    gonder();
+  }
+}
+function sesOverlayBaslat() {
+  sesOverlayAc();
+  sesOvTimer = setInterval(() => {
+    sesOvSaniye++;
+    const el = $("sesTimer");
+    if (el) el.textContent = String(Math.floor(sesOvSaniye / 60)).padStart(2, "0") + ":" + String(sesOvSaniye % 60).padStart(2, "0");
+  }, 1000);
+}
+
+// ── Tam ekran AI loader (ai-loader) ──────────────────
+const LOADER_DURUMLARI = [
+  {
+    durum: "Web'de araştırılıyor",
+    satirlar: ["Web araması başlatılıyor...", "Sayfalar taranıyor...", "5 web sitesi ziyaret ediliyor...", "İçerik analiz ediliyor...", "Özet oluşturuluyor..."],
+  },
+  {
+    durum: "Cevap analiz ediliyor",
+    satirlar: ["Arama sonuçları analiz ediliyor...", "Özet oluşturuluyor...", "İlgili bilgiler kontrol ediliyor...", "Analiz tamamlanıyor...", "Model yönlendirmesi yapılıyor...", "Bağlam oluşturuluyor..."],
+  },
+  {
+    durum: "Cevap yazılıyor",
+    satirlar: ["Cümleler kuruluyor...", "Mantık zinciri doğrulanıyor...", "Markdown biçimlendiriliyor...", "Akış hızlandırılıyor...", "Son rötuşlar yapılıyor..."],
+  },
+];
+let loaderDurumIdx = 0, loaderSatirIdx = 0, loaderTimer = null, loaderAktif = false;
+function loaderSatirEkle() {
+  const kutu = $("loaderSatirlar");
+  if (!kutu) return;
+  const grup = LOADER_DURUMLARI[loaderDurumIdx];
+  const satir = document.createElement("div");
+  satir.className = "loader-satir";
+  const no = document.createElement("span");
+  no.className = "loader-no";
+  no.textContent = String(loaderSatirIdx + 1).padStart(2, "0");
+  const metin = document.createElement("span");
+  metin.textContent = grup.satirlar[loaderSatirIdx % grup.satirlar.length];
+  satir.appendChild(no); satir.appendChild(metin);
+  kutu.appendChild(satir);
+  // sadece son 5 satır görünür kalsın
+  while (kutu.children.length > 5) kutu.removeChild(kutu.firstChild);
+  kutu.scrollTop = kutu.scrollHeight;
+  loaderSatirIdx++;
+  const sonrakiGrup = loaderSatirIdx % 8 === 0;
+  if (sonrakiGrup) {
+    loaderDurumIdx = (loaderDurumIdx + 1) % LOADER_DURUMLARI.length;
+    const st = $("loaderStatus");
+    if (st) st.textContent = LOADER_DURUMLARI[loaderDurumIdx].durum + "…";
+    // progress mask'ı güncelle
+    const mc = document.getElementById("loader-mask-circle");
+    if (mc) mc.setAttribute("strokeDasharray", ((loaderDurumIdx + 1) / LOADER_DURUMLARI.length) * 754 + ", 754");
+  }
+}
+function loaderAc() {
+  const ov = $("loaderOverlay");
+  if (!ov || loaderAktif) return;
+  loaderAktif = true;
+  loaderDurumIdx = 0; loaderSatirIdx = 0;
+  $("loaderSatirlar").innerHTML = "";
+  $("loaderStatus").textContent = LOADER_DURUMLARI[0].durum + "…";
+  const mc = document.getElementById("loader-mask-circle");
+  if (mc) mc.setAttribute("strokeDasharray", (1 / LOADER_DURUMLARI.length) * 754 + ", 754");
+  ov.classList.remove("hidden");
+  requestAnimationFrame(() => ov.classList.add("acik"));
+  loaderSatirEkle();
+  loaderTimer = setInterval(loaderSatirEkle, 1400);
+}
+function loaderKapat() {
+  const ov = $("loaderOverlay");
+  if (!ov) return;
+  loaderAktif = false;
+  if (loaderTimer) { clearInterval(loaderTimer); loaderTimer = null; }
+  ov.classList.remove("acik");
+  setTimeout(() => ov.classList.add("hidden"), 300);
+}
+
+// ── Görsel üretim kartı (image-generation) ──────────
+function gorselUretimGoster(goster) {
+  const k = $("gorselUretimKarti");
+  if (!k) return;
+  k.classList.toggle("hidden", !goster);
+}
+
+// ── Morph panel (ai-input → animated-ai-input) ───────
+function morphAc() {
+  const tetik = $("morphTetik");
+  const wrap = $("girdiKutuWrap");
+  if (!tetik || !wrap) return;
+  tetik.classList.add("kapan");
+  setTimeout(() => { tetik.hidden = true; }, 220);
+  wrap.hidden = false;
+  requestAnimationFrame(() => wrap.classList.add("acik"));
+  setTimeout(() => { $("giris").focus(); gonderBtnGuncelle(); }, 340);
+}
+// ── Auth modal ───────────────────────────────────────
+function authAc() { const m = $("authModal"); if (m) m.classList.remove("hidden"); }
+function authKapat() { const m = $("authModal"); if (m) m.classList.add("hidden"); }
+
 // ── Olay bağlama ──────────────────────────────────────
 function bagla() {
-  $("btnGonder").addEventListener("click", gonder);
+  $("btnGonder").addEventListener("click", () => {
+    const b = $("btnGonder");
+    if (b.classList.contains("gonderiliyor")) return;      // durdurma akış ileride
+    if (b.classList.contains("dolu")) { gonder(); return; }
+    sesOverlayBaslat();                                     // boşken: tam ekran ses
+  });
   $("giris").addEventListener("keydown", (e) => {
     const ctrlGerek = $("swKisaYol") && $("swKisaYol").checked;
     if (e.key === "Enter" && (ctrlGerek ? e.ctrlKey && !e.shiftKey : !e.shiftKey)) { e.preventDefault(); gonder(); }
   });
+  $("giris").addEventListener("input", gonderBtnGuncelle);
+
+  // Tam ekran ses overlay
+  if ($("sesMikroBtn")) $("sesMikroBtn").addEventListener("click", (e) => { e.stopPropagation(); sesOverlayKapat(true); });
+  if ($("sesOverlay")) $("sesOverlay").addEventListener("click", (e) => { if (e.target === $("sesOverlay")) sesOverlayKapat(false); });
+
+  // Morph panel
+  if ($("morphTetik")) $("morphTetik").addEventListener("click", morphAc);
+
+  // Auth
+  if ($("btnAuth")) $("btnAuth").addEventListener("click", authAc);
+  if ($("girisGoogle")) $("girisGoogle").addEventListener("click", () => { authKapat(); durum(true, "Google girişi yapılıyor…"); setTimeout(() => durum(false), 1600); });
+  if ($("girisMisafir")) $("girisMisafir").addEventListener("click", authKapat);
+  document.querySelectorAll("#authModal .modal-kutu").forEach((k) => k.addEventListener("click", (e) => e.stopPropagation()));
+  if ($("authModal")) $("authModal").addEventListener("click", (e) => { if (e.target === $("authModal")) authKapat(); });
+
+  // Prompt kutusu: pill modları
+  ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
+    const b = $(id);
+    if (!b) return;
+    b.addEventListener("click", () => {
+      promptMod = promptMod === b.dataset.mod ? null : b.dataset.mod;
+      promptPillGuncelle();
+    });
+  });
+
+  // Görsel ekleme
+  if ($("btnDosya")) $("btnDosya").addEventListener("click", () => $("gorselGirdi").click());
+  if ($("gorselGirdi")) $("gorselGirdi").addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) gorselIsle(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  // Sürükle-bırak görsel
+  const kutu = $("girdiCubuk");
+  if (kutu) {
+    kutu.addEventListener("dragover", (e) => { e.preventDefault(); kutu.classList.add("surukle"); });
+    kutu.addEventListener("dragleave", () => kutu.classList.remove("surukle"));
+    kutu.addEventListener("drop", (e) => {
+      e.preventDefault(); kutu.classList.remove("surukle");
+      const f = [...(e.dataTransfer.files || [])].find((x) => x.type.startsWith("image/"));
+      if (f) gorselIsle(f);
+    });
+  }
+
+  // Yapıştırma ile görsel
+  document.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const f = items[i].getAsFile();
+        if (f) { e.preventDefault(); gorselIsle(f); break; }
+      }
+    }
+  });
+
   $("btnTemizle").addEventListener("click", () => { karsilamaGoster(); gecmis = []; sohbetKaydet(); sohbetListesiCiz(); });
   $("btnYeniSohbet").addEventListener("click", yeniSohbet);
   $("btnPanel").addEventListener("click", panelToggle);
@@ -1119,6 +1510,11 @@ function bagla() {
   mcpListesiCiz();
   bagla();
   sohbetListesiCiz();
+  // İlk açılış: karsilama (morph tetikleyici) görünür, girdi kutusu kapalı
+  const kars = $("karsilama");
+  if (kars) kars.hidden = false;
+  promptPillGuncelle();
+  gonderBtnGuncelle();
   $("giris").focus();
 })();
 
