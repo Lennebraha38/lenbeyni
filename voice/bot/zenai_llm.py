@@ -44,7 +44,24 @@ class ZenaiLLMService(LLMService):
         timeout: float = 120.0,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        from pipecat.services.settings import LLMSettings
+
+        super().__init__(
+            settings=LLMSettings(
+                model=model,
+                system_instruction=None,
+                temperature=None,
+                max_tokens=max_tokens,
+                top_p=None,
+                top_k=None,
+                frequency_penalty=None,
+                presence_penalty=None,
+                seed=None,
+                filter_incomplete_user_turns=None,
+                user_turn_completion_config=None,
+            ),
+            **kwargs,
+        )
         self._gateway = gateway_url.rstrip("/")
         self._model = model
         self._mode = mode or ("chat" if model not in ("ajan", "rapor") else model)

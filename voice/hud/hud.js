@@ -346,7 +346,7 @@
       fazSeridi.textContent = 'köprü: ' + gateway;
       $('baglanti').textContent = 'gateway: ' + gateway;
       $('baglanti').classList.add('canli');
-      if (wsUrl) ses = SesKoprusu(wsUrl, olayIsle);
+      if (wsUrl) { ses = SesKoprusu(wsUrl, olayIsle); ses.baglan(); }
       mikBaslat();
     }
 
@@ -376,16 +376,64 @@
     don();
   }
 
-  /* ── Ses köprüsü (opsiyonel) ───────────────────────────────────────── */
-  /* WebRTC/WS x akışı: gateway'in mint gemileri "faz" olaylarını buradan HUD'a
-   * besler. Ses kaydı (SpeechRecognition yerine) yerel modellerle ZENAI bot
-   * üzerinden yapılır; köprü ayarlanmazsa hasta metin modu kullanılır. */
-  function SesKoprusu(wsUrl, onOlay) {
-    let soket = null, kayit = null, kuram = null;
+  /* ── Ses köprüsü (WebRTC, SmallWebRTC bot ucu) ──────────────────────────
+   * Tarayıcı mikrofonu WebRTC track olarak bota akar; bot (pipecat:
+   * VAD→STT→ZenAI LLM→Piper TTS) sesini geri yollar. Bot faz/durum olaylarını
+   * uygulama mesajı (data channel JSON) olarak gönderir; HUD bunları durum
+   * makinesine besler. */
+  function SesKoprusu(botUrl, onOlay) {
+    let pc = null, kanal = null, mikro = null;
+    const cikisElemani = ad.getElementById("ses-cikis");
+
+    async function baglan() {
+      try {
+        mikro = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        onOlay({ yerel: "hata", detay: "mikrofon reddedildi" });
+        return;
+      }
+      pc = new RTCPeerConnection();
+      mikro.getTracks().forEach(function (t) { pc.addTrack(t, mikro); });
+      pc.ontrack = function (e) {
+        if (cikisElemani.srcObject !== e.streams[0]) cikisElemani.srcObject = e.streams[0];
+      };
+      pc.ondatachannel = function (e) { kanal = e.channel; kanalDinle(kanal); };
+      /* SmallWebRTC: data channel'ı bot tarafı açar; bazı akışlarda istemci de açabilir */
+      kanal = pc.createDataChannel("pipecat");
+      kanalDinle(kanal);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      const yanit = await fetch(botUrl.replace(/\/$/, "") + "/offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sdp: pc.localDescription.sdp, type: pc.localDescription.type }),
+      });
+      if (!yanit.ok) {
+        onOlay({ yerel: "hata", detay: "bot ucu: " + yanit.status });
+        return;
+      }
+      const cevap = await yanit.json();
+      await pc.setRemoteDescription({ type: cevap.type, sdp: cevap.sdp });
+      onOlay({ yerel: "sus" });
+    }
+
+    function kanalDinle(k) {
+      k.onmessage = function (m) {
+        try {
+          onOlay(JSON.parse(m.data));
+        } catch (e) { /* JSON olmayan mesaj: yok say */ }
+      };
+    }
+
     return {
-      baglan: function () { /* ws + SDP el sıkışması: voice/bot ile eşleşir */ },
-      basla: function () { if (soket) soket.onbasla && soket.onbasla(); },
-      bitir: function () { if (soket) soket.onbitir && soket.onbitir(); },
+      baglan: baglan,
+      basla: function () { /* VAD bota göre çalışır; mikrofon track zaten akıyor */ },
+      bitir: function () { /* barge-in transport tarafından ele alınır */ },
+      kapat: function () {
+        if (mikro) mikro.getTracks().forEach(function (t) { t.stop(); });
+        if (pc) pc.close();
+        pc = null; kanal = null; mikro = null;
+      },
     };
   }
 
