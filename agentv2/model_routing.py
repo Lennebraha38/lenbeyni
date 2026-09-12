@@ -3,7 +3,8 @@ from typing import Optional, Tuple, List, Dict, Any
 Claude "az token + yuksek mantik" yapiyor. Bizim formulumuz:
   yuksek mantik + rakipten cok token = ustun cozum
 
-Token limitlerini yuksek tut (Claude 128K'dan 2x-4x daha fazla cikti).
+Token limitlerini yüksek tut (Claude 128K'dan 2x-4x daha fazla çıktı).
+Kod modülü: free tier ağırlıklı; önceki deepseek hesabı (bakiye sona erdi) → free kod uzmanına geri dönüldü.
 """
 import os
 
@@ -15,53 +16,53 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 KONU_MODELLERI = {
     "kod": (
         "cohere/north-mini-code:free",
-        65536,  # kod uzmani + genis token (deepseek bakiye olunca 402 -> free'ye don)
-        "Kod uzmani (free): syntax + calisan kod uret"
+        65536,  # kod uzmanı + geniş token (free tier)
+        "Kod uzmanı (free): syntax + çalışan kod üret"
     ),
     "matematik": (
         "nvidia/nemotron-3-ultra-550b-a55b:free",
-        65536,  # 4x Claude seviyesi — adim adim goster, hata bul
-        "Buyuk model: mantik agirlikli, uzun CoT cikti icin"
+        65536,  # 4x Claude seviyesi — adım adım göster, hata bul
+        "Büyük model: mantık ağırlıklı, uzun CoT çıktısı için"
     ),
     "mantik": (
         "nvidia/nemotron-3-ultra-550b-a55b:free",
-        65536,  # 4x — karmasik problem cozumleri icin
-        "Buyuk model: soyut dusunce, karmasik mantik agirlikli"
+        65536,  # 4x — karmaşık problem çözümleri için
+        "Büyük model: soyut düşünce, karmaşık mantık ağırlıklı"
     ),
     "bilim": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — bilimsel aciklama icin genis metin
-        "Genis baglam: bilimsel bilgi + ornek + detay"
+        48000,  # 3x — bilimsel açıklama için geniş metin
+        "Geniş bağlam: bilimsel bilgi + örnek + detay"
     ),
     "tarih": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — tarihsel olay zinciri icin uzun anlatim
-        "Tarihsel olaylar: neden-sonuc zinciri + donem baglami"
+        48000,  # 3x — tarihsel olay zinciri için uzun anlatım
+        "Tarihsel olaylar: neden-sonuç zinciri + dönem bağlamı"
     ),
     "dil": (
         "dots-studio/dots-3-note-preview:free",
-        24000,  # 2x — dil bilgisi aciklama + ornek
-        "Turkce dilbilgisi: kural + ornek + karsi ornek"
+        24000,  # 2x — dil bilgisi açıklama + örnek
+        "Türkçe dilbilgisi: kural + örnek + karşı örnek"
     ),
     "yaratici": (
         "dots-studio/dots-3-note-preview:free",
-        40000,  # 2.5x — uzun hikaye/masal icin
-        "Yaratici yazi: uzun anlatim + detay + atmosfer"
+        40000,  # 2.5x — uzun hikaye/masal için
+        "Yaratıcı yazı: uzun anlatım + detay + atmosfer"
     ),
     "kultur": (
         "dots-studio/dots-3-note-preview:free",
-        24000,  # 2x — bilgi + ornek + baglami
-        "Genel kultur: detayli bilgi + guncel ornekler"
+        24000,  # 2x — bilgi + örnek + bağlamsal
+        "Genel kültür: detaylı bilgi + güncel örnekler"
     ),
     "pratik": (
         "dots-studio/dots-3-note-preview:free",
         16000,  # 1.5x — pratik ama yeterli
-        "Pratik bilgi: uygulanabilir, kisa ama tam"
+        "Pratik bilgi: uygulanabilir, kısa ama tam"
     ),
     "teknoloji": (
         "dots-studio/dots-3-note-preview:free",
-        48000,  # 3x — teknik derinlik icin
-        "Teknoloji: derin analitik, teknik terim + ornek"
+        48000,  # 3x — teknik derinlik için
+        "Teknoloji: derin analitik, teknik terim + örnek"
     ),
 }
 
@@ -73,7 +74,7 @@ def model_sec(konu: str) -> Tuple[str, int]:
     model, maxt, _ = KONU_MODELLERI.get(konu, (DEFAULT_MODEL, DEFAULT_MAX, "Varsayilan"))
     return model, maxt
 
-# ── Fallback zinciri (429/401/404 durumunda otomatik gecis) ──────────────
+# ── Fallback zinciri (429/401/404 durumunda otomatik geçiş) ──────────────
 FALLBACK_ZINCIRI = [
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "openrouter/auto",
@@ -124,7 +125,8 @@ def routing_rapor() -> Dict[str, Any]:
     """Loglardan hangi model hangi konuda kazaniyor ozetler."""
     import os, glob, json
     sayilar = {}
-    dosyalar = glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit", "routing_log.jsonl")) or glob.glob("kayit/routing_log.jsonl")
+    dizin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kayit")
+    dosyalar = glob.glob(os.path.join(dizin, "routing_log.jsonl")) or glob.glob("kayit/routing_log.jsonl")
     for dosya in dosyalar:
         try:
             with open(dosya) as f:

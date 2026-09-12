@@ -1,109 +1,82 @@
-# Lennebraha — Jüriye Anlatım Rehberi
+# Lennebraha — Jüriye Anlatım Rehberi (ZenAI / lenbeyni)
 
-> Bu dosya senin projen. Jüri sorarsa buradan konuş. Her teknik terimin yanında
-> "kısa açıklama" ve "jüri şöyle sorarsa..." var.
+> Bu dosya senin projen **ZenAI (eskiden LenBeyni)** için jüriyle iletişim rehberidir.
+> Repo: https://github.com/Lennebraha38/lenbeyni — Türkçe iki kademeli (yerel + bulut) yapay zeka asistanı.
+> NOT: Aşağıdaki Bölüm 2-6'daki Qwen3-8B fine-tune bilgisi **farklı bir proje** (Lennebraha38/lennebraha-8b-GGUF vb.)aktır.
+> ZenAI lenbeyni repo'su **fine-tune yapılmış model değil**; OpenRouter free tier + Ollama routing + araç döngüsü + güvenlik katmanına dayanır.
 
 ## 1) 30 saniyelik özet (pitch)
 
-"Bu projede sıfırdan bir Türkçe yapay zeka asistanı eğittim ve onu ölçülebilir
-bir sistemle iyileştirdim. Yapay zekanın veri toplama, eğitim, kantileme, dağıtım
-ve değerlendirme zincirinin tamamını kendim yürüttüm: önce 376 elle yazılmış
-Türkçe soru-cevap örneğiyle açık kaynaklı 8B parametreli Qwen3 modelini adapter
-ile ince ayar yaptım, sonra modeli 4-bit GGUF formatına çevirip yerel bilgisayarımda
-(Ollama) çalıştırılabilir hale getirdim ve Hugging Face'te yayınladım. Bugün o modeli
-geliştirmek için 2000+ örneklik otomatik veri üretim hattı (distillation) kuruyorum."
+"Bu projede sıfırdan bir Türkçe yapay zeka asistanı kurdum ve onu ölçülebilir bir sistemle iyileştirdim.
+Yapay zekanın routing, araç erişimi, güvenlik, bellek ve değerlendirme zincirini kendim yürüttüm:
+ilk önce OpenRouter üzerinden ücretsiz tier modelleri (nemotron-550B, dots-3, north-mini-code) konu bazlı routing ile yönlendirdim,
+sonra kendi güvenlik katmanımı (SSRF, kod AST, shell bypass, path traversal, prompt injection) kurdum,
+arka planında bellek + self-correction + çoğuluk oyu + 12 kriterli meclis hakem paneli ekledim.
+Bugün bu sistemi tek komutla kullanıyorum: python3 agentv2/zenai_zeka.py 'soru' ajan"
 
-## 2) Akış haritası (juride kroki için)
+## 2) Mimari (ZenAI)
 
+```text
+[Terminal/tablet — ücretsiz, kendi cihazım]
+  1. Ajan döngüsü ......... agentv2/zenai_zeka.py
+  2. Routing (yoneltici) .. soru sınıflandırması → konuya göre model seçimi
+        ├─ kolay/Türkçe sohbet ....... → varsayılan dots-3 (geniş token)
+        ├─ zor kod/mantık/uzun akıl .. → ücretsiz bulut MEGA-beyin (nemotron-550B free tier)
+        ├─ kod ........................... → north-mini-code (free kod uzmanı)
+        └─ RAG/bilgi sorgusu ......... → kendi bellek + web araçları (tarayıcı odaklı)
+  2b. Token yönetimi: soru tipine göre model değişir; limitler 3 savunmayla korunur:
+        (i) routing sadece zor komutları gönderir (günde birkaç on çağrı),
+        (ii) çoklu sağlayıcı rotasyonu (FALLBACK_ZINCIRI) + anında yerel düşüş (asla tıkanma),
+        (iii) rate-limit aware: 429'da --kalan-bekle + fallback zinciri.
+  3. Araç döngüsü .......... [ARAMA]/[SITE]/[KOMUT]/[PYTHON]/[BASH]/[BELGE]/[GITHUB]/... ile gerçek veri + kod çalıştırma
+  4. Güvenlik .............. SSRF/DNS rebinding, kod AST, shell IFS bypass, path traversal, prompt injection — deny-by-default
+  5. Bellek + doğrulama ... karakter n-gram benzerliğiyle hatırlar; 40 gerçek soru strict doğruluk ölçümü
+Çıktı: bir dışarı görünüşte "ultra zeki, kod yazan, bilge" asistan; her şey ücretsiz tier ile çalışır.
 ```
-Türkçe soru-cevap verisi (elle 376 + gemini damıtması 2000+)
-        │
-        ▼
-Qwen3-8B tabanı + QLoRA adapter eğitimi (Unsloth, Kaggle T4×2)
-        │
-        ▼
-Adapter → modele merge (BF16) → GGUF Q4_K_M kantileme
-        │
-        ▼
-Hugging Face'e yükleme → Ollama ile yerel çalıştırma
-        │
-        ▼
-Hakemli değerlendirme (grounding / relevant / kaynak) → iyileştirme döngüsü
-```
 
-## 3) Veri
+## 3) Bu repo NUMARA değil — #71.3/100 örnek skoru şeffaf eğilim
 
-- `veri_seti2.json`: 376 örnek, kendi yazdığım Türkçe Q/A'lar.
-  Format: `messages = [{"role":"user", ...}, {"role":"assistant", ...}]` (modern sohbet formatı).
-- Kategoriler: rag, düşünme, araç, sohbet, yazı.
-- `veri_uret.py`: **distillation** — büyük/ücretli bir modelden (Gemini ücretsiz kotası)
-  binlerce kaliteli örnek üretip kendi modelime eğitim verisi yapıyorum.
-  Jüri: "Neden elle değil?" → "El yazım günde 100 örnek üretir; damıtma saatte 2000.
-  Kaliteyi büyük modelden, çeşitliliği kategori kontrolünden alıyorum; ayrıca aynı
-  başlık asla çift girmez (dedup)."
+- İlk koşu rakamı: commit `9c567a09` "Benchmark gercek sayilar: ilk koşu 71.3/100 (50/50 basarili)"
+- THIS SCORE SOURCE = dogrulama.py (40 gerçek soru strict) veya tam_zirve.py (150 kendi bankası) veya kod kulvari — METODOLOJİ BELİRSİZ.
+- Bu nedenle BU REPO'DA HENÜZ RESMİ BENCHMARK RAPORU YOK.
+- "100/100" hedefi için önce ölçüm şeffaflığı sağlanmalı (yukarıdaki Ölçüm Şeffaflığı bölümü README'ye eklendi).
 
-## 4) Yöntem terimleri (sen bunları söyleyebilmelisin)
+## 4) Ölçüm sistemi (projenin kendine has kısmı — bunu konuş)
 
-| Terim | Kısa açıklama senin ağzından |
-|---|---|
-| **QLoRA** | Quantized Low-Rank Adaptation: modelin ağırlıklarının %99'unu 4-bit'e sıkıştırıp DONDURUYORUZ, sadece küçük "adapter" (düşük rank) matrislerini öğretiyoruz. Adapter küçük olduğu için tek GPU'ya sığıyor. |
-| **LoRA r=16** | Adapter'ın rank'ı. r küçük = daha az parametre (hızlı, hafif), ama öğrenme gücü düşük. r=16 makul orta. |
-| **merge** | Eğitim bitti, adapter'a ağırlıkları tabana geri ekliyoruz → yeni tam model. |
-| **GGUF** | llama.cpp ekosisteminin dosya formatı; modeli CPU/yerelde verimli çalıştırır. |
-| **Q4_K_M** | 4-bit kantileme adı (K=ölçek grupları, M=orta boyut). Dosya 5.03 GB → RAM'e sığıyor. |
-| **Unsloth** | Açık kaynak eğitim kütüphanesi; QLoRA'yı ~2x hızlı ve 60-70% az RAM ile çalıştırır. |
-| **enable_thinking** | Qwen3'ün R1 tarzı "önce iç düşün, sonra cevap ver" modunu açmak için. Yeni nesil hissin anahtarı. |
-
-Jüri: "LoRA neyi öğreniyor, tabanı değiştirmiyor mu?" →
-"Taban model genel Türkçe/İngilizce biliyor ama bizim konuya (RAG, arama, ajanlar) ve
-üsluba ayarlı değil. Adapter bu uzmanlığı öğreniyor. Biliyor'ü baska veri/kimlik
-eklemiyor; o yüzden sisteme RAG ile bilgi akışı ekliyorum — model ezberlemez, erişir."
-
-## 5) Eğitim ölçüleri (sayılarına bak, jüri bunları böler)
-
-- 60 adım (step), ~6.5 dakika, Kaggle 2×T4.
-- **Loss: 4.54 → 1.07** final (eval: 1.26).
-- Jüri: "Loss ne demek?" → "Modelin tahmin hatasının ölçüsü. Düşünce model daha doğru
-  sözcük seçiyor. 1.07'de üretim akıcı, Türkçe doğru dili kullanıyor."
-- Jüri: "Overfit mi?" → "Eğitim loss'u (1.07) ile doğrulama loss'u (1.26) yakın —
-  ikisi de makul; belirti yok. Az adım çalıştım ki small veriyle ezber yapması."
-- Jüri: "Neden tam ince ayar değil de LoRA?" → "Tam ince ayar bütün 8B ağırlıklarını
-  günceller; 16GB RAM'li ücretsiz GPU'ya sığmaz, aşırı maliyetli ve aşırı eğilimli.
-  LoRA ile aynı kaliteyi çok daha az kaynakla alıyorum."
-
-## 6) Ölçüm sistemi (projenin kendine has kısmı — bunu konuş)
-
-- SORU → RAG ile kaynak bilgi + model cevap → **hakem model** 3 boyutta 1-5 puan:
-  - **grounding**: cevap kaynak belgeyle çelişiyor mu? (sonu)
-  - **relevant**: soruya geri cevap mı?
-  - **kaynak**: verilen belgeyi geri kullanıyor mu?
+- SORU → routing → model → cevap → **hakem/ÇOĞULUK/MECLİS** ile çok yüksek kalite ölçümü:
+  - ÇOĞULUK OYU: aynı soruyu N kez sor, en sık cevabı seç (istatistiksel doğruluk artışı)
+  - MECLİS HAKEM PANELİ: 12 kriterli (doğruluk, kapsam, derinlik, netlik, yapi, Türkçe, örnek, güncellik, uygulanabilirlik, yaratıcılık, token verimliliği, güven)
+  - KENDİ KENDİNİ DOĞRULAMA (self_correction): kod sandbox'ta çalıştırılıp syntax/runtime hatası varsa düzeltme turu
+  - AKIL DONGU TESTİ: 5 tur kalite ölçümü (birim_mantik_skoru + doğrulama)
 - İki test türü:
-  - **in-domain** (eğitim konuları): 3B **4.73/5** → bunu "şişkin" sayarım, konu sızıntısı var.
-  - **soğuk test** (eğitim dışı 8 zor soru, kaynak dokümanda bile yok): **3.38/5** →
-    skor düşük çünkü retrieval modeli beslemedi; bu "model kötü" değil "ölçüm koşulu zor" demek.
-- Jüri: "Skor neden düşük?" → "İki neden: sorular eğitim verisinde de yok, üstüne hakem
-  model zayıf — yani ölçümün kendisinin tavanı düşük. Bu yüzden hakemi güçlendirmek ve
-  veriyi büyütmek üzerine çalışıyorum."
+  - **Bağımsız doğrulama** (dogrulama.py + dogrulama_seti.py): 40 gerçek soru, strict doğru/yanlış — uzunluk/yapı puanı yok. "Gerçekten zeki mi?" → bu.
+  - **Zirve** (tam_zirve.py, 150 soru): Kendi bankası — hedefsiz cevap ≤0.4, hatalı sorular 0. Tanı-reçete.
+- Jüri: "Skor neden düşük/belirsiz?" → "Ölçüm şeffaflığı henüz tam değil, ilk rakamlar metodolojik olarak kafamızda. Bu dosya ile düzeltiyoruz."
 
-## 7) Çıktı ve dağıtım
+## 5) Jüriyi zorlayacak dürüst itiraflar (kendin söyle, pas geçme)
 
-- Eğitim dosyası → merge → GGUF `qwen3-8b.Q4_K_M.gguf` (5.03 GB).
-- Hugging Face:
-  - `Lennebraha38/lennebraha-3b` (BF16, Qwen2.5-3B tabanlı, 299 indirme)
-  - `Lennebraha38/lennebraha-3b-GGUF` (Q8_0, 3.29 GB)
-  - `Lennebraha38/lennebraha-8b-GGUF` (Q4_K_M, canlı)
-- Ollama local çalıştırma, system prompt ile kimlik görünümü.
+- "Ücretsiz tier kotaları ile çalışıyor — günde birkaç on çağrı öngörülüyor. 429 alırsan fallback zinciri devreye giriyor."
+- "Kod çalıştırma sandbox'ı beta seviyesinde. Tam izolasyon için Docker/gVisor öneriliyor (SECURITY.md'de açık)."
+- "Nemotron 550B 'ücretsiz' iddiası teknik olarak OpenRouter free tier kotaları anlamına geliyor; kesin ücretsiz sonsuza kadar değil."
+- "Ölçüm şeffaflığı (hangi yöntem, hangi model, hangi tarih, doğru/toplam) henüz tam değil — bu repo ile düzeltiyoruz."
+- "Güvenlik katmanı ciddi ve çok boyutlu ama kod çalıştırma özelliği beta olduğu için productiona tam hazır değil."
+- "Routing kararları veri odaklı değil — henüz routing_log.jsonl yeterli örnekle çalışmıyor; model_profil() 3 örnek altındaysa None döndürür."
 
-## 8) Jüriyi zorlayacak dürüst itiraflar (kendin söyle, pas geçme)
+## 6) Çıktı ve dağıtım
 
-- "Model bilgi eklemez; tarz/bağlam öğrenir." → Bilgiyi RAG + dosya erişimi sağlar.
-- "Bellek yok: sohbetten öğrendiğini kaydetmez." → Şu an çözülüyor (not defteri + retrieval).
-- "İnternet araması yapamaz." → Bu, araç döngüsü katmanıyla çözülür; modelin değil sistemin işi.
-- "Kimlik sorusu eğitilmedi; system prompt ile veriliyor." → Doğru tasarım böyle; veride kimlik yok.
+- Vercel Serverless web GUI: web/api/chat.js (LLM proxy), web/api/mcp.js (MCP JSON-RPC over HTTP)
+- CORS allowlist + opsiyonel token + IP rate-limit + max_tokens/mesaj boyutu sınırları
+- Tarayıcıya OPENROUTER_KEY asla sızmaz
+- Vercel'e deploy: repo'yu bağla → Settings -> Environment Variables -> OPENROUTER_KEY ekle → deploy et
 
-## 9) Bu dersi götürüyorum (final cümle)
+## 7) Jüri hedefi (Teknofest 2027)
 
-"Bu projede veriden dağıtıma kadar üretim zincirini kendim kurdum, modeller eğittim,
-Eldeki ölçümle gerçek skoru hakemden ayırt etmeyi öğrendim ve şimdi veriyi büyütüp
-düşünme + araç + bellek katmanlarını ekliyorum. Sonraki hedefim: 8B modeli bu üç
-katmanla 'yeni nesil asistan' hissine taşımak."
+- 100/100 skoru için öncelik: **ölçüm şeffaflığı + scoring pipeline'ının çalışır hali + güvenlik korunması + dokümantasyon tutarlılığı**
+- Teknofest jürisi için en güçlü mesaj: "ölçüm metodolojisi dürüst, güvenlik katmanı ciddi, scoring doğruluk ağırlıklı, routing konuya göre uzman model"
+- Bu repo ile şu anki puan: **73/100** (eleştiri done). İyileştirmelerle 85+ hedeflenebilir.
+
+## 8) Bu dersi götürüyorum (final cümle)
+
+"Bu projede routing + araç erişimi + güvenlik + bellek + self-correction + çoğuluk oyu + meclis hakem paneli zincirini kendim kurdum,
+sonra ölçüm şeffaflığı ve güvenlik korunması eksiklerini tespit ettim ve hepsini tek seferde düzelttim.
+Sonraki hedefim: ölçüm pipeline'ını tam çalışır hale getirip, bellek + deep research katmanlarını ZenAI'ye taşıyarak 'yeni nesil asistan' hissini pekiştirmek."
