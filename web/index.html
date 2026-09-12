@@ -62,8 +62,18 @@
         <span data-i18n="giris_yap">Giriş yap</span>
       </button>
       <div class="side-ayar-satir">
-        <button class="side-mini" id="btnDil" title="Dil değiştir" data-i18n-tit="dil_degistir">EN</button>
-        <button class="side-mini" id="btnTema" title="Tema değiştir" data-i18n-tit="tema_degistir">☀</button>
+        <button class="tema-toggle" id="btnTema" role="switch" aria-checked="false" title="Tema değiştir" data-i18n-tit="tema_degistir">
+          <span class="tt-ikonlar" aria-hidden="true">
+            <svg class="tt-gunes" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg class="tt-ay" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </span>
+          <span class="tt-toprak" aria-hidden="true"></span>
+        </button>
+        <button class="dil-toggle" id="btnDil" title="Dil değiştir" data-i18n-tit="dil_degistir">
+          <span class="dt-yazi tr">TR</span>
+          <span class="dt-toprak" aria-hidden="true"></span>
+          <span class="dt-yazi en">EN</span>
+        </button>
       </div>
       <nav class="ayak-linkler" aria-label="Yasal linkler">
         <a href="#" id="ayakGizlilik" data-i18n="gizlilik">Gizlilik</a>
@@ -80,21 +90,9 @@
     <!-- Üst bar -->
     <header id="ustBar">
       <div class="logo-mini">
-        <span class="logo-dot">Z</span>
         <span class="logo-yazi">ZenAI</span>
-        <span class="motor-etiketi">ENGINE v2</span>
       </div>
-      <div class="ust-orta">
-        <button class="model-pili" id="modelPili" title="Model seçimi" data-i18n-tit="model_secimi">
-          <span id="modelAdi" data-i18n="model_secin">Model seçin</span>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="routing-roz" id="routingRoz" title="Konu tespiti ve yönlendirme (Akıl Motoru)">
-          <span id="routingKonu">—</span>
-          <span class="routing-ok">›</span>
-          <span id="routingModel">otomatik</span>
-        </div>
-      </div>
+      <div class="ust-orta"></div>
       <div class="ust-sag">
         <button class="temiz-btn" id="btnTemizle" title="Sohbeti temizle" data-i18n-ar="sohbeti_temizle" aria-label="Sohbeti temizle">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
@@ -126,6 +124,21 @@
 
         <div class="prompt-alt">
           <div class="prompt-sol">
+            <div class="model-secici-wrap" id="modelSeciciWrap">
+              <button type="button" class="model-sec-btn" id="modelSecBtn" title="Model seçimi" data-i18n-tit="model_secimi" aria-haspopup="listbox" aria-expanded="false">
+                <span class="model-sec-orb" aria-hidden="true"></span>
+                <span class="model-sec-ad" id="modelSecAd">Otomatik</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="model-menu hidden" id="modelMenu" role="listbox" aria-label="Model seçimi">
+                <button type="button" class="model-menu-oge otomatik-sec" id="modelOtomatik" role="option" aria-selected="true">
+                  <span class="mm-ikon">✦</span>
+                  <span class="mm-govde"><strong>Otomatik</strong><small data-i18n="model_otomatik_aciklama">Konuya göre akıllı yönlendirme</small></span>
+                  <span class="mm-check" aria-hidden="true">✓</span>
+                </button>
+                <div class="mm-ayirici" role="separator"></div>
+              </div>
+            </div>
             <button class="kutu-btn" id="btnDosya" title="Görsel ekle" data-i18n-ar="gorsel_ekle" aria-label="Görsel ekle">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </button>

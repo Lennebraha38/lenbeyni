@@ -34,6 +34,8 @@ const L = {
   tr: {
     yenikonus: "Yeni sohbet", gecmisi_gizle: "Geçmişi gizle", ayarlar: "Ayarlar ve Yetenekler", bu_cihazda: "Bu cihazda",
     model_secin: "Model seçin", model_secimi: "Model seçimi",
+    model_otomatik: "Otomatik", model_otomatik_aciklama: "Konuya göre akıllı yönlendirme",
+    model_manual_aciklama: "Bu modeli her cevapta kullan",
     gir_ph: "ZenAI'ye bir şey sor…",
     gir_ph_ara: "Web'de araştır…", gir_ph_dusun: "Derin düşün…", gir_ph_kanvas: "Kanvas'ta oluştur…",
     gorsel_ekle: "Görsel ekle", gorsel_buyuk: "Görsel çok büyük (en fazla 10MB).",
@@ -78,6 +80,8 @@ const L = {
   en: {
     yenikonus: "New chat", gecmisi_gizle: "Hide history", ayarlar: "Settings & Skills", bu_cihazda: "On this device",
     model_secin: "Select model", model_secimi: "Model selection",
+    model_otomatik: "Auto", model_otomatik_aciklama: "Smart routing by topic",
+    model_manual_aciklama: "Use this model for every answer",
     gir_ph: "Ask ZenAI anything…",
     gir_ph_ara: "Search the web…", gir_ph_dusun: "Think deeply…", gir_ph_kanvas: "Create on canvas…",
     gorsel_ekle: "Attach image", gorsel_buyuk: "Image too large (max 10MB).",
@@ -129,7 +133,6 @@ function uygulaI18n() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
   document.querySelectorAll("[data-i18n-ar]").forEach((el) => (el.setAttribute("aria-label", t(el.dataset.i18nAr))));
   document.querySelectorAll("[data-i18n-tit]").forEach((el) => (el.title = t(el.dataset.i18nTit)));
-  if ($("btnDil")) $("btnDil").textContent = dil === "tr" ? "EN" : "TR";
   const meta = $("metaTema");
   if (meta) meta.setAttribute("content", tema === "aydinlik" ? "#f4f6fb" : "#04060c");
 }
@@ -137,7 +140,8 @@ function temaAt(yeni) {
   tema = yeni || tema;
   localStorage.setItem("lb_tema", tema);
   document.documentElement.dataset.tema = tema;
-  if ($("btnTema")) $("btnTema").textContent = tema === "aydinlik" ? "🌙" : "☀";
+  const tg = $("btnTema");
+  if (tg) tg.setAttribute("aria-checked", tema === "aydinlik" ? "true" : "false");
   uygulaI18n();
 }
 function dilAt(yeni) {
@@ -1068,7 +1072,11 @@ async function meclisTuru(soru, key) {
 // ── Model seçimi ──────────────────────────────────────
 function konuModel(secili, konu) {
   const sinir = (m) => [m[0], Math.min(m[1], 16384)];
-  if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return sinir(KONU_MODELLERI[konu]);
+  // Otomatik: konu yönlendirme aktifse konuya göre, değilse varsayılan model.
+  if (secili === "auto") {
+    if ($("swRoute") && $("swRoute").checked && KONU_MODELLERI[konu]) return sinir(KONU_MODELLERI[konu]);
+    return sinir(["dots-studio/dots-3-note-preview:free", 48000]);
+  }
   const sabit = {
     "dots-studio/dots-3-note-preview:free": sinir(["dots-studio/dots-3-note-preview:free", 48000]),
     "nvidia/nemotron-3-ultra-550b-a55b:free": sinir(["nvidia/nemotron-3-ultra-550b-a55b:free", 65536]),
@@ -1077,16 +1085,50 @@ function konuModel(secili, konu) {
   return sabit[secili] || sinir(["dots-studio/dots-3-note-preview:free", 48000]);
 }
 function modelSecili() {
-  return localStorage.getItem("lb_model") || "dots-studio/dots-3-note-preview:free";
+  return localStorage.getItem("lb_model") || "auto";
 }
 function modelPiliCiz(konu) {
-  const [m] = konuModel(modelSecili(), konu || konuBul($("giris").value || ""));
-  const ad = modelAdi(m);
-  const k = konu || konuBul($("giris").value || "");
-  $("modelAdi").textContent = ad;
-  $("routingKonu").textContent = k;
-  $("routingModel").textContent = ad;
-  $("routingRoz").classList.add("acik");
+  // Artık model seçimi prompt çubuğunda; sadece seçili adı güncelle.
+  const secim = modelSecili();
+  const adEl = $("modelSecAd");
+  if (!adEl) return;
+  if (secim === "auto") {
+    adEl.textContent = t("model_otomatik");
+  } else {
+    adEl.textContent = modelAdi(secim);
+  }
+  modelMenuIsaretle(secim);
+}
+function modelMenuIsaretle(secim) {
+  document.querySelectorAll(".model-menu-oge").forEach((o) => {
+    const deger = o.dataset.model || "auto";
+    o.setAttribute("aria-selected", deger === secim ? "true" : "false");
+  });
+}
+function modelMenuDoldur() {
+  const menu = $("modelMenu");
+  if (!menu) return;
+  // mevcut modelleri (Otomatik hariç) menuye ekle
+  Object.keys(MODEL_AD).forEach((kod) => {
+    const o = document.createElement("button");
+    o.type = "button";
+    o.className = "model-menu-oge";
+    o.dataset.model = kod;
+    o.setAttribute("role", "option");
+    o.innerHTML = `<span class="mm-ikon">◆</span><span class="mm-govde"><strong>${kaçis(modelAdi(kod))}</strong><small>${t("model_manual_aciklama")}</small></span><span class="mm-check" aria-hidden="true">✓</span>`;
+    o.addEventListener("click", () => {
+      localStorage.setItem("lb_model", kod);
+      modelPiliCiz();
+      modelMenuKapat();
+    });
+    menu.appendChild(o);
+  });
+  modelMenuIsaretle(modelSecili());
+}
+function modelMenuKapat() {
+  const menu = $("modelMenu"), btn = $("modelSecBtn");
+  if (menu) menu.classList.add("hidden");
+  if (btn) btn.setAttribute("aria-expanded", "false");
 }
 
 // ── Girdi boyutlandırma ───────────────────────────────
@@ -1133,22 +1175,20 @@ function modCipsCiz() {
   kutu.innerHTML = parcalar.join(" ");
 }
 
-// Model seçim pili
-$("modelPili").onclick = () => {
-  const modelSec = document.createElement("select");
-  modelSec.className = "select-tarz";
-  modelSec.setAttribute("aria-label", t("model_secimi"));
-  ["dots-studio/dots-3-note-preview:free", "cohere/north-mini-code:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "poolside/laguna-s-2.1:free"].forEach((m) => {
-    const o = document.createElement("option");
-    o.value = m; o.textContent = modelAdi(m);
-    modelSec.appendChild(o);
-  });
-  modelSec.value = modelSecili();
-  $("modelPili").replaceChildren(modelSec);
-  modelSec.focus();
-  modelSec.onchange = () => { localStorage.setItem("lb_model", modelSec.value); $("modelPili").innerHTML = '<span id="modelAdi">' + modelAdi(modelSec.value) + "</span>"; };
-  modelSec.onblur = () => { modelPiliCiz(); };
+// Model seçici (prompt çubuğu içi, input-bar estetiği)
+$("modelSecBtn").onclick = (e) => {
+  e.stopPropagation();
+  const menu = $("modelMenu"), btn = $("modelSecBtn");
+  const acik = !menu.classList.contains("hidden");
+  if (acik) { modelMenuKapat(); return; }
+  menu.classList.remove("hidden");
+  btn.setAttribute("aria-expanded", "true");
 };
+document.addEventListener("click", (e) => {
+  const wrap = $("modelSeciciWrap");
+  if (wrap && !wrap.contains(e.target)) modelMenuKapat();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") modelMenuKapat(); });
 
 // ── Prompt kutusu: pill modları, görsel, ses ──────────
 let promptMod = null;          // null | "ara" | "dusun" | "kanvas"
@@ -1374,6 +1414,13 @@ function bagla() {
   document.querySelectorAll("#authModal .modal-kutu").forEach((k) => k.addEventListener("click", (e) => e.stopPropagation()));
   if ($("authModal")) $("authModal").addEventListener("click", (e) => { if (e.target === $("authModal")) authKapat(); });
 
+  // Model seçici: "Otomatik" seçeneği
+  if ($("modelOtomatik")) $("modelOtomatik").addEventListener("click", () => {
+    localStorage.setItem("lb_model", "auto");
+    modelPiliCiz();
+    modelMenuKapat();
+  });
+
   // Prompt kutusu: pill modları
   ["pillAra", "pillDusun", "pillKanvas"].forEach((id) => {
     const b = $(id);
@@ -1506,6 +1553,7 @@ function bagla() {
     }
   } catch (e) { }
   modelPiliCiz();
+  modelMenuDoldur();
   skillListesiCiz();
   mcpListesiCiz();
   bagla();
