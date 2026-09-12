@@ -13,7 +13,7 @@ Komut formati:
   [LISTE]klasor,*.py[/LISTE]     - dosya listele
 """
 import os, re
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Tuple
 
 __all__ = ["yonlendir", "_izinli_yol", "_gorsel_isle", "_gorsel_dosya"]
 

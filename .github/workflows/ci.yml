@@ -34,8 +34,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Voice bagimliliklari (gateway + pipecat cekirdegi)
-        run: pip install -r voice/requirements.txt "pipecat-ai>=1.10" pytest pytest-asyncio
+        run: pip install -r voice/requirements.txt "pipecat-ai>=1.10" httpx pytest pytest-asyncio
       - name: Voice gateway + bot testleri
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/agentv2
         run: python -m pytest voice/tests/test_streamer.py voice/tests/test_gateway.py voice/tests/test_bot.py -q
       - name: HUD durum makinesi testi (node)
         run: node voice/tests/test_hud.js

@@ -126,11 +126,19 @@
       durumDetay.textContent = durum.detay;
     }
     const olayIsle = function (olay) {
-      durum.uygula(olay);
+      /* gateway SSE olaylari OpenAI biciminde: choices[0].delta -> duzlestir */
+      const delta = olay && olay.choices && olay.choices[0] && olay.choices[0].delta;
+      const duz = delta
+        ? { type: delta.type, faz: delta.faz, detay: delta.detay, durum: delta.durum,
+            icerik: delta.content, content: delta.content }
+        : olay;
+      durum.uygula(duz);
       setDurum();
-      if (olay && olay.type === 'faz') {
-        fazSeridi.textContent = (olay.faz + ' · ' + (olay.detay || '')).toUpperCase();
+      if (duz.type === 'faz') {
+        fazSeridi.textContent =
+          (duz.faz + ' · ' + (duz.detay || '')).toUpperCase();
       }
+      return duz;
     };
 
     /* mikrofon: hem analiz hem "dinliyor" enerjisi */
