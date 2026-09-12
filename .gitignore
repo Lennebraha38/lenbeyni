@@ -20,3 +20,11 @@ node_modules/
 veritabani.db
 example.db
 ornek.db
+*.zenai*.db
+*.zenai*.db-wal
+*.zenai*.db-shm
+*.db-wal
+*.db-shm
+tests/*.json-shm
+tests/*.json-wal
+~/.zenai_bellek.db

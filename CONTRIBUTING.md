@@ -30,7 +30,7 @@ export ZIRVE_MODEL="openai/gpt-4o-mini"   # benchmark acil yolu (rate-limit)
 ## Testler
 
 ```bash
-python3 -m pytest tests/ -q                          # tam paket (160 test)
+python3 -m pytest tests/ -q                          # tam paket (176 test)
 python3 -m pytest tests/test_guvenlik.py -q          # güvenlik kuralları
 python3 -m pytest tests/test_lenbeyni.py -q          # lenbeyni modülü
 python3 agentv2/dogrulama.py --adet 10               # bağımsız strict doğrulama (hızlı)

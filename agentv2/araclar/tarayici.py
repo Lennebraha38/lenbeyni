@@ -25,6 +25,11 @@ def otomatik(parcalar, llm: Optional[Callable] = None) -> str:
     hedef = parcalar[1].strip() if len(parcalar) > 1 else ""
     ek = parcalar[2].strip() if len(parcalar) > 2 else ""
 
+    if islem == "ac" and hedef.startswith("http"):
+        from agentv2.guvenlik import pinli_hedef
+        if not pinli_hedef(hedef):
+            return "[GUVENLIK Bloklandi: ic-alan/metin-disi hedef (SSRF)]"
+
     pw = _pw()
     if pw:
         try:
@@ -69,7 +74,16 @@ def _playwright(pw, islem: str, hedef: str, ek) -> str:
 def _hafif(islem: str, hedef: str = "") -> str:
     if islem == "ac" and hedef.startswith("http"):
         try:
-            r = subprocess.run(["curl", "-sL", "-A", "Mozilla/5.0", "--max-time", "15", "-o", "/tmp/lb_sayfa.html", hedef], timeout=20)
+            from agentv2.guvenlik import pinli_hedef
+            pinlu = pinli_hedef(hedef)
+            if not pinlu:
+                return "[GUVENLIK Bloklandi: ic-alan/metin-disi hedef (SSRF)]"
+            gercek_url, host = pinlu
+            komut = ["curl", "-sL", "-A", "Mozilla/5.0", "--max-time", "15", "-o", "/tmp/lb_sayfa.html"]
+            if host:
+                komut += ["-H", f"Host: {host}"]
+            komut.append(gercek_url)
+            r = subprocess.run(komut, timeout=20)
             if r.returncode == 0:
                 import re
                 h = open("/tmp/lb_sayfa.html", "r", errors="ignore").read()[:20000]

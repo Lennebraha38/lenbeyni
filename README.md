@@ -48,7 +48,7 @@ Kaynak dosya | Yöntem | Model | Tarih | Doğru/Toplam | Yüzde
 ## Test
 
 ```bash
-python3 -m pytest tests/ -q          # 160 test (akil + guvenlik + skor + araclar + token + meclis + guvenlik kurallari)
+python3 -m pytest tests/ -q          # 176 test (akil + guvenlik + skor + araclar + token + meclis + dayaniklilik)
 python3 agentv2/otomatik_skorer.py karsilastirma.json   # canli test skoru raporu
 python3 agentv2/cogunluk_oyu.py "soru" --tekrar 3       # majority vote
 python3 agentv2/tam_zirve.py --soru 10                  # zirve testi (ilk 10 soru)

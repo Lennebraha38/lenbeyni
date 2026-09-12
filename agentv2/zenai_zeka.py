@@ -40,35 +40,50 @@ def uzunluk(model: str, seviye: str = "normal") -> int:
     return _tavan(model, uzunluklar.get(seviye, 16384))
 
 def llm(mesajlar, model: str = MEGA_MODEL, max_tokens: Optional[int] = None, seviye: str = "normal", stream: bool = True) -> str:
-    if not OPENROUTER_KEY:
-        return None
     import requests, json
     if max_tokens is None:
         max_tokens = uzunluk(model, seviye)
-    r = requests.post(OPENROUTER_URL, json={
-        "model": model, "messages": mesajlar, "temperature": 0.7,
-        "max_tokens": _tavan(model, max_tokens), "stream": stream
-    }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=600)
-    if r.status_code != 200:
-        return None
-    if not stream:
-        return r.json().get("choices", [{}])[0].get("message", {}).get("content")
+    max_tokens = _tavan(model, max_tokens)
 
-    # streaming: parcalari topla, ilk tokeni ver (LLM uygulamasi akis hissi icin cagiran yardima bakabilir)
-    parcalar = []
-    for satir in r.iter_lines(decode_unicode=True):
-        if not satir or not satir.startswith("data:"):
-            continue
-        veri = satir[5:].strip()
-        if veri == "[DONE]":
-            break
+    if OPENROUTER_KEY:
         try:
-            delta = json.loads(veri)["choices"][0]["delta"].get("content", "")
-            if delta:
-                parcalar.append(delta)
+            r = requests.post(OPENROUTER_URL, json={
+                "model": model, "messages": mesajlar, "temperature": 0.7,
+                "max_tokens": max_tokens, "stream": stream
+            }, headers={"Authorization": f"Bearer {OPENROUTER_KEY}"}, timeout=600)
+            if r.status_code == 200:
+                if not stream:
+                    return (r.json().get("choices", [{}])[0].get("message", {}).get("content")
+                            or None)
+
+                # streaming: parcalari topla, ilk tokeni ver (LLM uygulamasi akis hissi icin cagiran yardima bakabilir)
+                parcalar = []
+                for satir in r.iter_lines(decode_unicode=True):
+                    if not satir or not satir.startswith("data:"):
+                        continue
+                    veri = satir[5:].strip()
+                    if veri == "[DONE]":
+                        break
+                    try:
+                        delta = json.loads(veri)["choices"][0]["delta"].get("content", "")
+                        if delta:
+                            parcalar.append(delta)
+                    except Exception:
+                        continue
+                if parcalar:
+                    return "".join(parcalar)
         except Exception:
-            continue
-    return "".join(parcalar) or None
+            pass
+
+    # Tek-key kirilganligi: OpenRouter yoksa/429/5xx verirse diger saglayicilara gec.
+    try:
+        from llm_provider import sira_sor
+    except ImportError:
+        from agentv2.llm_provider import sira_sor
+    try:
+        return sira_sor(mesajlar, model, max_tokens)
+    except Exception:
+        return None
 
 def ajan(soru: str) -> str:
     belleklik = Bellek()
@@ -149,14 +164,28 @@ def chat(soru: str) -> str:
     return ajan(soru)
 
 def acik(soru: str, mod: str = "ajan") -> str:
+    # Semantik onbellek: tekrar eden sorularda API cagrisini kes.
+    try:
+        from onbellek import onbel_istek, onbel_kaydet
+    except ImportError:
+        from agentv2.onbellek import onbel_istek, onbel_kaydet
+
     if mod == "rapor":
         return rapor(soru)
+    esik = 0.85 if mod == "chat" else 0.97  # ajan aracli oldugu icin neredeyse-birebir ister
+    isabet = onbel_istek(soru, esik)
+    if isabet:
+        return isabet
     if mod == "chat":
         sistem = sistem_promptu(konu=None, kapsam="uzun", seviye="duzgun")
         son = llm([{"role": "system", "content": sistem},
                    {"role": "user", "content": soru}], seviye="normal")
-        return son or "Beyin yanit vermedi."
-    return ajan(soru)
+        yanit = son or "Beyin yanit vermedi."
+        onbel_kaydet(soru, yanit)
+        return yanit
+    yanit = ajan(soru)
+    onbel_kaydet(soru, yanit)
+    return yanit
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

@@ -25,11 +25,25 @@ BASLIK = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chro
 
 # ---------- browser-use: tarayici / site ----------
 from typing import Optional, Tuple, List, Dict, Any, Callable, Union
+from urllib.parse import urljoin, urlsplit
 def sayfa(url: str, maxlen: int = 4000) -> str:
     if not url.startswith("http"): url = "https://" + url
     if not url_guvenli(url):
         return "[GUVENLIK Bloklandi: engellenen URL (ic ag/SSRF onleme)]"
-    r = requests.get(url, timeout=20, headers=BASLIK, allow_redirects=True)
+    # Redirect zincirini elle takip et: her atlamada yeniden SSRF kontrolu
+    # (allow_redirects ile ic-alana dusan redirect atlanip SSRF acilirdi).
+    r = requests.get(url, timeout=20, headers=BASLIK, allow_redirects=False)
+    for _ in range(6):
+        if r.status_code in (301, 302, 303, 307, 308):
+            adres = r.headers.get("Location")
+            if not adres:
+                break
+            url = urljoin(url, adres)
+            if not url_guvenli(url):
+                return "[GUVENLIK Bloklandi: redirect ic-alana gitti (SSRF)]"
+            r = requests.get(url, timeout=20, headers=BASLIK, allow_redirects=False)
+        else:
+            break
     metin = re.sub(r"<script.*?</script>|<style.*?</style>|<nav.*?</nav>|<footer.*?</footer>|<header.*?</header>", "", r.text, flags=re.S)
     metin = re.sub(r"<[^>]+>", " ", metin)
     metin = re.sub(r"&[a-z]+;", " ", metin)

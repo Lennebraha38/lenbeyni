@@ -1,0 +1,26 @@
+name: Security
+on: [push, pull_request]
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gizli anahtar taramasi (gitleaks)
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_Linux_x86_64.tar.gz -o /tmp/gl.tgz
+          tar -xzf /tmp/gl.tgz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --no-banner --redact
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+      - uses: github/codeql-action/analyze@v3

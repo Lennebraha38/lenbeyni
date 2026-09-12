@@ -89,21 +89,52 @@ def _ozet(metin: str, boyut: int = 42) -> str:
 
 # ── Ana Bellek Sınıfı ──────────────────────────────────────────────────
 class BellekVec:
-    """Hibrit bellek: FAISS+embedding (varsa) veya n-gram TF-IDF fallback."""
+    """Hibrit bellek: FAISS+embedding (varsa) veya n-gram TF-IDF fallback.
+
+    Depo: SQLite (transaction guvenli, eszamanli yazma race'i yok).
+    Eski `~/.zenai_bellek.json` varsa bir kez otomatik gocume kabul eder.
+    """
 
     def __init__(self, yol: Optional[str] = None, kullanici: str = "varsayilan") -> None:
-        self.yol = yol or os.path.expanduser("~/.zenai_bellek.json")
+        import sqlite3
+        self.yol = yol or os.path.expanduser("~/.zenai_bellek.db")
         self.kullanici = kullanici
         self.veri = {}
         self._faiss_index = None
         self._faiss_keys = []
         self._faiss_vectors = []
-        try:
-            with open(self.yol) as f:
-                self.veri = json.load(f)
-        except Exception:
-            self.veri = {}
+        self._sql = sqlite3.connect(self.yol, timeout=5, check_same_thread=False)
+        self._sql.execute("PRAGMA journal_mode=WAL")
+        self._sql.execute("CREATE TABLE IF NOT EXISTS bellek("
+                          "kullanici TEXT NOT NULL, anahtar TEXT NOT NULL,"
+                          " govde TEXT NOT NULL, zaman REAL NOT NULL,"
+                          " sure REAL, etiket TEXT, hash TEXT,"
+                          " PRIMARY KEY (kullanici, anahtar))")
+        self._sql.commit()
+        self._senkron_ic()
         self._temizle()
+
+    def _senkron_ic(self) -> None:
+        """SQLite'ten bellega aktar; db bosken eski JSON varsa goc et."""
+        var = self._sql.execute("SELECT 1 FROM bellek LIMIT 1").fetchone()
+        if not var:
+            eski = self.yol[:-3] + ".json" if self.yol.endswith(".db") else self.yol
+            if eski != self.yol and os.path.exists(eski):
+                try:
+                    okun = json.load(open(eski, encoding="utf-8"))
+                    for ku, kayitlar in okun.items():
+                        for k, v in kayitlar.items():
+                            self.veri.setdefault(ku, {})[k] = v
+                    self._yaz()
+                    return
+                except Exception:
+                    pass
+        self.veri = {}
+        for ku, anahtar, govde, zaman, sure, etiket, h in self._sql.execute(
+                "SELECT kullanici, anahtar, govde, zaman, sure, etiket, hash FROM bellek"):
+            self.veri.setdefault(ku, {})[anahtar] = {
+                "deger": json.loads(govde), "zaman": zaman,
+                "sure": sure, "etiket": etiket, "hash": h}
 
     def _kayitlar(self) -> Dict[str, Any]:
         return self.veri.setdefault(self.kullanici, {})
@@ -120,9 +151,22 @@ class BellekVec:
             self._yaz()
 
     def _yaz(self) -> None:
+        """Tum kullanici kayitlarini tek transaction ile SQLite'a yaz."""
         try:
-            with open(self.yol, "w") as f:
-                json.dump(self.veri, f, ensure_ascii=False, indent=1)
+            with self._sql:
+                self._sql.execute("DELETE FROM bellek WHERE kullanici = ?",
+                                  (self.kullanici,))
+                for k, v in self._kayitlar().items():
+                    g = v
+                    if not isinstance(g, dict) or "deger" not in g:
+                        g = {"deger": v, "zaman": 0, "sure": None,
+                             "etiket": None, "hash": ""}
+                    self._sql.execute(
+                        "INSERT OR REPLACE INTO bellek(kullanici, anahtar, govde, zaman, sure, etiket, hash) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (self.kullanici, k, json.dumps(g["deger"], ensure_ascii=False),
+                         g.get("zaman", time.time()), g.get("sure"),
+                         g.get("etiket"), g.get("hash", "")))
         except Exception:
             pass
 

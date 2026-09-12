@@ -136,6 +136,27 @@ def url_guvenli_ip(url: str) -> Tuple[bool, Optional[str]]:
             return False, None
     return True, cozulen_ip
 
+def pinli_hedef(url: str) -> Optional[Tuple[str, Optional[str]]]:
+    """SSRF + DNS-rebinding onleme: (guvenli_curl_url, Host_basligi) veya None.
+
+    Cozulen IP'yi dogrular, http'de URL'i IP'ye cevirir (Host basligi korunur),
+    https'te host-u korur ama cozulen IP kaydedilmis olur (TLS/SNI icin host gerekli).
+    Ikinci DNS cozumlemesine guvenilmez (TOCTOU degil).
+    """
+    from urllib.parse import urlsplit
+    guvenli, cozulen_ip = url_guvenli_ip(url)
+    if not guvenli or not cozulen_ip:
+        return None
+    p = urlsplit(url if "://" in url else "https://" + url)
+    host = p.netloc
+    if ":" in host and not host.startswith("["):
+        host = host.rsplit(":", 1)[0]
+    if p.scheme == "http":
+        # IP'ye pinle, Host basligini ozgun adla tut (rebinding kirilir)
+        yeniden = f"http://{cozulen_ip}{p.path or '/'}{'?' + p.query if p.query else ''}"
+        return yeniden, host
+    return url, None
+
 def yorl_guvenli(yol: str, kokler: Optional[List[str]] = None) -> Optional[str]:
     """Dosya okuma/calistirmani izin verilen koklere sabitler (path traversal onleme)."""
     if not yol:
