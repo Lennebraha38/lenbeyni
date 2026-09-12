@@ -84,6 +84,10 @@ body[data-durum="arastiriyor"].durum-dot { color: var(--amber); }
 body[data-durum="konusuyor"]  .durum-dot { color: var(--turkuaz); }
 body[data-durum="hata"]       .durum-dot { color: var(--kirmizi); }
 
+/* dinlerken: ai-loader öne çıksın, canvas geri çekilsin */
+body[data-durum="dinliyor"] #hud-canvas { opacity: 0.28; transition: opacity 0.45s; }
+#hud-canvas { transition: opacity 0.45s; }
+
 /* ── Sohbet paneli ───────────────────────── */
 .sohbet-panel {
   position: fixed; left: 0; right: 0; bottom: 96px; z-index: 4;
